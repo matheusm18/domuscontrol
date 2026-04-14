@@ -21,8 +21,8 @@ public abstract class Device {
     /** The power consumption of the device in Wh/h. */
     private double consumptionPerHour;
 
-    /** The status of the device (true if on, false if off). */
-    private boolean on;
+    /** The status of the device */
+    private DeviceStatus status;
 
     /** The total number of minutes the device has been on. */
     private int totalMinutesOn;
@@ -46,7 +46,7 @@ public abstract class Device {
         this.brand = "";
         this.model = "";
         this.consumptionPerHour = 0.0;
-        this.on = false;
+        this.status = DeviceStatus.OFF;
         this.totalMinutesOn = 0;
         this.totalActivations = 0;
     }
@@ -62,7 +62,7 @@ public abstract class Device {
         this.brand = brand;
         this.model = model;
         this.consumptionPerHour = consumptionPerHour;
-        this.on = false;
+        this.status = DeviceStatus.OFF;
         this.totalMinutesOn = 0;
         this.totalActivations = 0;
     }
@@ -76,7 +76,7 @@ public abstract class Device {
         this.brand = device.getBrand();
         this.model = device.getModel();
         this.consumptionPerHour = device.getConsumptionPerHour();
-        this.on = device.isOn();
+        this.status = device.getStatus();
         this.totalMinutesOn = device.getTotalMinutesOn();
         this.totalActivations = device.getTotalActivations();
     }
@@ -118,12 +118,12 @@ public abstract class Device {
     }
 
     /**
-     * Checks if the device is on.
+     * Gets the status of the device.
      * 
-     * @return true if the device is on, false otherwise.
+     * @return This device's status (ON or OFF).
      */
-    public boolean isOn(){
-        return on;
+    public DeviceStatus getStatus(){
+        return status;
     }
 
     /**
@@ -185,8 +185,8 @@ public abstract class Device {
      * Otherwise, it sets the status to on and increments the total activations by 1.
      */
     public void turnOn() {
-        if (!on) {
-            on = true;
+        if (status == DeviceStatus.OFF) {
+            status = DeviceStatus.ON;
             totalActivations++;
         }
     }
@@ -195,8 +195,8 @@ public abstract class Device {
      * Turns the device off. If the device is already off, this method does nothing
      */
     public void turnOff() {
-        if (on) {
-            on = false;
+        if (status == DeviceStatus.ON) {
+            status = DeviceStatus.OFF;
         }
     }
 
@@ -206,7 +206,9 @@ public abstract class Device {
      * @param minutes The number of minutes to be added to the total minutes on if the device is on.
      */
     public void tick(int minutes) {
-        if (on) totalMinutesOn += minutes;
+        if (status == DeviceStatus.ON) {
+            totalMinutesOn += minutes;
+        }
     }
 
     /**
@@ -222,7 +224,7 @@ public abstract class Device {
      * Checks if this device is equal to another object.
      * 
      * @param o Object to be compared with this device.
-     * @return true if the given object is a device with the same id as this device, false otherwise.
+     * @return true if the given object is a device with the same fields as this device, false otherwise.
      */
     @Override
     public boolean equals(Object o) {
@@ -231,17 +233,19 @@ public abstract class Device {
         if (o == null || o.getClass() != this.getClass()) return false;
 
         Device d = (Device) o;
-        return d.getId() == this.id;
+        return d.getId() == this.id && d.getBrand().equals(this.brand) && d.getModel().equals(this.model)
+            && d.getConsumptionPerHour() == this.consumptionPerHour && d.getStatus() == this.status  && 
+            d.getTotalActivations() == this.totalActivations && d.getTotalMinutesOn() == this.totalMinutesOn;
     }
 
     /**
-     * Calculates the hash code of this device. Only the device's id is used to calculate the hash code.
+     * Calculates the hash code of this device.
      * 
      * @return The hash code of this device.
      */
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(this.id, this.brand, this.model, this.consumptionPerHour, this.status, this.totalMinutesOn, this.totalActivations);
     }
 
     /**
@@ -254,17 +258,20 @@ public abstract class Device {
 
     /**
      * Creates a string representation of this device. 
-     * The string representation includes the class name, id, brand, model, power consumption, and status of the device.
+     * The string representation includes the class name, id, brand, model, consumption rate, status, total minutes on, total activations and total energy consumption of the device.
      */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(this.getClass().getSimpleName())
-            .append(" [ ID: ").append(this.getId()).append(" ] ")
-            .append("| Brand: ").append(this.getBrand())
-            .append(" | Model: ").append(this.getModel())
-            .append(" | Consumption: ").append(this.getConsumptionPerHour()).append(" Wh/h")
-            .append(" | Status: ").append(this.isOn() ? "ON" : "OFF");
+        sb.append(this.getClass().getSimpleName()).append("\n")
+            .append("ID: ").append(this.id).append("\n")
+            .append("Brand: ").append(this.brand).append("\n")
+            .append("Model: ").append(this.model).append("\n")
+            .append("Consumption: ").append(this.consumptionPerHour).append(" Wh/h\n")
+            .append("Status: ").append(this.status).append("\n")
+            .append("Minutes on: ").append(this.totalMinutesOn).append("\n")
+            .append("Activations: ").append(this.totalActivations).append("\n")
+            .append("Energy used: ").append(this.getEnergyConsumption()).append(" Wh");
         return sb.toString();
     }
 }
