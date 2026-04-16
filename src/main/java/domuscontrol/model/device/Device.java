@@ -271,7 +271,7 @@ public abstract class Device {
             .append("Status: ").append(this.status).append("\n")
             .append("Minutes on: ").append(this.totalMinutesOn).append("\n")
             .append("Activations: ").append(this.totalActivations).append("\n")
-            .append("Energy used: ").append(this.getEnergyConsumption()).append(" Wh");
+            .append("Energy used: ").append(this.getEnergyConsumption()).append(" Wh\n");
         return sb.toString();
     }
 }
