@@ -181,32 +181,36 @@ public abstract class Device {
     }
 
     /**
-     * Turns the device on. If the device is already on, this method does nothing. 
-     * Otherwise, it sets the status to on and increments the total activations by 1.
-     */
-    public void turnOn() {
-        if (status == DeviceStatus.OFF) {
-            status = DeviceStatus.ON;
-            totalActivations++;
-        }
-    }
-
-    /**
-     * Turns the device off. If the device is already off, this method does nothing
-     */
-    public void turnOff() {
-        if (status == DeviceStatus.ON) {
-            status = DeviceStatus.OFF;
-        }
-    }
-
-    /**
-     * Updates the total minutes on of the device. If the device is on, it increments the total minutes on by the given number of minutes.
+     * Updates the device status and safely increments activations 
+     * if changing from an idle state to an active state.
      * 
-     * @param minutes The number of minutes to be added to the total minutes on if the device is on.
+     * @param newStatus The new status to apply.
+     */
+    public void updateStatus(DeviceStatus newStatus) {
+        boolean wasIdle = (this.status == DeviceStatus.OFF || this.status == DeviceStatus.CLOSED);
+        boolean willBeActive = (newStatus == DeviceStatus.ON || newStatus == DeviceStatus.OPEN);
+
+        if (wasIdle && willBeActive) {
+            this.totalActivations++;
+        }
+        this.status = newStatus;
+    }
+
+    /**
+     * Abstract method that forces subclasses to define if they are 
+     * currently in a state that counts as "active" or "consuming".
+     * 
+     * @return true if the device is actively consuming time/energy.
+     */
+    public abstract boolean isConsuming();
+
+    /**
+     * Updates the total minutes on of the device. If the device is consuming, it increments the total minutes on by the given number of minutes.
+     * 
+     * @param minutes The number of minutes to be added to the total minutes on if the device is consuming.
      */
     public void tick(int minutes) {
-        if (status == DeviceStatus.ON) {
+        if (this.isConsuming()) {
             totalMinutesOn += minutes;
         }
     }

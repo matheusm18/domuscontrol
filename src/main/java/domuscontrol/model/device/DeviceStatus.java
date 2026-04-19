@@ -1,5 +1,5 @@
 package domuscontrol.model.device;
 
 public enum DeviceStatus {
-    ON, OFF
+    ON, OFF, OPEN, CLOSED
 }
