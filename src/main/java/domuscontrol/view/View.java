@@ -1,5 +1,5 @@
 package domuscontrol.view;
 
-public class test {
+public class View {
     
 }
