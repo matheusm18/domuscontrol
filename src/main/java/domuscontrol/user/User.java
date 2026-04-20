@@ -1,12 +1,16 @@
 package domuscontrol.user;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+
+import domuscontrol.exceptions.HouseNotFoundException;
 
 /**
  * Represents a user in the system.
  */
-public class User {
+public class User implements Serializable {
 	private static int nextId = 1;
 
 	private final int id;
@@ -93,6 +97,15 @@ public class User {
 	}
 
 	/**
+	 * Gets the IDs of all houses where the user has a role.
+	 * 
+	 * @return A set of house IDs where the user has a role.
+	 */
+	public Set<Integer> getHouseIds() {
+		return this.rolesByHouseId.keySet();
+	}
+
+	/**
 	 * Gets the roles by house ID.
 	 * @return The map of roles by house ID.
 	 */
@@ -149,7 +162,10 @@ public class User {
 	 * Removes a role from the user for a specific house.
 	 * @param houseId The ID of the house.
 	 */
-	public void removeRole(int houseId) {
+	public void removeRole(int houseId) throws HouseNotFoundException {
+		if (!this.rolesByHouseId.containsKey(houseId)) {
+			throw new HouseNotFoundException("House not found for ID: " + houseId);
+		}
 		this.rolesByHouseId.remove(houseId);
 	}
 
@@ -158,8 +174,12 @@ public class User {
 	 * @param houseId The ID of the house.
 	 * @return The role of the user for the specified house, or null if no role is assigned.
 	 */
-	public UserRole getRoleForHouse(int houseId) {
-		return this.rolesByHouseId.get(houseId);
+	public UserRole getRoleForHouse(int houseId) throws HouseNotFoundException {
+		UserRole role = this.rolesByHouseId.get(houseId);
+		if (role == null) {
+			throw new HouseNotFoundException("House not found for ID: " + houseId);
+		}
+		return role;
 	}
 
 	/**
@@ -167,7 +187,7 @@ public class User {
 	 * @param houseId The ID of the house.
 	 * @return true if the user is an administrator for the specified house, false otherwise.
 	 */
-	public boolean isAdminForHouse(int houseId) {
+	public boolean isAdminForHouse(int houseId) throws HouseNotFoundException {
 		return getRoleForHouse(houseId) == UserRole.ADMINISTRATOR;
 	}
 

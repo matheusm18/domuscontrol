@@ -3,9 +3,12 @@ package domuscontrol.model.houses;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import domuscontrol.exceptions.DeviceNotFoundException;
+import domuscontrol.exceptions.DivisionNotFoundException;
 import domuscontrol.model.device.Device;
 
 import java.util.Map;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -16,7 +19,7 @@ import java.util.List;
  * A House aggregates multiple Divisions (rooms), managing the overall state, 
  * simulating the passage of time, and calculating global statistics.
  */
-public class House {
+public class House implements Serializable {
     
     /**
      * Static counter used to automatically assign unique, sequential IDs to each new house.
@@ -204,9 +207,13 @@ public class House {
      * Removes a division from the house based on its name.
      *
      * @param name The name of the division to remove.
+     * @throws DivisionNotFoundException if no division with the given name exists in the house.
      */
-    public void deleteDivision(String name) {
-        this.divisions.remove(name); 
+    public void deleteDivision(String name) throws DivisionNotFoundException {
+        if (!this.divisions.containsKey(name)) {
+            throw new DivisionNotFoundException("Division not found: " + name);
+        }
+        this.divisions.remove(name);
     }
 
     /**
@@ -349,12 +356,44 @@ public class House {
         .collect(Collectors.toList()); 
     }
 
-    public void addDeviceToDivision(Device device, String division){
-        Device device2 = this.devices.computeIfAbsent(device.getId(), k-> device.clone());
-        // computeIfAbsent does the proccess of verification if the key exists and return the value or the result of the argument function (and also inserts the value)
-        List<Device> list_dev = this.divisions.computeIfAbsent(division, k -> new ArrayList<>());
-        if(!list_dev.stream().anyMatch(d -> d.getId() == device.getId())){
+    /**
+     * Adds a device to a specific division within the house.
+     * @param device The device to be added.
+     * @param division The name of the division to which the device will be added.
+     * @throws DivisionNotFoundException if no division with the given name exists in the house.
+     */
+    public void addDeviceToDivision(Device device, String division) throws DivisionNotFoundException {
+        if (!this.divisions.containsKey(division)) {
+            throw new DivisionNotFoundException("Division not found: " + division);
+        }
+
+        Device device2 = this.devices.computeIfAbsent(device.getId(), k -> device.clone());
+
+        List<Device> list_dev = this.divisions.get(division);
+
+        if (!list_dev.stream().anyMatch(d -> d.getId() == device.getId())) {
             list_dev.add(device2);
         }
+    }
+
+    /**
+     * Updates the information of a device in the house.
+     * The device is updated in the global devices map and also in any division that contains it.
+     * @param device The device with updated information to be stored in the house.
+     */
+    public void updateDevice(Device device) throws DeviceNotFoundException {
+        if (!this.devices.containsKey(device.getId())) throw new DeviceNotFoundException("Device not found: " + device.getId());
+
+        Device updated = device.clone();
+        this.devices.put(device.getId(), updated);
+        
+        this.divisions.forEach((name, list) -> {
+            for (int i = 0; i < list.size(); i++) {
+                if (list.get(i).getId() == device.getId()) {
+                    list.set(i, updated);
+                    break;
+                }
+            }
+        });
     }
 }

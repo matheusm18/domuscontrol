@@ -1,0 +1,9 @@
+package domuscontrol.exceptions;
+
+public class DeviceNotFoundException extends RuntimeException {
+
+    /** Exception thrown when a requested device is not found in the system. */
+    public DeviceNotFoundException(String exception) {
+        super(exception);
+    }
+}

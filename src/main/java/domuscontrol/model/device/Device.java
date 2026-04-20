@@ -1,11 +1,12 @@
 package domuscontrol.model.device;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * Represents a generic device of the DomusControl application.
  */
-public abstract class Device {
+public abstract class Device implements Serializable{
 
     private static int nextId = 1;
 
