@@ -29,7 +29,7 @@ public class UserManager implements Serializable {
      */
     public User createUser(String name, String email, String password) throws UserAlreadyExistsException {
         if (existsUserWithEmail(email)) {
-            throw new UserAlreadyExistsException("This email is already registered: " + email);
+            throw new UserAlreadyExistsException(email);
         }
         User newUser = new User(name, email, password, new HashMap<>());
         this.registerUser(newUser);
@@ -44,10 +44,10 @@ public class UserManager implements Serializable {
      */
     private void registerUser(User user) throws UserAlreadyExistsException {
         if (existsUserWithId(user.getId())) {
-            throw new UserAlreadyExistsException("User ID already exists: " + user.getId());
+            throw new UserAlreadyExistsException("" + user.getId());
         }
         if (existsUserWithEmail(user.getEmail())) {
-            throw new UserAlreadyExistsException("This email is already registered: " + user.getEmail());
+            throw new UserAlreadyExistsException(user.getEmail());
         }
         this.usersById.put(user.getId(), user);
         this.usersByEmail.put(user.getEmail().toLowerCase(), user);
@@ -83,7 +83,7 @@ public class UserManager implements Serializable {
     public User getUserById(int userId) throws UserNotFoundException {
         User user = this.usersById.get(userId);
         if (user == null) {
-            throw new UserNotFoundException("User not found with ID: " + userId);
+            throw new UserNotFoundException("" + userId);
         }
         return user.clone();
     }
@@ -98,7 +98,7 @@ public class UserManager implements Serializable {
     public User getUserByEmail(String email) throws UserNotFoundException {
         User user = this.usersByEmail.get(email.toLowerCase());
         if (user == null) {
-            throw new UserNotFoundException("User not found with email: " + email);
+            throw new UserNotFoundException(email);
         }
         return user.clone();
     }
@@ -114,13 +114,13 @@ public class UserManager implements Serializable {
     public void updateUser(User updatedUser) throws UserNotFoundException, UserAlreadyExistsException {
         User oldUser = this.usersById.get(updatedUser.getId());
         if (oldUser == null) {
-            throw new UserNotFoundException("Cannot update: User ID " + updatedUser.getId() + " does not exist.");
+            throw new UserNotFoundException("" + updatedUser.getId());
         }
         String oldEmail = oldUser.getEmail().toLowerCase();
         String newEmail = updatedUser.getEmail().toLowerCase();
         if (!oldEmail.equals(newEmail)) {
             if (existsUserWithEmail(newEmail)) {
-                throw new UserAlreadyExistsException("Cannot change email. New email already in use: " + newEmail);
+                throw new UserAlreadyExistsException(newEmail);
             }
             this.usersByEmail.remove(oldEmail);
         }

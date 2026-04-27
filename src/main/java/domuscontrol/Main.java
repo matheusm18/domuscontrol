@@ -1,13 +1,14 @@
 package domuscontrol;
 
+import domuscontrol.ui.DomusControlUI;
+
 /**
- * The Main class serves as the entry point for the Domus Control application.
- * It initializes the application infrastructure and starts the main application loop.
+ * Application entry point.
+ * Bootstraps the MVC delegate chain by instantiating {@link domuscontrol.ui.DomusControlUI},
+ * which owns the model and acts as the top-level View/Controller.
  */
 public class Main {
     public static void main(String[] args) {
-        DomusControlApplication app = new DomusControlApplication();
-        app.init();
-        app.start();
+        new DomusControlUI().run();
     }
 }

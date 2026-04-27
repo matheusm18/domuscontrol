@@ -24,6 +24,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Model facade of the DomusControl application.
+ */
 public class DomusControl implements Serializable {
 
     private final UserManager userManager;
@@ -57,7 +60,7 @@ public class DomusControl implements Serializable {
      */
     public User validateLogin(String email, String password) throws UserNotFoundException, LoginInvalidPasswordException {
         User user = this.userManager.getUserByEmail(email);
-        if (!user.getPassword().equals(password)) throw new LoginInvalidPasswordException("Invalid password for " + email + ".");
+        if (!user.getPassword().equals(password)) throw new LoginInvalidPasswordException(email);
         return user;
     }
 
