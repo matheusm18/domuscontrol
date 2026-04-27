@@ -1,5 +1,7 @@
 package domuscontrol;
 
+import domuscontrol.view.DomusControlTextUI;
+
 public class DomusControlApplication {
 
     private DomusControlController controller;
@@ -8,8 +10,7 @@ public class DomusControlApplication {
         this.controller = new DomusControlController();
     }
 
-    /** Starts the main menu loop. Blocks until the user exits. */
     public void start() {
-        System.out.println("Welcome to DomusControl!");
+        new DomusControlTextUI(this.controller).run();
     }
 }
