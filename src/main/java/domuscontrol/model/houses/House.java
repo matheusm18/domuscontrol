@@ -5,7 +5,10 @@ import java.util.stream.Collectors;
 
 import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
+import domuscontrol.exceptions.UserNotFoundException;
+import domuscontrol.exceptions.UserAlreadyExistsException;
 import domuscontrol.model.device.Device;
+import domuscontrol.user.UserRole;
 
 import java.util.Map;
 import java.io.Serializable;
@@ -49,6 +52,12 @@ public class House implements Serializable {
     private Map<String, List<Device>> divisions; 
 
     /**
+     * A map storing the users that have access to this house and their respective roles.
+     * The key is the user's id, and the value is their role in the house.
+     */
+    private Map<Integer, UserRole> usersInHouse;
+
+    /**
      * Updates the static ID counter. 
      * Useful when loading a saved system state to ensure new houses do not overlap 
      * with previously assigned IDs.
@@ -67,7 +76,8 @@ public class House implements Serializable {
         this.id = House.nextId++;
         this.name = ""; 
         this.divisions = new HashMap<>();
-        this.devices = new HashMap<>(); 
+        this.devices = new HashMap<>();
+        this.usersInHouse = new HashMap<>();
     }
 
     /**
@@ -78,11 +88,12 @@ public class House implements Serializable {
      * @param devices   A map of devices to populate the house.
      * @param name      The name of the house.
      */
-    public House(Map<String, List<Device>> divisions, Map<Integer, Device> devices, String name) {
+    public House(Map<String, List<Device>> divisions, Map<Integer, Device> devices, String name, Map<Integer, UserRole> usersInHouse) {
         this.id = House.nextId++;
         this.name = name; 
         this.setDevices(devices); 
-        this.setDivisions(divisions); 
+        this.setDivisions(divisions);
+        this.usersInHouse = new HashMap<>(usersInHouse);
     }
 
     /**
@@ -97,6 +108,7 @@ public class House implements Serializable {
         this.name = h.getName(); 
         this.setDevices(h.getDevices());
         this.setDivisions(h.getDivisions());
+        this.usersInHouse = new HashMap<>(h.getUserRoles()); 
     }
 
     /**
@@ -137,6 +149,21 @@ public class House implements Serializable {
             devices.forEach((k, v) -> devicesMap.put(k, v.clone())); // Deep copy device
         }
         this.devices = devicesMap; 
+    }
+
+    /**
+     * Removes a device from the house based on its unique ID.
+     * @param deviceId The unique ID of the device to be removed.
+     * @throws DeviceNotFoundException if no device with the given ID exists in the house.
+     */
+    public void removeDevice(int deviceId) throws DeviceNotFoundException {
+        if (!this.devices.containsKey(deviceId)) {
+            throw new DeviceNotFoundException("Device not found: " + deviceId);
+        }
+        // Remove the device from all divisions that contain it
+        this.divisions.forEach((name, list) -> list.removeIf(dev -> dev.getId() == deviceId));
+        // Remove the device from the global devices map
+        this.devices.remove(deviceId);
     }
 
     /**
@@ -213,6 +240,14 @@ public class House implements Serializable {
         if (!this.divisions.containsKey(name)) {
             throw new DivisionNotFoundException("Division not found: " + name);
         }
+        // Remove devices from the global devices map
+        List<Device> devicesToRemove = this.divisions.get(name);
+        if (devicesToRemove != null) {
+            for (Device device : devicesToRemove) {
+                this.devices.remove(device.getId());
+            }
+        }
+        // Remove the division itself
         this.divisions.remove(name);
     }
 
@@ -223,6 +258,43 @@ public class House implements Serializable {
      */
     public int divisionsNumber() {
         return this.divisions.size();
+    }
+
+    /**
+     * Returns a map of users that have access to this house and their respective roles.
+     *
+     * @return A map where the key is the user's id and the value is their role in the house.
+     */
+    public Map<Integer, UserRole> getUserRoles() {
+        return new HashMap<>(this.usersInHouse);
+    }
+
+    /**
+     * Assigns a user to this house with a specific role.
+     *
+     * @param userId The ID of the user to be assigned.
+     * @param role The role to assign to the user in this house.
+     * @throws UserNotFoundException (mantido do original, embora o nome possa ser revisto)
+     * @throws UserAlreadyExistsException if the user is already assigned to this house.
+     */
+    public void assignUser(int userId, UserRole role) throws UserNotFoundException, UserAlreadyExistsException {
+        if (this.usersInHouse.containsKey(userId)) {
+            throw new UserAlreadyExistsException("User with ID " + userId + " is already in this house.");
+        }
+        this.usersInHouse.put(userId, role);
+    }
+
+    /**
+     * Removes a user from this house based on their ID.
+     * 
+     * @param userId The ID of the user to be removed.
+     * @throws UserNotFoundException If the user is not found in the house.
+     */
+    public void removeUser(int userId) throws UserNotFoundException {
+        if (!this.usersInHouse.containsKey(userId)) {
+            throw new UserNotFoundException("User not found: " + userId);
+        }
+        this.usersInHouse.remove(userId);
     }
 
     /**
@@ -261,7 +333,7 @@ public class House implements Serializable {
             str.append("No divisions in this house yet.\n");
         } else {
             this.divisions.forEach((name, list) -> {
-                str.append("Division: ").append(name).append("\n");
+                str.append("\n---   Division: ").append(name).append("    ---\n");
                 list.forEach(dev -> str.append("  ").append(dev.toString()).append("\n"));
             }); 
         }
@@ -305,33 +377,6 @@ public class House implements Serializable {
      */
     public void tick(int minutes){
         this.devices.values().forEach(device -> device.tick(minutes)); 
-    }
-
-    /**
-     * Identifies the top 3 devices in the entire house based on their total time turned on.
-     * Sorts all the devices to find the ones with the highest usage time.
-     *
-     * @return A list containing the top 3 devices with the highest usage time.
-     */
-    public List<Device> top3DevicesTimeConsumption(){
-        return this.devices.values().stream()
-            .sorted(Comparator.comparingInt(Device::getTotalMinutesOn).reversed())
-            .limit(3)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Identifies the top 3 devices in the entire house based on their total number of activations.
-     * Sorts all the devices to find the ones that were turned on the most times.
-     *
-     * @return A list containing the top 3 devices that were turned on the most times.
-     */
-    public List<Device> top3DevicesTurnedOnTimes(){
-        return this.devices.values().stream()
-            .sorted(Comparator.comparingInt(Device::getTotalActivations).reversed())
-            .limit(3)
-            .map(Device::clone)
-            .collect(Collectors.toList());
     }
 
     /**

@@ -10,6 +10,7 @@ import domuscontrol.exceptions.UserNotFoundException;
 import domuscontrol.model.device.Device;
 import domuscontrol.model.houses.House;
 import domuscontrol.model.houses.HouseManager;
+import domuscontrol.model.houses.DivisionInfo;
 import domuscontrol.user.User;
 import domuscontrol.user.UserManager;
 import domuscontrol.user.UserRole;
@@ -21,8 +22,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 /**
  * Model facade of the DomusControl application.
@@ -58,9 +64,15 @@ public class DomusControl implements Serializable {
      * @throws UserNotFoundException If no user is registered with that email.
      * @throws LoginInvalidPasswordException If the email exists but the password is wrong.
      */
-    public User validateLogin(String email, String password) throws UserNotFoundException, LoginInvalidPasswordException {
-        User user = this.userManager.getUserByEmail(email);
-        if (!user.getPassword().equals(password)) throw new LoginInvalidPasswordException(email);
+    public User validateLogin(String emailName, String password) throws UserNotFoundException, LoginInvalidPasswordException {
+        User user;
+        try {
+            user = this.userManager.getUserByEmail(emailName);
+         } // throws UserNotFoundException if email is not registered, which is the expected behavior for invalid login, so we don't
+        catch (UserNotFoundException e) {
+            user = this.userManager.getUserByName(emailName); // try again with lowercase email, to allow case-insensitive login
+        }
+        if (!user.getPassword().equals(password)) throw new LoginInvalidPasswordException(emailName);
         return user;
     }
 
@@ -73,6 +85,17 @@ public class DomusControl implements Serializable {
      */
     public User getUserByEmail(String email) throws UserNotFoundException {
         return this.userManager.getUserByEmail(email);
+    }
+
+    /**
+     * Retrieves a clone of the user identified by the given ID.
+     * 
+     * @param id The user's ID.
+     * @return A clone of the user.
+     * @throws UserNotFoundException If no user is registered with that ID.
+     */
+    public User getUserById(int id) throws UserNotFoundException {
+        return this.userManager.getUserById(id);
     }
 
     /**
@@ -179,6 +202,11 @@ public class DomusControl implements Serializable {
         return this.houseManager.getHouseById(houseId);
     }
 
+    public Map<Integer, UserRole> getUsersInHouse(int houseId) throws HouseNotFoundException {
+        House house = this.houseManager.getHouseById(houseId);
+        return house.getUserRoles();
+    }  
+
     /**
      * Returns the role the given user has in the given house.
      *
@@ -200,6 +228,55 @@ public class DomusControl implements Serializable {
      */
     public List<House> getAllHouses() {
         return this.houseManager.getAllHouses();
+    }
+
+    /**
+     * Retrieves all houses associated with a user by their email.
+     * @param email The email of the user whose houses we want to retrieve.
+     * @return A list of all houses associated with the user. 
+     * @throws UserNotFoundException If the email does not correspond to a registered user.
+     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
+     */
+    public List<House> getAllHousesByUser(String email) throws UserNotFoundException, HouseNotFoundException {
+        User user = this.userManager.getUserByEmail(email);
+        return user.getHouseIds().stream()
+                .map(this.houseManager::getHouseById)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Assigns a user to a house with a specific role, updating both the user's and the house's records.
+     * @param houseId The ID of the house to which the user will be assigned.
+     * @param userId The ID of the user to assign.
+     * @param role The role to assign to the user in the house.
+     * @throws UserNotFoundException If the user with the given ID does not exist.
+     * @throws HouseNotFoundException If the house with the given ID does not exist.
+     */
+    public void assaignUserToHouse(int houseId, Integer userId, UserRole role) throws UserNotFoundException, HouseNotFoundException {
+        User user = this.userManager.getUserById(userId);
+        House house = this.houseManager.getHouseById(houseId);
+
+        user.assignRole(houseId, role);
+        house.assignUser(user.getId(), role);
+
+        this.userManager.updateUser(user);
+        this.houseManager.updateHouse(house);
+    }
+
+    /**
+     * Removes a user from a house, updating both the user's and the house's records.
+     * @param houseId
+     * @param userId
+     * @throws UserNotFoundException
+     * @throws HouseNotFoundException
+     */
+    public void deleteUserFromHouse(int houseId, int userId) throws UserNotFoundException, HouseNotFoundException {
+        User user = this.userManager.getUserById(userId);
+        House house = this.houseManager.getHouseById(houseId);
+        user.removeRole(houseId);
+        house.removeUser(userId);
+        this.userManager.updateUser(user);
+        this.houseManager.updateHouse(house);
     }
 
     /**
@@ -263,6 +340,17 @@ public class DomusControl implements Serializable {
     }
 
     /**
+     * Removes a device from the specified house.
+     * @param houseId The ID of the house from which the device will be removed.
+     * @param deviceId The ID of the device to be removed.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws DeviceNotFoundException If the device is not found in the specified house.
+     */
+    public void removeDevice(int houseId, int deviceId) throws HouseNotFoundException, DeviceNotFoundException {
+        this.houseManager.removeDevice(houseId, deviceId);
+    }
+
+    /**
      * Advances the simulation clock, updating all houses and devices.
      *
      * @param minutes The number of minutes to advance.
@@ -279,7 +367,6 @@ public class DomusControl implements Serializable {
     public House getMostConsumingHouse() {
         return this.houseManager.getMostConsumingHouse();
     }
-
 
     // TODO: Falta toda a parte de automacoes, cenários e escalonamentos (metodos add, get, toggle, execute e undo)
 
@@ -312,4 +399,61 @@ public class DomusControl implements Serializable {
             return (DomusControl) ois.readObject();
         }
     }
+
+    // ---- Queries ----
+
+    /**
+     * Helper method to get all devices for a given user by aggregating devices from all their houses.
+     * @param email The email of the user whose devices we want to retrieve.
+     * @return A list of all devices associated with the user's houses.
+     */
+    protected List<Device> getAllDevicesForUser(String email) {
+        List<Device> devices = new ArrayList<>();
+        for (House house : this.getHousesByUser(email)) {
+            devices.addAll(house.getDevices().values());
+        }
+        return devices;
+    }
+
+    public List<Device> getTopDevicesByCriterion(String email, int n, ToIntFunction<Device> criterion) {
+        return getAllDevicesForUser(email).stream()
+            .sorted(Comparator.comparingInt(criterion).reversed())
+            .limit(n)
+            .map(Device::clone)
+            .collect(Collectors.toList());
+    }
+
+
+    protected List<DivisionInfo> getAllDivisionsForUser(String email) {
+        List<DivisionInfo> divisions = new ArrayList<>();
+        for (House house : this.getHousesByUser(email)) {
+            house.getDivisions().forEach((name, devices) -> 
+                divisions.add(new DivisionInfo(house, name, 
+                            devices.stream().
+                                    map(d -> String.valueOf(d.getId())).
+                                    collect(Collectors.toList())))
+            );
+        }
+        return divisions;
+    }
+
+    public List<DivisionInfo> getTopDivisionsByCriterion(String email, int n, Function<DivisionInfo, Integer> criterion) {
+        return getAllDivisionsForUser(email).stream()
+            .sorted(Comparator.comparingInt(criterion::apply).reversed())
+            .limit(n)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns the top 3 most consuming houses based on total energy consumption.
+     * @return A list of the top 3 most consuming houses.
+     */
+    public List<House> getTop3MostConsumingHouses(String email) {
+        return this.getHousesByUser(email).stream()
+                .sorted(Comparator.comparingDouble(House::calculateTotalConsumption).reversed())
+                .limit(3)
+                .collect(Collectors.toList());
+    }
+
+
 }

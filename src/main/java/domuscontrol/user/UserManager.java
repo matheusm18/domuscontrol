@@ -104,6 +104,22 @@ public class UserManager implements Serializable {
     }
 
     /**
+     * Retrieves a user by their name. Since names are not guaranteed to be unique, this method searches through all users and returns the first match.
+     * 
+     * @param name the name of the user to retrieve
+     * @return a clone of the first {@link User} found with the given name
+     * @throws UserNotFoundException if no user with the given name exists
+     */
+    public User getUserByName(String name) throws UserNotFoundException {
+        for (User user : this.usersById.values()) {
+            if (user.getName().equals(name)) {
+                return user.clone();
+            }
+        }
+        throw new UserNotFoundException(name);
+    }
+
+    /**
      * Updates the stored data for an existing user.
      * If the user's email has changed, the email index is updated accordingly.
      *
