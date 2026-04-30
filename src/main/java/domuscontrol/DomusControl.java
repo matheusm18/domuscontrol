@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.time.LocalTime;
-import java.util.stream.Collectors;
 import java.time.LocalDateTime;
 
 /**
@@ -69,7 +68,8 @@ public class DomusControl implements Serializable {
         this.houseManager = new HouseManager();
     }
 
-    void tick(int minutes) {
+    public void tick(int minutes) {
+        lastTickTime = currentTime; 
         DomusControl.setCurrentTime(currentTime.plusMinutes(minutes)); 
         this.houseManager.tick(minutes);
     }
@@ -379,15 +379,6 @@ public class DomusControl implements Serializable {
      */
     public void removeDevice(int houseId, int deviceId) throws HouseNotFoundException, DeviceNotFoundException {
         this.houseManager.removeDevice(houseId, deviceId);
-    }
-
-    /**
-     * Advances the simulation clock, updating all houses and devices.
-     *
-     * @param minutes The number of minutes to advance.
-     */
-    public void tick(int minutes) {
-        this.houseManager.tick(minutes);
     }
 
     /**
