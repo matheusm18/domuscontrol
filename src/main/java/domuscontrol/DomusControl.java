@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 /**
  * Model facade of the DomusControl application.
@@ -31,10 +33,38 @@ public class DomusControl implements Serializable {
 
     private final UserManager userManager;
     private final HouseManager houseManager;
+    private static LocalDateTime currentTime = LocalDateTime.of(2026, 1, 1, 12, 0); // Start at January 1, 2026, 12:00 AM
+    private static LocalDateTime lastTickTime; 
+
+    public static LocalDateTime getCurrentDateTime(){
+        return currentTime; 
+    }
+
+    public static LocalDateTime getLastTickDateTime(){
+        return lastTickTime; 
+    }
+
+    public static void setCurrentTime(LocalDateTime newTime){
+        lastTickTime = currentTime; 
+        currentTime = newTime; 
+    }
+
+    public static LocalTime getCurrentTime(){
+        return currentTime.toLocalTime(); 
+    }
+
+    public static LocalTime getLastTickTime(){
+        return lastTickTime.toLocalTime();
+    }
 
     public DomusControl() {
         this.userManager  = new UserManager();
         this.houseManager = new HouseManager();
+    }
+
+    void tick(int minutes) {
+        DomusControl.setCurrentTime(currentTime.plusMinutes(minutes)); 
+        this.houseManager.tick(minutes);
     }
 
     /**
@@ -262,14 +292,6 @@ public class DomusControl implements Serializable {
         this.houseManager.updateDevice(houseId, device);
     }
 
-    /**
-     * Advances the simulation clock, updating all houses and devices.
-     *
-     * @param minutes The number of minutes to advance.
-     */
-    public void tick(int minutes) {
-        this.houseManager.tick(minutes);
-    }
 
     /**
      * Returns the house with the highest energy consumption across the system.
@@ -280,9 +302,17 @@ public class DomusControl implements Serializable {
         return this.houseManager.getMostConsumingHouse();
     }
 
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
+        out.writeObject(currentTime);
+        out.writeObject(lastTickTime);
+    }
 
-    // TODO: Falta toda a parte de automacoes, cenários e escalonamentos (metodos add, get, toggle, execute e undo)
-
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        currentTime = (LocalDateTime) in.readObject();
+        lastTickTime = (LocalDateTime) in.readObject();
+    }
 
     /**
      * Saves the full state of the model to a binary file.
@@ -309,7 +339,20 @@ public class DomusControl implements Serializable {
     public static DomusControl loadState(String fileName) throws FileNotFoundException, IOException, ClassNotFoundException {
         try (FileInputStream fis = new FileInputStream(fileName);
              ObjectInputStream ois = new ObjectInputStream(fis)) {
-            return (DomusControl) ois.readObject();
+            DomusControl model = (DomusControl) ois.readObject();
+
+            List<House> houses = model.getAllHouses();
+            int maxHouseId = houses.stream().mapToInt(House::getId).max().orElse(0);
+            House.setNextId(maxHouseId);
+
+            int maxDeviceId = houses.stream()
+                .flatMap(h -> h.getDevices().values().stream())
+                .mapToInt(Device::getId)
+                .max()
+                .orElse(0);
+            Device.setNextId(maxDeviceId);
+
+            return model;
         }
     }
 }
