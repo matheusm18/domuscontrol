@@ -7,10 +7,13 @@ import domuscontrol.exceptions.UserNotFoundException;
 import domuscontrol.menu.Menu;
 import domuscontrol.model.device.Device;
 import domuscontrol.model.houses.House;
+import domuscontrol.model.houses.DivisionInfo;
 import domuscontrol.user.User;
+import domuscontrol.user.UserRole;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 /**
@@ -71,7 +74,7 @@ public class UserUI {
             System.out.println("\n==| Your Houses |==");
             for (int i = 0; i < houses.size(); i++) {
                 House h = houses.get(i);
-                System.out.printf("%d - %s [ID: %d]%n", i + 1, h.getName(), h.getId());
+                System.out.printf("%d - %s %n", i + 1, h.getName());
             }
             System.out.print("Select house (0 to cancel): ");
             int choice = readInt();
@@ -90,7 +93,10 @@ public class UserUI {
         String name = sc.nextLine();
         try {
             House house = model.createHouse(email, name);
-            System.out.printf("House '%s' created [ID: %d].%n", house.getName(), house.getId());
+            System.out.printf("House '%s' created.%n", house.getName());
+            //Adicionar o utilizador à casa com o papel de Admin
+            Integer userId = model.getUserByEmail(email).getId();
+            model.assaignUserToHouse(house.getId(), userId, UserRole.ADMINISTRATOR);
         } catch (UserNotFoundException | HouseAlreadyExistsException e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -100,7 +106,8 @@ public class UserUI {
         try {
             User user = model.getUserByEmail(email);
             System.out.println("\n==| Profile |==");
-            System.out.println(user.toString());
+            showUserDetails(user);
+
         } catch (UserNotFoundException e) {
             System.out.println("Error: " + e.getMessage());
             return;
@@ -130,61 +137,99 @@ public class UserUI {
         menu.run();
     }
 
+/**
+     * Displays the details of a user.
+     * @param user The user to display.
+     */
+    public void showUserDetails(User user) {
+        if (user == null) {
+            System.out.println("No user to display.");
+            return;
+        }
+        System.out.println("User Details:");
+        System.out.println("ID: " + user.getId());
+        System.out.println("Name: " + user.getName());
+        System.out.println("Email: " + user.getEmail());
+        System.out.println("Roles:");
+
+        Map<Integer, UserRole> roles = user.getRolesByHouseId();
+        if (roles.isEmpty()) {
+            System.out.println("  No roles assigned.");
+        } else {
+            for (Map.Entry<Integer, UserRole> entry : roles.entrySet()) {
+                try {
+                    // Usar o novo método para obter o nome da casa pelo ID
+                    String houseName = this.model.getHouseById(entry.getKey()).getName();
+                    System.out.println("  " + houseName + ": " + entry.getValue());
+                } catch (HouseNotFoundException e) {
+                    // Esta exceção pode acontecer se uma casa for removida mas a referência no user permanecer
+                    System.out.println("  House with ID " + entry.getKey() + " not found: " + entry.getValue());
+                }
+            }
+        }
+    }
+
     private void statistics(String email) {
         Menu menu = new Menu(new String[]{
-                "Most consuming house (system-wide)",
+                "Most consuming houseses",
                 "Top 3 devices by time on",
                 "Top 3 devices by activations",
                 "Top 3 divisions by device count"
         });
 
         menu.setHandler(1, () -> {
-            House h = model.getMostConsumingHouse();
-            if (h == null) System.out.println("No houses in the system.");
-            else System.out.printf("Most consuming: %s [ID: %d] — %.2f Wh%n",
-                    h.getName(), h.getId(), h.calculateTotalConsumption());
+            List<House> topHouses = model.getTop3MostConsumingHouses(email);
+            if (topHouses.isEmpty()) {
+                System.out.println("No houses in the system.");
+            } else {
+                for (int i = 0; i < topHouses.size(); i++) {
+                    House h = topHouses.get(i);
+                    System.out.printf("%d. %s — %.2f Wh%n", i + 1, h.getName(), h.calculateTotalConsumption());
+                }
+            }
         });
-        menu.setHandler(2, () -> houseStatDevices(email, false));
-        menu.setHandler(3, () -> houseStatDevices(email, true));
-        menu.setHandler(4, () -> houseStatDivisions(email));
+        menu.setHandler(2, () -> {
+            List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalMinutesOn);
+            if (topDevices.isEmpty()) {
+                System.out.println("No devices found for your houses.");
+            } else {
+                for (int i = 0; i < topDevices.size(); i++) {
+                    Device d = topDevices.get(i);
+                    System.out.printf("[%d] %d. %s %s — %d minutes on%n", 
+                        d.getClass().getSimpleName(), i + 1, d.getBrand(), d.getModel(), d.getTotalMinutesOn());
+                }
+            }
+        });
+        menu.setHandler(3, () -> {
+            List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalActivations);
+            if (topDevices.isEmpty()) {
+                System.out.println("No devices found for your houses.");
+            } else {
+                for (int i = 0; i < topDevices.size(); i++) {
+                    Device d = topDevices.get(i);
+                    System.out.printf("[%d] %d. %s %s — %d activations%n", 
+                        d.getClass().getSimpleName(), i + 1, d.getBrand(), d.getModel(), d.getTotalActivations());
+                }
+            }
+        });
+        menu.setHandler(4, () -> {
+            List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterion(email, 3, div -> div.house.getDivisions().get(div.divisionName).size());
+
+            if (topDivisions.isEmpty()) {
+                System.out.println("No divisions found for your houses.");
+            } else {
+                for (int i = 0; i < topDivisions.size(); i++) {
+                    DivisionInfo div = topDivisions.get(i);
+                    System.out.printf("%d. Divisão: %s (Casa: %s) — %d dispositivos%n", 
+                        i + 1, 
+                        div.divisionName, 
+                        div.house.getName(), 
+                        div.devices.size());
+                }
+            }
+        });
 
         menu.run();
-    }
-
-    private void houseStatDevices(String email, boolean byActivations) {
-        House house = pickHouse(email);
-        if (house == null) return;
-        List<Device> result = byActivations
-                ? house.top3DevicesTurnedOnTimes()
-                : house.top3DevicesTimeConsumption();
-        if (result.isEmpty()) System.out.println("No devices.");
-        else result.forEach(System.out::println);
-    }
-
-    private void houseStatDivisions(String email) {
-        House house = pickHouse(email);
-        if (house == null) return;
-        List<String> divs = house.top3DivisionsWithMostDevices();
-        if (divs.isEmpty()) System.out.println("No divisions.");
-        else divs.forEach(System.out::println);
-    }
-
-    private House pickHouse(String email) {
-        try {
-            List<House> houses = model.getHousesByUser(email);
-            if (houses.isEmpty()) { System.out.println("No houses."); return null; }
-            System.out.println("\n==| Select House |==");
-            for (int i = 0; i < houses.size(); i++) {
-                System.out.printf("%d - %s%n", i + 1, houses.get(i).getName());
-            }
-            System.out.print("Choice: ");
-            int choice = readInt();
-            if (choice < 1 || choice > houses.size()) return null;
-            return houses.get(choice - 1);
-        } catch (UserNotFoundException | HouseNotFoundException e) {
-            System.out.println("Error: " + e.getMessage());
-            return null;
-        }
     }
 
     private void advanceSimulation() {

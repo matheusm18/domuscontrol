@@ -4,6 +4,7 @@ import domuscontrol.DomusControl;
 import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
 import domuscontrol.exceptions.HouseNotFoundException;
+import domuscontrol.exceptions.UserNotFoundException;
 import domuscontrol.menu.Menu;
 import domuscontrol.model.device.Curtain;
 import domuscontrol.model.device.Device;
@@ -49,12 +50,13 @@ public class HouseUI {
     }
 
     public void show(String email, int houseId, String houseName) {
-        System.out.printf("%n==| House: %s [ID: %d] |==%n", houseName, houseId);
+        System.out.printf("%n==| House: %s |==%n", houseName);
 
         Menu menu = new Menu(new String[]{
                 "View House Details",
                 "Manage Divisions",
                 "Manage Devices",
+                "Manage Users",
                 "Operate a Device",
                 "Automations",
                 "Schedules",
@@ -63,14 +65,16 @@ public class HouseUI {
 
         menu.setPreCondition(2, () -> isAdmin(email, houseId));
         menu.setPreCondition(3, () -> isAdmin(email, houseId));
+        menu.setPreCondition(4, () -> isAdmin(email, houseId));
 
         menu.setHandler(1, () -> viewHouseDetails(houseId));
         menu.setHandler(2, () -> manageDivisions(houseId));
         menu.setHandler(3, () -> manageDevices(houseId));
-        menu.setHandler(4, () -> operateDevice(houseId));
-        menu.setHandler(5, () -> System.out.println("Automations not yet implemented."));
-        menu.setHandler(6, () -> System.out.println("Schedules not yet implemented."));
-        menu.setHandler(7, () -> System.out.println("Scenarios not yet implemented."));
+        menu.setHandler(4, () -> manageUsers(houseId));
+        menu.setHandler(5, () -> operateDevice(houseId));
+        menu.setHandler(6, () -> System.out.println("Automations not yet implemented."));
+        menu.setHandler(7, () -> System.out.println("Schedules not yet implemented."));
+        menu.setHandler(8, () -> System.out.println("Scenarios not yet implemented."));
 
         menu.run();
     }
@@ -169,8 +173,8 @@ public class HouseUI {
             if (devices.isEmpty()) { System.out.println("No devices."); return; }
             System.out.println("\n==| Devices |==");
             devices.values().forEach(d ->
-                System.out.printf("  [ID:%d] %s %s (%s) - %s%n",
-                        d.getId(), d.getBrand(), d.getModel(),
+                System.out.printf("  %s %s (%s) - %s%n",
+                        d.getBrand(), d.getModel(),
                         d.getClass().getSimpleName(), d.getStatus())
             );
         } catch (HouseNotFoundException e) {
@@ -229,7 +233,7 @@ public class HouseUI {
         try {
             Lamp lamp = new Lamp(base.brand(), base.modelName(), base.consumption(), brightness, colorTemp);
             model.addDeviceToDivision(houseId, lamp, division);
-            System.out.println("Lamp added [ID: " + lamp.getId() + "].");
+            System.out.println("Lamp added.");
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -244,7 +248,7 @@ public class HouseUI {
         try {
             Speaker speaker = new Speaker(base.brand(), base.modelName(), base.consumption(), volume, source);
             model.addDeviceToDivision(houseId, speaker, division);
-            System.out.println("Speaker added [ID: " + speaker.getId() + "].");
+            System.out.println("Speaker added.");
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -257,7 +261,7 @@ public class HouseUI {
         try {
             Curtain curtain = new Curtain(base.brand(), base.modelName(), base.consumption(), opening);
             model.addDeviceToDivision(houseId, curtain, division);
-            System.out.println("Curtain added [ID: " + curtain.getId() + "].");
+            System.out.println("Curtain added.");
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -270,7 +274,7 @@ public class HouseUI {
         try {
             Gate gate = new Gate(base.brand(), base.modelName(), base.consumption(), opening);
             model.addDeviceToDivision(houseId, gate, division);
-            System.out.println("Gate added [ID: " + gate.getId() + "].");
+            System.out.println("Gate added.");
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -281,7 +285,7 @@ public class HouseUI {
         try {
             Plug plug = new Plug(base.brand(), base.modelName(), base.consumption());
             model.addDeviceToDivision(houseId, plug, division);
-            System.out.println("Plug added [ID: " + plug.getId() + "].");
+            System.out.println("Plug added.");
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -292,7 +296,7 @@ public class HouseUI {
         try {
             Relay relay = new Relay(base.brand(), base.modelName(), base.consumption());
             model.addDeviceToDivision(houseId, relay, division);
-            System.out.println("Relay added [ID: " + relay.getId() + "].");
+            System.out.println("Relay added.");
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
@@ -302,12 +306,91 @@ public class HouseUI {
         try {
             Device device = pickDevice(houseId);
             if (device == null) return;
-            // TODO: add removeDevice to DomusControl model
-            System.out.println("Remove device not yet implemented.");
+            try {
+                model.removeDevice(houseId, device.getId());
+                System.out.println("Device removed.");
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
         } catch (HouseNotFoundException e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
+
+    // ---- Users ----
+
+    private void manageUsers(int houseId) {
+        Menu menu = new Menu(new String[]{"List Users", "Add User", "Remove User"});
+        menu.setHandler(1, () -> listUsers(houseId));
+        menu.setHandler(2, () -> addUser(houseId));
+        menu.setHandler(3, () -> removeUser(houseId));
+        menu.run();
+    }
+
+    private void listUsers(int houseId) {
+        try {
+            Map<Integer, UserRole> users = model.getUsersInHouse(houseId);
+            if (users.isEmpty()) { System.out.println("No users."); return; }
+            System.out.println("\n==| Users |==");
+            users.forEach((userId, role) -> {
+                String userName = model.getUserById(userId).getName();
+                System.out.printf("  %s (%s)%n", userName, role);
+            });
+        } catch (HouseNotFoundException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void addUser(int houseId) {
+        //assingnUser to house with role
+        System.out.print("User email: ");
+        String email = sc.nextLine().trim();
+        System.out.print("Role (1-Admin, 2-User): ");
+        int roleChoice = readInt();
+        UserRole role = switch (roleChoice) {
+            case 1 -> UserRole.ADMINISTRATOR;
+            case 2 -> UserRole.USER;
+            default -> null;
+        };
+        if (role == null) { System.out.println("Invalid role choice."); return; }
+        try {
+            // Primeiro, verificamos se o utilizador existe.
+            // Se não existir, getUserByEmail lança UserNotFoundException.
+            Integer userId = model.getUserByEmail(email).getId();
+
+            // Se o utilizador existe, tentamos adicioná-lo à casa.
+            // Este método pode lançar HouseNotFoundException.
+            model.assaignUserToHouse(houseId, userId, role);
+
+            System.out.println("User added to house with role " + role + ".");
+
+        } catch (UserNotFoundException e) {
+            System.out.println("Error: User with email '" + email + "' not found.");
+        } catch (HouseNotFoundException e) {
+            System.out.println("Error: " + e.getMessage());
+        } catch (Exception e) {
+            // Um catch genérico para outros erros inesperados
+            System.out.println("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    private void removeUser(int houseId) {
+        //unassign user from house
+        System.out.print("User email: ");
+        String email = sc.nextLine().trim();
+        try {
+            Integer userId = model.getUserByEmail(email).getId();
+            model.deleteUserFromHouse(houseId, userId);
+            System.out.println("User removed from house.");
+        } catch (UserNotFoundException e) {
+            System.out.println("Error: User with email '" + email + "' not found.");
+        } catch (HouseNotFoundException e) {
+            System.out.println("Error: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
 
     // ---- Operate Device ----
 
@@ -330,8 +413,8 @@ public class HouseUI {
         System.out.println("\n==| Devices |==");
         for (int i = 0; i < deviceList.size(); i++) {
             Device d = deviceList.get(i);
-            System.out.printf("%d - [ID:%d] %s %s (%s) - %s%n",
-                    i + 1, d.getId(), d.getBrand(), d.getModel(),
+            System.out.printf("%d - %s %s (%s) - %s%n",
+                    i + 1, d.getBrand(), d.getModel(),
                     d.getClass().getSimpleName(), d.getStatus());
         }
         System.out.print("Select device (0 to cancel): ");

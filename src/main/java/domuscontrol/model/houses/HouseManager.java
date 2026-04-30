@@ -120,6 +120,18 @@ public class HouseManager implements Serializable {
     }
 
     /**
+     * Removes a device from a specific house. The device is removed from the global devices map and also from any division that contains it.
+     * @param houseId The ID of the house from which the device will be removed.
+     * @param deviceId The ID of the device to be removed.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws DeviceNotFoundException if no device with the given ID exists in the specified house.
+     */
+    public void removeDevice(int houseId, int deviceId) throws HouseNotFoundException, DeviceNotFoundException {
+        House h = getHouseInternal(houseId);
+        h.removeDevice(deviceId);
+    }
+
+    /**
      * Advances time for all houses in the system.
      * This cascades down to every device in every division.
      */

@@ -49,16 +49,15 @@ public class DomusControlUI {
     }
 
     private void doLogin() {
-        System.out.print("Email: ");
-        String email = sc.nextLine();
+        System.out.print("Email or Name: ");
+        String user = sc.nextLine();
         System.out.print("Password: ");
         String password = sc.nextLine();
         try {
-            model.validateLogin(email, password);
-            this.currentUserEmail = email;
+            this.currentUserEmail = model.validateLogin(user, password).getEmail();
             userUI.show(this.currentUserEmail);
         } catch (UserNotFoundException e) {
-            System.out.println("No account found with that email.");
+            System.out.println("No account found with "+ user + ".");
         } catch (LoginInvalidPasswordException e) {
             System.out.println("Incorrect password.");
         }
