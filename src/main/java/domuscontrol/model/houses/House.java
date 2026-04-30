@@ -187,21 +187,6 @@ public class House implements Serializable {
     }
 
     /**
-     * Removes a device from the house based on its unique ID.
-     * @param deviceId The unique ID of the device to be removed.
-     * @throws DeviceNotFoundException if no device with the given ID exists in the house.
-     */
-    public void removeDevice(int deviceId) throws DeviceNotFoundException {
-        if (!this.devices.containsKey(deviceId)) {
-            throw new DeviceNotFoundException("Device not found: " + deviceId);
-        }
-        // Remove the device from all divisions that contain it
-        this.divisions.forEach((name, list) -> list.removeIf(dev -> dev.getId() == deviceId));
-        // Remove the device from the global devices map
-        this.devices.remove(deviceId);
-    }
-
-    /**
      * Sets the divisions for this house by creating a copy of the provided map's lists.
      *
      * @param divisions A map of divisions to be added to this house.
