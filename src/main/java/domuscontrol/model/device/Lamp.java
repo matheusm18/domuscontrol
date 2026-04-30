@@ -1,12 +1,14 @@
 package domuscontrol.model.device;
 
 import domuscontrol.model.device.types.AdjustableDevice;
+import domuscontrol.model.device.types.ColorAdjustableDevice;
+
 import java.util.Objects;
 
 /**
  * Represents a smart lamp device.
  */
-public class Lamp extends AdjustableDevice {
+public class Lamp extends AdjustableDevice implements ColorAdjustableDevice {
 
     /** The color temperature of the lamp in Kelvin (2700K to 4000K). */
     private int colorTemperature;
