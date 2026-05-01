@@ -4,6 +4,7 @@ import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
 import domuscontrol.exceptions.HouseAlreadyExistsException;
 import domuscontrol.exceptions.HouseNotFoundException;
+import domuscontrol.exceptions.LastAdminException;
 import domuscontrol.exceptions.LoginInvalidPasswordException;
 import domuscontrol.exceptions.UserAlreadyExistsException;
 import domuscontrol.exceptions.UserNotFoundException;
@@ -234,9 +235,11 @@ public class DomusControl implements Serializable {
     }
 
     public Map<Integer, UserRole> getUsersInHouse(int houseId) throws HouseNotFoundException {
-        House house = this.houseManager.getHouseById(houseId);
-        return house.getUserRoles();
-    }  
+        this.houseManager.getHouseById(houseId); // validate house exists
+        return this.userManager.getAllUsers().stream()
+            .filter(u -> u.getHouseIds().contains(houseId))
+            .collect(Collectors.toMap(User::getId, u -> u.getRolesByHouseId().get(houseId)));
+    }
 
     /**
      * Returns the role the given user has in the given house.
@@ -283,15 +286,14 @@ public class DomusControl implements Serializable {
      * @throws UserNotFoundException If the user with the given ID does not exist.
      * @throws HouseNotFoundException If the house with the given ID does not exist.
      */
-    public void assaignUserToHouse(int houseId, Integer userId, UserRole role) throws UserNotFoundException, HouseNotFoundException {
+    public void assignUserToHouse(int houseId, Integer userId, UserRole role) throws UserNotFoundException, HouseNotFoundException {
+        this.houseManager.getHouseById(houseId); // validate house exists
         User user = this.userManager.getUserById(userId);
-        House house = this.houseManager.getHouseById(houseId);
-
+        if (user.getHouseIds().contains(houseId)) {
+            throw new UserAlreadyExistsException("");
+        }
         user.assignRole(houseId, role);
-        house.assignUser(user.getId(), role);
-
         this.userManager.updateUser(user);
-        this.houseManager.updateHouse(house);
     }
 
     /**
@@ -303,11 +305,16 @@ public class DomusControl implements Serializable {
      */
     public void deleteUserFromHouse(int houseId, int userId) throws UserNotFoundException, HouseNotFoundException {
         User user = this.userManager.getUserById(userId);
-        House house = this.houseManager.getHouseById(houseId);
+        UserRole role = user.getRoleForHouse(houseId);
+        if (role == UserRole.ADMINISTRATOR) {
+            long adminCount = getUsersInHouse(houseId).values().stream()
+                .filter(r -> r == UserRole.ADMINISTRATOR).count();
+            if (adminCount <= 1) {
+                throw new LastAdminException("");
+            }
+        }
         user.removeRole(houseId);
-        house.removeUser(userId);
         this.userManager.updateUser(user);
-        this.houseManager.updateHouse(house);
     }
 
     /**

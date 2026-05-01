@@ -6,10 +6,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
-import domuscontrol.exceptions.UserNotFoundException;
-import domuscontrol.exceptions.UserAlreadyExistsException;
 import domuscontrol.model.device.Device;
-import domuscontrol.user.UserRole;
 import domuscontrol.exceptions.UserDoesntHaveScenarios;
 import domuscontrol.model.routines.Automation;
 import domuscontrol.exceptions.AutomationDoesntExistException;
@@ -65,12 +62,6 @@ public class House implements Serializable {
     private RoutineManager routineFacade;
 
     /**
-     * A map storing the users that have access to this house and their respective roles.
-     * The key is the user's id, and the value is their role in the house.
-     */
-    private Map<Integer, UserRole> usersInHouse;
-
-    /**
      * Updates the static ID counter. 
      * Useful when loading a saved system state to ensure new houses do not overlap 
      * with previously assigned IDs.
@@ -88,7 +79,7 @@ public class House implements Serializable {
      */
     public House() {
         this.id = House.nextId++;
-        this.name = ""; 
+        this.name = "";
         this.divisions = new HashMap<>();
         this.devices = new HashMap<>();
         this.routineFacade = new RoutineManager();
@@ -103,13 +94,12 @@ public class House implements Serializable {
      * @param devices   A map of devices to populate the house.
      * @param name      The name of the house.
      */
-    public House(Map<String, List<Device>> divisions, Map<Integer, Device> devices, String name, Map<Integer, UserRole> usersInHouse) {
+    public House(Map<String, List<Device>> divisions, Map<Integer, Device> devices, String name) {
         this.id = House.nextId++;
         this.name = name;
         this.routineFacade = new RoutineManager();
-        this.setDevices(devices); 
+        this.setDevices(devices);
         this.setDivisions(divisions);
-        this.usersInHouse = new HashMap<>(usersInHouse);
     }
 
     /**
@@ -125,7 +115,6 @@ public class House implements Serializable {
         this.routineFacade = h.getRoutineFacade();
         this.setDevices(h.getDevices());
         this.setDivisions(h.getDivisions());
-        this.usersInHouse = new HashMap<>(h.getUserRoles()); 
     }
 
     /**
@@ -272,43 +261,6 @@ public class House implements Serializable {
      */
     public int divisionsNumber() {
         return this.divisions.size();
-    }
-
-    /**
-     * Returns a map of users that have access to this house and their respective roles.
-     *
-     * @return A map where the key is the user's id and the value is their role in the house.
-     */
-    public Map<Integer, UserRole> getUserRoles() {
-        return new HashMap<>(this.usersInHouse);
-    }
-
-    /**
-     * Assigns a user to this house with a specific role.
-     *
-     * @param userId The ID of the user to be assigned.
-     * @param role The role to assign to the user in this house.
-     * @throws UserNotFoundException (mantido do original, embora o nome possa ser revisto)
-     * @throws UserAlreadyExistsException if the user is already assigned to this house.
-     */
-    public void assignUser(int userId, UserRole role) throws UserNotFoundException, UserAlreadyExistsException {
-        if (this.usersInHouse.containsKey(userId)) {
-            throw new UserAlreadyExistsException("User with ID " + userId + " is already in this house.");
-        }
-        this.usersInHouse.put(userId, role);
-    }
-
-    /**
-     * Removes a user from this house based on their ID.
-     * 
-     * @param userId The ID of the user to be removed.
-     * @throws UserNotFoundException If the user is not found in the house.
-     */
-    public void removeUser(int userId) throws UserNotFoundException {
-        if (!this.usersInHouse.containsKey(userId)) {
-            throw new UserNotFoundException("User not found: " + userId);
-        }
-        this.usersInHouse.remove(userId);
     }
 
     /**

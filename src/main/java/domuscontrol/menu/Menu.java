@@ -17,6 +17,7 @@ public class Menu {
     private List<String> opcoes;
     private List<PreCondition> disponivel;
     private List<Handler> handlers;
+    private boolean stopped = false;
 
     public Menu(String[] opcoes) {
         this.opcoes = Arrays.asList(opcoes);
@@ -28,8 +29,13 @@ public class Menu {
         });
     }
 
+    public void stop() {
+        this.stopped = true;
+    }
+
     public void run() {
         int op;
+        stopped = false;
         do {
             show();
             op = readOption();
@@ -38,7 +44,7 @@ public class Menu {
             } else if (op > 0) {
                 this.handlers.get(op - 1).execute();
             }
-        } while (op != 0);
+        } while (op != 0 && !stopped);
     }
 
     public void setPreCondition(int i, PreCondition b) {

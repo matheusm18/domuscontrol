@@ -4,6 +4,7 @@ import domuscontrol.DomusControl;
 import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
 import domuscontrol.exceptions.HouseNotFoundException;
+import domuscontrol.exceptions.LastAdminException;
 import domuscontrol.exceptions.UserNotFoundException;
 import domuscontrol.menu.Menu;
 import domuscontrol.model.device.Curtain;
@@ -70,7 +71,7 @@ public class HouseUI {
         menu.setHandler(1, () -> viewHouseDetails(houseId));
         menu.setHandler(2, () -> manageDivisions(houseId));
         menu.setHandler(3, () -> manageDevices(houseId));
-        menu.setHandler(4, () -> manageUsers(houseId));
+        menu.setHandler(4, () -> { if (manageUsers(houseId, email)) menu.stop(); });
         menu.setHandler(5, () -> operateDevice(houseId));
         menu.setHandler(6, () -> System.out.println("Automations not yet implemented."));
         menu.setHandler(7, () -> System.out.println("Schedules not yet implemented."));
@@ -319,12 +320,19 @@ public class HouseUI {
 
     // ---- Users ----
 
-    private void manageUsers(int houseId) {
+    private boolean manageUsers(int houseId, String email) {
+        boolean[] leftHouse = {false};
         Menu menu = new Menu(new String[]{"List Users", "Add User", "Remove User"});
         menu.setHandler(1, () -> listUsers(houseId));
         menu.setHandler(2, () -> addUser(houseId));
-        menu.setHandler(3, () -> removeUser(houseId));
+        menu.setHandler(3, () -> {
+            if (removeUser(houseId, email)) {
+                leftHouse[0] = true;
+                menu.stop();
+            }
+        });
         menu.run();
+        return leftHouse[0];
     }
 
     private void listUsers(int houseId) {
@@ -360,7 +368,7 @@ public class HouseUI {
 
             // Se o utilizador existe, tentamos adicioná-lo à casa.
             // Este método pode lançar HouseNotFoundException.
-            model.assaignUserToHouse(houseId, userId, role);
+            model.assignUserToHouse(houseId, userId, role);
 
             System.out.println("User added to house with role " + role + ".");
 
@@ -374,21 +382,24 @@ public class HouseUI {
         }
     }
 
-    private void removeUser(int houseId) {
-        //unassign user from house
+    private boolean removeUser(int houseId, String currentEmail) {
         System.out.print("User email: ");
-        String email = sc.nextLine().trim();
+        String targetEmail = sc.nextLine().trim();
         try {
-            Integer userId = model.getUserByEmail(email).getId();
+            Integer userId = model.getUserByEmail(targetEmail).getId();
             model.deleteUserFromHouse(houseId, userId);
             System.out.println("User removed from house.");
+            return targetEmail.equalsIgnoreCase(currentEmail);
         } catch (UserNotFoundException e) {
-            System.out.println("Error: User with email '" + email + "' not found.");
+            System.out.println("Error: User with email '" + targetEmail + "' not found.");
+        } catch (LastAdminException e) {
+            System.out.println("Error: " + e.getMessage());
         } catch (HouseNotFoundException e) {
             System.out.println("Error: " + e.getMessage());
         } catch (Exception e) {
             System.out.println("An unexpected error occurred: " + e.getMessage());
         }
+        return false;
     }
 
 

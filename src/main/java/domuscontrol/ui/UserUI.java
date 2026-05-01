@@ -94,9 +94,6 @@ public class UserUI {
         try {
             House house = model.createHouse(email, name);
             System.out.printf("House '%s' created.%n", house.getName());
-            //Adicionar o utilizador à casa com o papel de Admin
-            Integer userId = model.getUserByEmail(email).getId();
-            model.assaignUserToHouse(house.getId(), userId, UserRole.ADMINISTRATOR);
         } catch (UserNotFoundException | HouseAlreadyExistsException e) {
             System.out.println("Error: " + e.getMessage());
         }
