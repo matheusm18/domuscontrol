@@ -14,7 +14,7 @@ import domuscontrol.model.device.Device;
 import domuscontrol.model.routines.Automation;
 import domuscontrol.model.suggestions.AutomationSuggestion;
 import domuscontrol.model.suggestions.DeviceInteraction;
-import java.util.List;
+
 import java.util.function.Consumer;
 
 /**
@@ -151,8 +151,18 @@ public class HouseManager implements Serializable {
      * Advances time for all houses in the system.
      * This cascades down to every device in every division.
      */
-    public void tick(int minutes) {
-        this.housesById.values().forEach(house -> house.tick(minutes));
+    public List<String> tick(int minutes) {
+        List<String> activated = new ArrayList<>();
+
+        for (House house : this.housesById.values()) {
+            List<String> houseActivated = house.tick(minutes);
+
+            for (String automationName : houseActivated) {
+                activated.add(house.getName() + ": " + automationName);
+            }
+        }
+
+        return activated;
     }
 
     /** Returns the house with the highest energy consumption. */

@@ -83,10 +83,10 @@ public class DomusControl implements Serializable {
         this.houseManager = new HouseManager();
     }
 
-    public void tick(int minutes) {
+    public List<String> tick(int minutes) {
         lastTickTime = currentTime; 
         DomusControl.setCurrentTime(currentTime.plusMinutes(minutes)); 
-        this.houseManager.tick(minutes);
+        return this.houseManager.tick(minutes);
     }
 
     /**

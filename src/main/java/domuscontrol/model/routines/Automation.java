@@ -153,26 +153,33 @@ public class Automation extends Routine {
      * This prevents actions from firing repeatedly while conditions remain met (edge-triggering).
      * * Notice: No parameters needed! It just tells the actions and conditions to do their job.
      */
-    public void checkAndTrigger() {
-        if (this.conditions.isEmpty()) return;
+    public boolean checkAndTrigger() {
+        if (this.conditions.isEmpty()) {
+            return false;
+        }
 
         boolean allConditionsMet = true;
+
         for (Condition condition : this.conditions) {
-            // Evaluate directly against the condition's internal state
             if (!condition.evaluate()) {
                 allConditionsMet = false;
                 break;
             }
         }
 
+        boolean triggered = false;
+
         if (allConditionsMet && !this.wasConditionMetPreviously) {
             for (Action action : this.getActions()) {
-                // Execute directly using the action's internal state
                 action.execute();
             }
+
+            triggered = true;
         }
-        
+
         this.wasConditionMetPreviously = allConditionsMet;
+
+        return triggered;
     }
 
     /**

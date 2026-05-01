@@ -1,5 +1,6 @@
 package domuscontrol.model.routines.conditions;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Objects;
 
@@ -61,27 +62,24 @@ public class TimeCondition implements TimeBasedCondition {
      */
     @Override
     public boolean evaluate() {
-        LocalTime now = DomusControl.getCurrentTime();
-        LocalTime before = DomusControl.getLastTickTime();
+        LocalDateTime now = DomusControl.getCurrentDateTime();
+        LocalDateTime before = DomusControl.getLastTickDateTime();
 
-        if (now == null || this.triggerTime == null) {
+        if (now == null || before == null || this.triggerTime == null) {
             return false;
         }
 
-        if (before == null) {
-            return now.equals(this.triggerTime);
+        if (!now.isAfter(before)) {
+            return now.toLocalTime().equals(this.triggerTime);
         }
 
-        if (now.equals(this.triggerTime)) return true;
+        LocalDateTime nextTrigger = before.toLocalDate().atTime(this.triggerTime);
 
-        // Check if the trigger time was passed during the simulation tick
-        if (before.isBefore(now)) {
-            // Normal case (e.g., jumped from 08:00 to 08:05, trigger is 08:03)
-            return this.triggerTime.isAfter(before) && this.triggerTime.isBefore(now);
-        } else {
-            // Handle the midnight crossover (e.g., 23:58 to 00:03)
-            return this.triggerTime.isAfter(before) || this.triggerTime.isBefore(now);
+        if (!nextTrigger.isAfter(before)) {
+            nextTrigger = nextTrigger.plusDays(1);
         }
+
+        return !nextTrigger.isAfter(now);
     }
 
     /**

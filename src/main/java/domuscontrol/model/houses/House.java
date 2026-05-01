@@ -268,7 +268,9 @@ public class House implements Serializable {
      * @param interaction The interaction to record.
      */
     public void logInteraction(DeviceInteraction interaction) {
+        System.out.println("[HOUSE] A gravar interação: " + interaction);
         this.interactionLogger.log(interaction);
+        System.out.println("[HOUSE] Total logs agora: " + this.interactionLogger.size());
     }
 
     /**
@@ -445,9 +447,9 @@ public class House implements Serializable {
      *
      * @param minutes The number of minutes elapsed since the last tick.
      */
-    public void tick(int minutes) {
+    public List<String> tick(int minutes) {
         this.devices.values().forEach(device -> device.tick(minutes));
-        this.routineFacade.tick();
+        return this.routineFacade.tick();
     }
 
     /**

@@ -1,6 +1,7 @@
 package domuscontrol.model.routines;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -263,10 +264,16 @@ public class RoutineManager implements Serializable {
      * against the current house state and time.
      * * @param house The house context to evaluate.
      */
-    public void tick() {
+    public List<String> tick() {
+        List<String> activated = new ArrayList<>();
+
         for (Automation auto : this.automations.values()) {
-            auto.checkAndTrigger();
+            if (auto.checkAndTrigger()) {
+                activated.add(auto.getName());
+            }
         }
+
+        return activated;
     }
 
     /**

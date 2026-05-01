@@ -230,9 +230,23 @@ public class UserUI {
     private void advanceSimulation() {
         System.out.print(Ansi.prompt("Minutes to advance"));
         int minutes = readInt();
-        if (minutes <= 0) { System.out.println("  Must be a positive number."); return; }
-        model.tick(minutes);
+
+        if (minutes <= 0) {
+            System.out.println("  Must be a positive number.");
+            return;
+        }
+
+        List<String> activated = model.tick(minutes);
+
         System.out.println("  Simulation advanced by " + minutes + " minute(s).");
+
+        if (!activated.isEmpty()) {
+            System.out.println();
+            System.out.println("  Automations activated:");
+            for (String name : activated) {
+                System.out.println("  - " + name);
+            }
+        }
     }
 
     private void saveState() {
