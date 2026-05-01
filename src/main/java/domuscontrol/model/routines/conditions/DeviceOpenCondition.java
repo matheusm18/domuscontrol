@@ -5,79 +5,114 @@ import domuscontrol.model.routines.Condition;
 import domuscontrol.model.device.types.OpenableDevice;
 
 /**
- * Condition that evaluates whether an openable device (like a door, window, or gate) 
- * matches a specific open or closed state.
+ * Condition that evaluates whether the opening level of an openable device
+ * (e.g., curtains, garage gate) satisfies a specific comparison against a trigger value.
+ * The opening level ranges from 0 (fully closed) to 100 (fully open).
  */
 public class DeviceOpenCondition implements Condition {
+
     private OpenableDevice device;
-    private boolean triggerWhenOpen;
+    private int triggerLevel;
+    private Operator operator;
 
     /**
-     * Default constructor initializing device to null and trigger state to true (open).
+     * Default constructor initializing device to null and operator to EQUALS.
      */
     public DeviceOpenCondition() {
-        this.device = null;
-        this.triggerWhenOpen = true;
+        this.device       = null;
+        this.triggerLevel = 0;
+        this.operator     = Operator.EQUALS;
     }
 
     /**
      * Parameterized constructor.
-     * @param device          The live reference to the openable device to monitor.
-     * @param triggerWhenOpen The state to check for (true for open, false for closed).
+     *
+     * @param device       The live reference to the openable device to monitor.
+     * @param triggerLevel The opening level threshold (0-100) for comparison.
+     * @param operator     The comparison operator (EQUALS, GREATER_THAN, LESS_THAN).
      */
-    public DeviceOpenCondition(OpenableDevice device, boolean triggerWhenOpen) {
-        this.device = device;
-        this.triggerWhenOpen = triggerWhenOpen;
+    public DeviceOpenCondition(OpenableDevice device, int triggerLevel, Operator operator) {
+        this.device       = device;
+        this.triggerLevel = triggerLevel;
+        this.operator     = operator != null ? operator : Operator.EQUALS;
     }
 
     /**
-     * Copy constructor for deep copying the condition itself.
-     * Note: The device pointer remains shared.
+     * Copy constructor using getters to access the other instance's state.
+     * The device pointer remains shared.
+     *
      * @param other The existing DeviceOpenCondition instance to copy.
      */
     public DeviceOpenCondition(DeviceOpenCondition other) {
-        this.device = other.getDevice();
-        this.triggerWhenOpen = other.getTriggerWhenOpen();
+        this.device       = other.getDevice();
+        this.triggerLevel = other.getTriggerLevel();
+        this.operator     = other.getOperator();
     }
 
     /**
-     * Retrieves the target device.
+     * Returns the target device.
+     *
      * @return The openable device reference.
      */
     public OpenableDevice getDevice() { return device; }
-    
+
     /**
      * Sets a new target device.
+     *
      * @param device The new openable device reference.
      */
     public void setDevice(OpenableDevice device) { this.device = device; }
 
     /**
-     * Checks the trigger state setting.
-     * @return true if the condition triggers when the device is open; false if when closed.
+     * Returns the trigger level threshold.
+     *
+     * @return The opening level threshold (0-100).
      */
-    public boolean getTriggerWhenOpen() { return triggerWhenOpen; }
-    
-    /**
-     * Sets the trigger state requirement.
-     * @param triggerWhenOpen true to trigger on open, false to trigger on closed.
-     */
-    public void setTriggerWhenOpen(boolean triggerWhenOpen) { this.triggerWhenOpen = triggerWhenOpen; }
+    public int getTriggerLevel() { return triggerLevel; }
 
     /**
-     * Evaluates the condition by checking the current open/closed state of the live device reference.
-     * @return true if the current state matches the triggerWhenOpen requirement; false otherwise.
+     * Sets a new trigger level threshold.
+     *
+     * @param triggerLevel The new opening level threshold (0-100).
+     */
+    public void setTriggerLevel(int triggerLevel) { this.triggerLevel = triggerLevel; }
+
+    /**
+     * Returns the comparison operator.
+     *
+     * @return The Operator enum value.
+     */
+    public Operator getOperator() { return operator; }
+
+    /**
+     * Sets a new comparison operator.
+     *
+     * @param operator The new Operator to be used.
+     */
+    public void setOperator(Operator operator) { this.operator = operator != null ? operator : Operator.EQUALS; }
+
+    /**
+     * Evaluates the condition by reading the current opening level of the live device reference.
+     *
+     * @return true if the current opening level satisfies the operator comparison; false otherwise.
      */
     @Override
     public boolean evaluate() {
         if (this.device != null) {
-            return this.device.isOpen() == this.triggerWhenOpen;
+            int currentLevel = this.device.getOpeningLevel();
+            switch (this.getOperator()) {
+                case EQUALS:       return currentLevel == this.getTriggerLevel();
+                case GREATER_THAN: return currentLevel > this.getTriggerLevel();
+                case LESS_THAN:    return currentLevel < this.getTriggerLevel();
+                default:           return false;
+            }
         }
-        return false; // If the device doesn't exist, the condition fails
+        return false;
     }
 
     /**
      * Creates a deep copy of this condition.
+     *
      * @return A new instance of DeviceOpenCondition.
      */
     @Override
@@ -86,32 +121,46 @@ public class DeviceOpenCondition implements Condition {
     }
 
     /**
-     * Compares this condition with another object for equality.
+     * Checks if this condition is associated with a specific device ID.
+     * Used by the RoutineManager to clean up routines when a device is deleted.
+     *
+     * @param deviceId The ID to check.
+     * @return true if the stored device's ID matches; false otherwise.
+     */
+    @Override
+    public boolean hasDeviceId(int deviceId) {
+        return this.device != null && this.device.getId() == deviceId;
+    }
+
+    /**
+     * Compares this condition with another object for equality using getters.
+     *
      * @param o The object to compare with.
-     * @return true if device reference and trigger state match; false otherwise.
+     * @return true if device, trigger level, and operator match; false otherwise.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
-        
         DeviceOpenCondition that = (DeviceOpenCondition) o;
-        
-        return Objects.equals(this.device, that.getDevice()) && 
-               this.triggerWhenOpen == that.getTriggerWhenOpen();
+        return this.getTriggerLevel() == that.getTriggerLevel() &&
+               this.getOperator() == that.getOperator() &&
+               Objects.equals(this.getDevice(), that.getDevice());
     }
 
     /**
      * Generates a hash code for this condition.
-     * @return The hash code.
+     *
+     * @return The hash code based on device, trigger level, and operator.
      */
     @Override
     public int hashCode() {
-        return Objects.hash(this.device, this.triggerWhenOpen);
+        return Objects.hash(this.getDevice(), this.getTriggerLevel(), this.getOperator());
     }
 
     /**
-     * Clones the current condition instance.
+     * Clones this condition instance.
+     *
      * @return A cloned DeviceOpenCondition.
      */
     @Override
@@ -120,27 +169,14 @@ public class DeviceOpenCondition implements Condition {
     }
 
     /**
-     * Returns a string representation of the condition.
-     * @return Formatted string containing device info and the required state.
+     * Returns a string representation of this condition.
+     *
+     * @return Formatted string containing device info and comparison logic.
      */
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("DeviceOpenCondition { ")
-          .append("Device: ").append(this.device != null ? this.device.getId() : "null")
-          .append(", Trigger when OPEN: ").append(this.triggerWhenOpen)
-          .append(" }");
-        return sb.toString();
-    }
-
-    /**
-     * Checks if this condition is associated with a specific device ID.
-     * Used by the House/RoutineManager to clean up routines when a device is deleted.
-     * @param deviceId The ID to check.
-     * @return true if the target device ID matches; false otherwise.
-     */
-    @Override 
-    public boolean hasDeviceId(int deviceId) {
-        return this.device != null && this.device.getId() == deviceId;
+        return "DeviceOpenCondition { Device: " +
+               (this.getDevice() != null ? this.getDevice().getId() : "null") +
+               ", Opening " + this.getOperator() + " " + this.getTriggerLevel() + "% }";
     }
 }

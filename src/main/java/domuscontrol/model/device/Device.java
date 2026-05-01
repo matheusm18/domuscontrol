@@ -31,6 +31,7 @@ public abstract class Device implements Serializable{
     /** The total number of times the device has been activated. */
     private int totalActivations;
 
+
     /**
      * Sets the next id to be assigned to a device. 
      * This method is used when loading devices from a file to ensure that the next id is greater than the last id of the loaded devices.
@@ -50,10 +51,11 @@ public abstract class Device implements Serializable{
         this.status = DeviceStatus.OFF;
         this.totalMinutesOn = 0;
         this.totalActivations = 0;
+
     }
     
-    /** Creates a device from the value of its fields. 
-     * 
+    /** Creates a device from the value of its fields.
+     *
      * @param brand the brand of the device.
      * @param model the model of the device.
      * @param consumptionPerHour The power consumption rate of the device in Wh/h.
@@ -66,10 +68,11 @@ public abstract class Device implements Serializable{
         this.status = DeviceStatus.OFF;
         this.totalMinutesOn = 0;
         this.totalActivations = 0;
+
     }
 
     /** Copy constructor of a device.
-     * 
+     *
      * @param device the device to copy.
      */
     public Device(Device device) {
@@ -80,6 +83,7 @@ public abstract class Device implements Serializable{
         this.status = device.getStatus();
         this.totalMinutesOn = device.getTotalMinutesOn();
         this.totalActivations = device.getTotalActivations();
+
     }
 
     /**

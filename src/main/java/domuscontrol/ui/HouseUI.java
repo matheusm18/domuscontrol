@@ -1,12 +1,17 @@
 package domuscontrol.ui;
 
 import domuscontrol.DomusControl;
+import domuscontrol.exceptions.DeviceIsNotInstanceOfAdjustableDeviceException;
+import domuscontrol.exceptions.DeviceIsNotInstanceOfOpenableDeviceException;
+import domuscontrol.exceptions.DeviceIsNotInstanceOfSwitchableDeviceException;
 import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
 import domuscontrol.exceptions.HouseNotFoundException;
 import domuscontrol.exceptions.LastAdminException;
 import domuscontrol.exceptions.UserAlreadyExistsException;
+import domuscontrol.exceptions.NameAlreadyExistsException;
 import domuscontrol.exceptions.UserNotFoundException;
+import domuscontrol.model.suggestions.AutomationSuggestion;
 import domuscontrol.menu.Menu;
 import domuscontrol.model.device.Curtain;
 import domuscontrol.model.device.Device;
@@ -53,6 +58,13 @@ public class HouseUI {
     }
 
     public void show(String email, int houseId, String houseName) {
+        int userId;
+        try {
+            userId = model.getUserByEmail(email).getId();
+        } catch (UserNotFoundException e) {
+            System.out.println("  Error: User not found.");
+            return;
+        }
 
         Menu menu = new Menu(houseName, new String[]{
                 "View House Details",
@@ -60,6 +72,7 @@ public class HouseUI {
                 "Manage Devices",
                 "Manage Users",
                 "Operate a Device",
+                "Suggestions",
                 "Automations",
                 "Schedules",
                 "Scenarios"
@@ -73,10 +86,11 @@ public class HouseUI {
         menu.setHandler(2, () -> manageDivisions(houseId));
         menu.setHandler(3, () -> manageDevices(houseId));
         menu.setHandler(4, () -> { if (manageUsers(houseId, email)) menu.stop(); });
-        menu.setHandler(5, () -> operateDevice(houseId));
-        menu.setHandler(6, () -> System.out.println("  Automations not yet implemented."));
-        menu.setHandler(7, () -> System.out.println("  Schedules not yet implemented."));
-        menu.setHandler(8, () -> System.out.println("  Scenarios not yet implemented."));
+        menu.setHandler(5, () -> operateDevice(houseId, userId));
+        menu.setHandler(6, () -> showSuggestions(houseId, userId));
+        menu.setHandler(7, () -> System.out.println("  Automations not yet implemented."));
+        menu.setHandler(8, () -> System.out.println("  Schedules not yet implemented."));
+        menu.setHandler(9, () -> System.out.println("  Scenarios not yet implemented."));
 
         menu.run();
     }
@@ -415,11 +429,11 @@ public class HouseUI {
 
     // ---- Operate Device ----
 
-    private void operateDevice(int houseId) {
+    private void operateDevice(int houseId, int userId) {
         try {
             Device device = pickDevice(houseId);
             if (device == null) return;
-            operateSelectedDevice(houseId, device.getId());
+            operateSelectedDevice(houseId, device.getId(), userId);
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: " + e.getMessage());
         }
@@ -445,7 +459,7 @@ public class HouseUI {
         return deviceList.get(choice - 1);
     }
 
-    private void operateSelectedDevice(int houseId, int deviceId) {
+    private void operateSelectedDevice(int houseId, int deviceId, int userId) {
         try {
             Device dev = model.getDevice(houseId, deviceId);
             Ansi.listTitle(dev.getBrand() + " " + dev.getModel());
@@ -455,16 +469,16 @@ public class HouseUI {
 
             if (dev instanceof AdjustableDevice) {
                 Menu opMenu = new Menu("Operate Device", new String[]{"Toggle ON/OFF", "Set Level (0-100)"});
-                opMenu.setHandler(1, () -> toggleDevice(houseId, deviceId));
-                opMenu.setHandler(2, () -> setDeviceLevel(houseId, deviceId));
+                opMenu.setHandler(1, () -> toggleDevice(houseId, deviceId, userId));
+                opMenu.setHandler(2, () -> setDeviceLevel(houseId, deviceId, userId));
                 opMenu.run();
             } else if (dev instanceof SwitchableDevice) {
                 Menu opMenu = new Menu("Operate Device", new String[]{"Toggle ON/OFF"});
-                opMenu.setHandler(1, () -> toggleDevice(houseId, deviceId));
+                opMenu.setHandler(1, () -> toggleDevice(houseId, deviceId, userId));
                 opMenu.run();
             } else if (dev instanceof OpenableDevice) {
                 Menu opMenu = new Menu("Operate Device", new String[]{"Set Opening (%)"});
-                opMenu.setHandler(1, () -> setDeviceOpening(houseId, deviceId));
+                opMenu.setHandler(1, () -> setDeviceOpening(houseId, deviceId, userId));
                 opMenu.run();
             } else {
                 System.out.println("  No supported operations for this device.");
@@ -474,42 +488,62 @@ public class HouseUI {
         }
     }
 
-    private void toggleDevice(int houseId, int deviceId) {
+    private void toggleDevice(int houseId, int deviceId, int userId) {
         try {
-            Device d = model.getDevice(houseId, deviceId);
-            SwitchableDevice sd = (SwitchableDevice) d;
-            if (sd.isOn()) sd.turnOff(); else sd.turnOn();
-            model.updateDevice(houseId, d);
-            System.out.println("  Device is now " + (sd.isOn() ? "ON" : "OFF") + ".");
-        } catch (HouseNotFoundException | DeviceNotFoundException e) {
+            model.toggleDevice(houseId, deviceId, userId);
+            System.out.println("  Device toggled.");
+        } catch (HouseNotFoundException | DeviceNotFoundException | DeviceIsNotInstanceOfSwitchableDeviceException e) {
             System.out.println("  Error: " + e.getMessage());
         }
     }
 
-    private void setDeviceLevel(int houseId, int deviceId) {
+    private void setDeviceLevel(int houseId, int deviceId, int userId) {
         System.out.print(Ansi.prompt("Level (0-100)"));
         int level = readInt();
         try {
-            Device d = model.getDevice(houseId, deviceId);
-            AdjustableDevice ad = (AdjustableDevice) d;
-            ad.setLevel(level);
-            model.updateDevice(houseId, d);
-            System.out.println("  Level set to " + ad.getLevel() + ".");
-        } catch (HouseNotFoundException | DeviceNotFoundException e) {
+            model.setDeviceLevel(houseId, deviceId, level, userId);
+            System.out.println("  Level set.");
+        } catch (HouseNotFoundException | DeviceNotFoundException | DeviceIsNotInstanceOfAdjustableDeviceException e) {
             System.out.println("  Error: " + e.getMessage());
         }
     }
 
-    private void setDeviceOpening(int houseId, int deviceId) {
+    private void setDeviceOpening(int houseId, int deviceId, int userId) {
         System.out.print(Ansi.prompt("Opening percentage (0-100)"));
         int pct = readInt();
         try {
-            Device d = model.getDevice(houseId, deviceId);
-            OpenableDevice od = (OpenableDevice) d;
-            od.setOpening(pct);
-            model.updateDevice(houseId, d);
-            System.out.println("  Opening set to " + od.getOpeningLevel() + "%.");
-        } catch (HouseNotFoundException | DeviceNotFoundException e) {
+            model.setDeviceOpening(houseId, deviceId, pct, userId);
+            System.out.println("  Opening set.");
+        } catch (HouseNotFoundException | DeviceNotFoundException | DeviceIsNotInstanceOfOpenableDeviceException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private void showSuggestions(int houseId, int userId) {
+        try {
+            List<AutomationSuggestion> suggestions = model.getSuggestions(houseId, userId);
+            if (suggestions.isEmpty()) {
+                System.out.println("  No suggestions available yet. Interact with devices to generate patterns.");
+                return;
+            }
+
+            Ansi.listTitle("Suggestions");
+            for (int i = 0; i < suggestions.size(); i++) {
+                AutomationSuggestion s = suggestions.get(i);
+                Ansi.listRow(String.format("%d  %s", i + 1, s.getDescription()));
+            }
+            Ansi.listSeparator();
+
+            System.out.print(Ansi.prompt("Accept suggestion (0 to skip)"));
+            int choice = readInt();
+            if (choice < 1 || choice > suggestions.size()) return;
+
+            AutomationSuggestion chosen = suggestions.get(choice - 1);
+            model.addAutomation(houseId, chosen.getAutomation());
+            System.out.println("  Automation added successfully.");
+        } catch (NameAlreadyExistsException e) {
+            System.out.println("  Error: Automation already exists.");
+        } catch (Exception e) {
             System.out.println("  Error: " + e.getMessage());
         }
     }

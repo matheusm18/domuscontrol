@@ -8,7 +8,21 @@ import domuscontrol.exceptions.LastAdminException;
 import domuscontrol.exceptions.LoginInvalidPasswordException;
 import domuscontrol.exceptions.UserAlreadyExistsException;
 import domuscontrol.exceptions.UserNotFoundException;
+import domuscontrol.exceptions.DeviceIsNotInstanceOfAdjustableDeviceException;
+import domuscontrol.exceptions.DeviceIsNotInstanceOfColorAdjustableDeviceException;
+import domuscontrol.exceptions.DeviceIsNotInstanceOfOpenableDeviceException;
+import domuscontrol.exceptions.DeviceIsNotInstanceOfSwitchableDeviceException;
+import domuscontrol.exceptions.NameAlreadyExistsException;
+import domuscontrol.exceptions.ScheduleWithConditionDifferentFromTimeException;
+import domuscontrol.model.routines.Automation;
+import domuscontrol.model.suggestions.AutomationSuggestion;
+import domuscontrol.model.suggestions.DeviceInteraction;
+import domuscontrol.model.suggestions.InteractionType;
 import domuscontrol.model.device.Device;
+import domuscontrol.model.device.types.AdjustableDevice;
+import domuscontrol.model.device.types.ColorAdjustableDevice;
+import domuscontrol.model.device.types.OpenableDevice;
+import domuscontrol.model.device.types.SwitchableDevice;
 import domuscontrol.model.houses.House;
 import domuscontrol.model.houses.HouseManager;
 import domuscontrol.model.houses.DivisionInfo;
@@ -375,6 +389,58 @@ public class DomusControl implements Serializable {
      */
     public void updateDevice(int houseId, Device device) throws HouseNotFoundException, DeviceNotFoundException {
         this.houseManager.updateDevice(houseId, device);
+    }
+
+    /** Toggles a switchable device ON or OFF and logs the interaction for the given user. */
+    public void toggleDevice(int houseId, int deviceId, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfSwitchableDeviceException {
+        Device clone = this.houseManager.getDevice(houseId, deviceId);
+        if (!(clone instanceof SwitchableDevice))
+            throw new DeviceIsNotInstanceOfSwitchableDeviceException("Device " + deviceId + " is not switchable.");
+        boolean[] turnedOn = {false};
+        this.houseManager.interactWithDevice(houseId, deviceId, d -> {
+            SwitchableDevice sd = (SwitchableDevice) d;
+            if (sd.isOn()) { sd.turnOff(); turnedOn[0] = false; }
+            else           { sd.turnOn();  turnedOn[0] = true;  }
+        });
+        InteractionType type = turnedOn[0] ? InteractionType.TURN_ON : InteractionType.TURN_OFF;
+        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, type, userId, getCurrentDateTime()));
+    }
+
+    /** Sets the level (0–100) of an adjustable device and logs the interaction. */
+    public void setDeviceLevel(int houseId, int deviceId, int level, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfAdjustableDeviceException {
+        Device clone = this.houseManager.getDevice(houseId, deviceId);
+        if (!(clone instanceof AdjustableDevice))
+            throw new DeviceIsNotInstanceOfAdjustableDeviceException("Device " + deviceId + " is not adjustable.");
+        this.houseManager.interactWithDevice(houseId, deviceId, d -> ((AdjustableDevice) d).setLevel(level));
+        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_LEVEL, (double) level, userId, getCurrentDateTime()));
+    }
+
+    /** Sets the opening percentage (0–100) of an openable device and logs the interaction. */
+    public void setDeviceOpening(int houseId, int deviceId, int percentage, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfOpenableDeviceException {
+        Device clone = this.houseManager.getDevice(houseId, deviceId);
+        if (!(clone instanceof OpenableDevice))
+            throw new DeviceIsNotInstanceOfOpenableDeviceException("Device " + deviceId + " is not openable.");
+        this.houseManager.interactWithDevice(houseId, deviceId, d -> ((OpenableDevice) d).setOpening(percentage));
+        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_OPENING, (double) percentage, userId, getCurrentDateTime()));
+    }
+
+    /** Sets the color temperature of a color-adjustable device and logs the interaction. */
+    public void setDeviceColorTemperature(int houseId, int deviceId, int temperature, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfColorAdjustableDeviceException {
+        Device clone = this.houseManager.getDevice(houseId, deviceId);
+        if (!(clone instanceof ColorAdjustableDevice))
+            throw new DeviceIsNotInstanceOfColorAdjustableDeviceException("Device " + deviceId + " is not color adjustable.");
+        this.houseManager.interactWithDevice(houseId, deviceId, d -> ((ColorAdjustableDevice) d).setColorTemperature(temperature));
+        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_COLOR_TEMPERATURE, (double) temperature, userId, getCurrentDateTime()));
+    }
+
+    /** Returns automation and schedule suggestions based on this user's interaction history in the house. */
+    public List<AutomationSuggestion> getSuggestions(int houseId, int userId) throws HouseNotFoundException, ScheduleWithConditionDifferentFromTimeException {
+        return this.houseManager.getSuggestions(houseId, userId);
+    }
+
+    /** Adds an accepted suggestion's automation to the house. */
+    public void addAutomation(int houseId, Automation automation) throws HouseNotFoundException, NameAlreadyExistsException {
+        this.houseManager.addAutomation(houseId, automation);
     }
 
     /**

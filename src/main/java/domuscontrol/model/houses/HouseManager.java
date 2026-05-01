@@ -8,7 +8,14 @@ import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
 import domuscontrol.exceptions.HouseAlreadyExistsException;
 import domuscontrol.exceptions.HouseNotFoundException;
+import domuscontrol.exceptions.NameAlreadyExistsException;
+import domuscontrol.exceptions.ScheduleWithConditionDifferentFromTimeException;
 import domuscontrol.model.device.Device;
+import domuscontrol.model.routines.Automation;
+import domuscontrol.model.suggestions.AutomationSuggestion;
+import domuscontrol.model.suggestions.DeviceInteraction;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Manager responsible for handling all houses in the system.
@@ -120,6 +127,15 @@ public class HouseManager implements Serializable {
     }
 
     /**
+     * Applies an interaction to a live device inside the house without exposing the reference.
+     * The device's observer is notified automatically during the interaction.
+     */
+    public void interactWithDevice(int houseId, int deviceId, Consumer<Device> interaction) throws HouseNotFoundException, DeviceNotFoundException {
+        House h = getHouseInternal(houseId);
+        h.interactWithDevice(deviceId, interaction);
+    }
+
+    /**
      * Removes a device from a specific house. The device is removed from the global devices map and also from any division that contains it.
      * @param houseId The ID of the house from which the device will be removed.
      * @param deviceId The ID of the device to be removed.
@@ -152,6 +168,18 @@ public class HouseManager implements Serializable {
         return this.housesById.values().stream()
                 .map(House::clone)
                 .collect(Collectors.toList());
+    }
+
+    public void logInteraction(int houseId, DeviceInteraction interaction) throws HouseNotFoundException {
+        getHouseInternal(houseId).logInteraction(interaction);
+    }
+
+    public List<AutomationSuggestion> getSuggestions(int houseId, int userId) throws HouseNotFoundException, ScheduleWithConditionDifferentFromTimeException {
+        return getHouseInternal(houseId).getSuggestions(userId);
+    }
+
+    public void addAutomation(int houseId, Automation automation) throws HouseNotFoundException, NameAlreadyExistsException {
+        getHouseInternal(houseId).addAutomation(automation);
     }
 
     /** Returns the live (non-cloned) House reference for internal mutation. */

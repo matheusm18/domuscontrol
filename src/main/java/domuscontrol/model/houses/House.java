@@ -6,11 +6,19 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
+import domuscontrol.exceptions.NameAlreadyExistsException;
+import domuscontrol.exceptions.ScheduleWithConditionDifferentFromTimeException;
+import domuscontrol.exceptions.UserNotFoundException;
+import domuscontrol.exceptions.UserAlreadyExistsException;
 import domuscontrol.model.device.Device;
+import domuscontrol.model.suggestions.AutomationSuggestion;
+import domuscontrol.model.suggestions.DeviceInteraction;
+import domuscontrol.model.suggestions.InteractionLogger;
+import domuscontrol.model.suggestions.SuggestionEngine;
+import domuscontrol.user.UserRole;
 import domuscontrol.exceptions.UserDoesntHaveScenarios;
 import domuscontrol.model.routines.Automation;
 import domuscontrol.exceptions.AutomationDoesntExistException;
-import domuscontrol.exceptions.NameAlreadyExistsException;
 import domuscontrol.model.routines.RoutineManager;
 import domuscontrol.model.routines.Scenario;
 import domuscontrol.exceptions.ScenarioDoesntExistException;
@@ -24,26 +32,26 @@ import java.util.List;
 
 /**
  * Represents a complete House in the Domus Control automation system.
- * A House aggregates multiple Divisions (rooms), managing the overall state, 
+ * A House aggregates multiple Divisions (rooms), managing the overall state,
  * simulating the passage of time, and calculating global statistics.
  */
 public class House implements Serializable {
-    
+
     /**
      * Static counter used to automatically assign unique, sequential IDs to each new house.
      */
-    private static int nextId = 1; 
+    private static int nextId = 1;
 
     /**
      * The name or designation of the house.
      */
     private String name;
-    
+
     /**
      * The unique identifier for this specific house.
      */
-    private final int id; 
-    
+    private final int id;
+
     /**
      * A map storing all devices within this house.
      * The key is the device's unique ID, and the value is the Device object itself.
@@ -54,16 +62,28 @@ public class House implements Serializable {
      * A map storing all divisions within this house.
      * The key is the division's name, and the value is a list of devices in that division.
      */
-    private Map<String, List<Device>> divisions; 
-    
+    private Map<String, List<Device>> divisions;
+
     /**
      * The facade managing all automations, schedules, and scenarios for this house.
      */
     private RoutineManager routineFacade;
 
     /**
-     * Updates the static ID counter. 
-     * Useful when loading a saved system state to ensure new houses do not overlap 
+     * A map storing the users that have access to this house and their respective roles.
+     * The key is the user's id, and the value is their role in the house.
+     */
+    private Map<Integer, UserRole> usersInHouse;
+
+    /**
+     * The logger that records all manual device interactions performed in this house.
+     * Used by the SuggestionEngine to detect patterns and generate automation suggestions.
+     */
+    private InteractionLogger interactionLogger;
+
+    /**
+     * Updates the static ID counter.
+     * Useful when loading a saved system state to ensure new houses do not overlap
      * with previously assigned IDs.
      *
      * @param lastId The highest ID currently loaded in the system.
@@ -74,8 +94,7 @@ public class House implements Serializable {
 
     /**
      * Default constructor.
-     * Initializes a new house with a unique ID, an empty name, midnight as the current time,
-     * and an empty routine manager.
+     * Initializes a new house with a unique ID, an empty name, and an empty routine manager.
      */
     public House() {
         this.id = House.nextId++;
@@ -83,29 +102,33 @@ public class House implements Serializable {
         this.divisions = new HashMap<>();
         this.devices = new HashMap<>();
         this.routineFacade = new RoutineManager();
+        this.usersInHouse = new HashMap<>();
+        this.interactionLogger = new InteractionLogger();
     }
 
     /**
      * Parameterized constructor.
      * Initializes a new house with a unique ID, a specific name, and predefined divisions.
-     * Time defaults to midnight.
      *
-     * @param divisions A map of divisions to populate the house.
-     * @param devices   A map of devices to populate the house.
-     * @param name      The name of the house.
+     * @param divisions    A map of divisions to populate the house.
+     * @param devices      A map of devices to populate the house.
+     * @param name         The name of the house.
+     * @param usersInHouse A map of users and their roles in this house.
      */
     public House(Map<String, List<Device>> divisions, Map<Integer, Device> devices, String name) {
         this.id = House.nextId++;
         this.name = name;
         this.routineFacade = new RoutineManager();
+        this.usersInHouse = new HashMap<>(usersInHouse);
+        this.interactionLogger = new InteractionLogger();
         this.setDevices(devices);
         this.setDivisions(divisions);
     }
 
     /**
      * Copy constructor.
-     * Creates a new House instance by copying the state, retaining the exact ID, 
-     * and performing deep copies of devices and routines.
+     * Creates a new House instance by copying the state, retaining the exact ID,
+     * and performing deep copies of devices, routines, and the interaction logger.
      *
      * @param h The House object to copy.
      */
@@ -113,6 +136,8 @@ public class House implements Serializable {
         this.id = h.getId();
         this.name = h.getName();
         this.routineFacade = h.getRoutineFacade();
+        this.usersInHouse = new HashMap<>(h.getUserRoles());
+        this.interactionLogger = h.getInteractionLogger();
         this.setDevices(h.getDevices());
         this.setDivisions(h.getDivisions());
     }
@@ -122,8 +147,8 @@ public class House implements Serializable {
      *
      * @return The integer ID.
      */
-    public int getId() { 
-        return this.id; 
+    public int getId() {
+        return this.id;
     }
 
     /**
@@ -131,8 +156,8 @@ public class House implements Serializable {
      *
      * @return The name string.
      */
-    public String getName() { 
-        return this.name; 
+    public String getName() {
+        return this.name;
     }
 
     /**
@@ -140,39 +165,40 @@ public class House implements Serializable {
      *
      * @param name The new name for the house.
      */
-    public void setName(String name) { 
-        this.name = name; 
+    public void setName(String name) {
+        this.name = name;
     }
 
     /**
      * Retrieves a deep copy of the routine facade managing this house's automations.
      *
-     * @return A cloned RoutineFacade object.
+     * @return A cloned RoutineManager object.
      */
-    public RoutineManager getRoutineFacade() { 
-        return this.routineFacade.clone(); 
+    public RoutineManager getRoutineFacade() {
+        return this.routineFacade.clone();
     }
 
     /**
      * Sets the routine facade for this house, performing a deep copy to preserve encapsulation.
      *
-     * @param facade The RoutineFacade to assign.
+     * @param facade The RoutineManager to assign.
      */
-    public void setRoutineFacade(RoutineManager facade) { 
-        this.routineFacade = facade.clone(); 
+    public void setRoutineFacade(RoutineManager facade) {
+        this.routineFacade = facade.clone();
     }
 
     /**
      * Sets the devices for this house.
+     * Each device is cloned and the interactionLogger is registered as observer.
      *
      * @param devices A map of devices to be added to this house (will be cloned).
      */
     public void setDevices(Map<Integer, Device> devices) {
-        Map<Integer, Device> devicesMap = new HashMap<>(); 
+        Map<Integer, Device> devicesMap = new HashMap<>();
         if (devices != null) {
             devices.forEach((k, v) -> devicesMap.put(k, v.clone()));
         }
-        this.devices = devicesMap; 
+        this.devices = devicesMap;
     }
 
     /**
@@ -181,7 +207,7 @@ public class House implements Serializable {
      * @param divisions A map of divisions to be added to this house.
      */
     public void setDivisions(Map<String, List<Device>> divisions) {
-        Map<String, List<Device>> divisionsMap = new HashMap<>(); 
+        Map<String, List<Device>> divisionsMap = new HashMap<>();
         if (divisions != null) {
             divisions.forEach((name, list) -> {
                 divisionsMap.put(name, list.stream()
@@ -189,7 +215,7 @@ public class House implements Serializable {
                     .collect(Collectors.toList()));
             });
         }
-        this.divisions = divisionsMap; 
+        this.divisions = divisionsMap;
     }
 
     /**
@@ -198,9 +224,9 @@ public class House implements Serializable {
      * @return A map containing clones of the internal devices.
      */
     public Map<Integer, Device> getDevices() {
-        Map<Integer, Device> newMap = new HashMap<>(); 
+        Map<Integer, Device> newMap = new HashMap<>();
         this.devices.forEach((k, v) -> newMap.put(k, v.clone()));
-        return newMap; 
+        return newMap;
     }
 
     /**
@@ -209,15 +235,58 @@ public class House implements Serializable {
      * @return A map containing the divisions and clones of their devices.
      */
     public Map<String, List<Device>> getDivisions() {
-        Map<String, List<Device>> newMap = new HashMap<>(); 
+        Map<String, List<Device>> newMap = new HashMap<>();
         this.divisions.forEach((name, list) -> {
             newMap.put(name, list.stream().map(Device::clone).collect(Collectors.toList()));
         });
-        return newMap; 
+        return newMap;
     }
 
     /**
-     * Adds a single division to the house. 
+     * Returns the interaction logger of this house.
+     * The returned logger is a deep copy to preserve encapsulation.
+     *
+     * @return A clone of the internal InteractionLogger.
+     */
+    public InteractionLogger getInteractionLogger() {
+        return this.interactionLogger.clone();
+    }
+
+    /**
+     * Replaces the interaction logger with a deep copy of the provided one.
+     *
+     * @param interactionLogger The new InteractionLogger to assign.
+     */
+    public void setInteractionLogger(InteractionLogger interactionLogger) {
+        this.interactionLogger = interactionLogger != null ? interactionLogger.clone() : new InteractionLogger();
+    }
+
+    /**
+     * Records a manual device interaction in the house's interaction history.
+     * Should be called from the controller layer after every successful manual device interaction.
+     *
+     * @param interaction The interaction to record.
+     */
+    public void logInteraction(DeviceInteraction interaction) {
+        this.interactionLogger.log(interaction);
+    }
+
+    /**
+     * Analyses the interaction history of this house and returns a list of
+     * automation and schedule suggestions based on detected patterns.
+     * Passes the live internal device map directly to the SuggestionEngine
+     * so it can build fully functional Action and Condition objects.
+     *
+     * @return A list of AutomationSuggestion objects ready to be presented to the user.
+     * @throws ScheduleWithConditionDifferentFromTimeException if a suggested schedule
+     *         is built with a non-time condition, which should never happen in practice.
+     */
+    public List<AutomationSuggestion> getSuggestions(int userId) throws ScheduleWithConditionDifferentFromTimeException {
+        return SuggestionEngine.suggest(this.interactionLogger, this.devices, userId);
+    }
+
+    /**
+     * Adds a single division to the house.
      *
      * @param name    The name of the division.
      * @param devices The list of devices in the division.
@@ -243,14 +312,12 @@ public class House implements Serializable {
         if (!this.divisions.containsKey(name)) {
             throw new DivisionNotFoundException("Division not found: " + name);
         }
-        // Remove devices from the global devices map
         List<Device> devicesToRemove = this.divisions.get(name);
         if (devicesToRemove != null) {
             for (Device device : devicesToRemove) {
                 this.devices.remove(device.getId());
             }
         }
-        // Remove the division itself
         this.divisions.remove(name);
     }
 
@@ -264,15 +331,52 @@ public class House implements Serializable {
     }
 
     /**
-     * Calculates the total energy consumption of the entire house by aggregating 
+     * Returns a map of users that have access to this house and their respective roles.
+     *
+     * @return A map where the key is the user's id and the value is their role in the house.
+     */
+    public Map<Integer, UserRole> getUserRoles() {
+        return new HashMap<>(this.usersInHouse);
+    }
+
+    /**
+     * Assigns a user to this house with a specific role.
+     *
+     * @param userId The ID of the user to be assigned.
+     * @param role   The role to assign to the user in this house.
+     * @throws UserNotFoundException      if the user does not exist.
+     * @throws UserAlreadyExistsException if the user is already assigned to this house.
+     */
+    public void assignUser(int userId, UserRole role) throws UserNotFoundException, UserAlreadyExistsException {
+        if (this.usersInHouse.containsKey(userId)) {
+            throw new UserAlreadyExistsException("User with ID " + userId + " is already in this house.");
+        }
+        this.usersInHouse.put(userId, role);
+    }
+
+    /**
+     * Removes a user from this house based on their ID.
+     *
+     * @param userId The ID of the user to be removed.
+     * @throws UserNotFoundException if the user is not found in the house.
+     */
+    public void removeUser(int userId) throws UserNotFoundException {
+        if (!this.usersInHouse.containsKey(userId)) {
+            throw new UserNotFoundException("User not found: " + userId);
+        }
+        this.usersInHouse.remove(userId);
+    }
+
+    /**
+     * Calculates the total energy consumption of the entire house by aggregating
      * the consumption of all its devices.
      *
      * @return The total consumption in Wh.
      */
-    public double calculateTotalConsumption() { 
+    public double calculateTotalConsumption() {
         return this.devices.values().stream()
                    .mapToDouble(Device::getEnergyConsumption)
-                   .sum(); 
+                   .sum();
     }
 
     /**
@@ -281,28 +385,28 @@ public class House implements Serializable {
      * @return A new House object.
      */
     @Override
-    public House clone() { 
-        return new House(this); 
+    public House clone() {
+        return new House(this);
     }
 
     /**
-     * Returns a formatted string representation of the house, including simulation time.
+     * Returns a formatted string representation of the house.
      *
      * @return A formatted string.
      */
     @Override
     public String toString() {
-        StringBuilder str = new StringBuilder(); 
-        str.append("=== House: ").append(this.name).append(" [ID: ").append(this.id).append("] ===\n");
+        StringBuilder str = new StringBuilder();
+        str.append("=== House: ").append(this.getName()).append(" [ID: ").append(this.getId()).append("] ===\n");
         if (this.divisions.isEmpty()) {
             str.append("No divisions yet.\n");
         } else {
             this.divisions.forEach((name, list) -> {
                 str.append("\n---   Division: ").append(name).append("    ---\n");
                 list.forEach(dev -> str.append("  ").append(dev.toString()).append("\n"));
-            }); 
+            });
         }
-        return str.toString(); 
+        return str.toString();
     }
 
     /**
@@ -314,13 +418,14 @@ public class House implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;
-        if (o == null || o.getClass() != this.getClass()) return false; 
-        House h = (House) o; 
-        return Objects.equals(this.name, h.getName()) &&
-               this.id == h.getId() &&
-               this.divisions.equals(h.getDivisions()) &&
-               this.devices.equals(h.getDevices()) &&
-               Objects.equals(this.routineFacade, h.getRoutineFacade());
+        if (o == null || o.getClass() != this.getClass()) return false;
+        House h = (House) o;
+        return Objects.equals(this.getName(), h.getName()) &&
+               this.getId() == h.getId() &&
+               this.getDivisions().equals(h.getDivisions()) &&
+               this.getDevices().equals(h.getDevices()) &&
+               Objects.equals(this.getRoutineFacade(), h.getRoutineFacade()) &&
+               Objects.equals(this.getInteractionLogger(), h.getInteractionLogger());
     }
 
     /**
@@ -330,16 +435,18 @@ public class House implements Serializable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(this.id, this.name, this.divisions, this.devices, this.routineFacade);
+        return Objects.hash(this.getId(), this.getName(), this.getDivisions(),
+                            this.getDevices(), this.getRoutineFacade(), this.getInteractionLogger());
     }
 
     /**
-     * Simulates the passing of time for the house. Updates the clock, triggers device
-     * logic, and checks all automations and schedules.
-     * * @param minutes The number of minutes elapsed since the last tick.
+     * Simulates the passing of time for the house. Updates device logic and checks
+     * all automations and schedules.
+     *
+     * @param minutes The number of minutes elapsed since the last tick.
      */
     public void tick(int minutes) {
-        this.devices.values().forEach(device -> device.tick(minutes)); 
+        this.devices.values().forEach(device -> device.tick(minutes));
         this.routineFacade.tick();
     }
 
@@ -373,8 +480,8 @@ public class House implements Serializable {
      *
      * @return The global device count.
      */
-    public int devicesNumber() { 
-        return this.devices.size(); 
+    public int devicesNumber() {
+        return this.devices.size();
     }
 
     /**
@@ -384,10 +491,10 @@ public class House implements Serializable {
      */
     public List<String> top3DivisionsWithMostDevices() {
         return this.divisions.entrySet().stream()
-        .sorted(Comparator.<Map.Entry<String, List<Device>>>comparingInt(e -> e.getValue().size()).reversed())
-        .limit(3)
-        .map(Map.Entry::getKey)
-        .collect(Collectors.toList()); 
+            .sorted(Comparator.<Map.Entry<String, List<Device>>>comparingInt(e -> e.getValue().size()).reversed())
+            .limit(3)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -408,9 +515,8 @@ public class House implements Serializable {
 
     /**
      * Completely removes a device from the house.
-     * This method deletes the device from the global devices map, cascades the deletion 
-     * to remove it from any division it belongs to, and safely clears all associated actions 
-     * and conditions from the routine manager to prevent orphaned references.
+     * Deletes the device from the global devices map, cascades the deletion to all
+     * divisions, and clears all associated actions and conditions from the routine manager.
      *
      * @param deviceId The unique identifier of the device to be removed.
      * @throws DeviceNotFoundException if no device with the specified ID exists in the house.
@@ -419,13 +525,13 @@ public class House implements Serializable {
         if (!this.devices.containsKey(deviceId)) throw new DeviceNotFoundException("Device not found: " + deviceId);
         this.devices.remove(deviceId);
         this.divisions.values().forEach(list -> list.removeIf(d -> d.getId() == deviceId));
-
-        this.routineFacade.removeDevice(deviceId); 
+        this.routineFacade.removeDevice(deviceId);
     }
 
     /**
      * Removes a specific device from a designated division.
-     * * @param deviceId The unique identifier of the device to remove from the room.
+     *
+     * @param deviceId The unique identifier of the device to remove from the division.
      * @param division The name of the division from which the device should be removed.
      * @throws DivisionNotFoundException if the specified division does not exist in the house.
      */
@@ -459,19 +565,16 @@ public class House implements Serializable {
      * Retrieves the live reference to a device by its ID.
      * This returns the actual object pointer, not a clone, and is intended
      * to be used when constructing Actions and Conditions.
-     * * @param deviceId The unique identifier of the device.
+     *
+     * @param deviceId The unique identifier of the device.
      * @return The live Device object.
      * @throws DeviceNotFoundException if the device ID does not exist in the house.
      */
     public Device getDevice(int deviceId) throws DeviceNotFoundException {
         Device device = this.devices.get(deviceId);
-        
         if (device == null) {
-            // Note: If you have a custom exception like DeviceNotFoundException, 
-            // you should throw that here instead!
             throw new DeviceNotFoundException("Device with ID " + deviceId + " not found in the house.");
         }
-        
         return device;
     }
 
@@ -540,7 +643,6 @@ public class House implements Serializable {
         this.routineFacade.addAutomation(a);
     }
 
-
     /**
      * Removes an automation from the routine facade by its name.
      *
@@ -550,7 +652,6 @@ public class House implements Serializable {
     public void removeAutomation(String name) throws AutomationDoesntExistException {
         this.routineFacade.removeAutomation(name);
     }
-
 
     /**
      * Removes a scenario from the routine facade for a specific user.
@@ -563,4 +664,5 @@ public class House implements Serializable {
     public void removeScenario(int userId, String name) throws UserDoesntHaveScenarios, ScenarioDoesntExistException {
         this.routineFacade.removeScenario(userId, name);
     }
+
 }

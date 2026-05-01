@@ -35,7 +35,7 @@ public abstract class OpenableDevice extends Device {
         } else {
             this.openingLevel = percentage;
         }
-        
+
         if (this.openingLevel > 0) {
             this.updateStatus(DeviceStatus.OPEN);
         } else {
