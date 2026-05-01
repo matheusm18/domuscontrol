@@ -10,6 +10,7 @@ import domuscontrol.model.houses.House;
 import domuscontrol.model.houses.DivisionInfo;
 import domuscontrol.user.User;
 import domuscontrol.user.UserRole;
+import domuscontrol.utils.Ansi;
 
 import java.io.IOException;
 import java.util.List;
@@ -45,7 +46,7 @@ public class UserUI {
     }
 
     public void show(String email) {
-        Menu menu = new Menu(new String[]{
+        Menu menu = new Menu("Dashboard", new String[]{
                 "My Houses",
                 "Create House",
                 "My Profile",
@@ -68,15 +69,14 @@ public class UserUI {
         try {
             List<House> houses = model.getHousesByUser(email);
             if (houses.isEmpty()) {
-                System.out.println("You have no houses yet.");
+                System.out.println("  You have no houses yet.");
                 return;
             }
-            System.out.println("\n==| Your Houses |==");
-            for (int i = 0; i < houses.size(); i++) {
-                House h = houses.get(i);
-                System.out.printf("%d - %s %n", i + 1, h.getName());
-            }
-            System.out.print("Select house (0 to cancel): ");
+            Ansi.listTitle("Your Houses");
+            for (int i = 0; i < houses.size(); i++)
+                Ansi.listRow(String.format("%d  %s", i + 1, houses.get(i).getName()));
+            Ansi.listSeparator();
+            System.out.print(Ansi.prompt("Select house (0 to cancel)"));
             int choice = readInt();
             if (choice < 1 || choice > houses.size()) return;
 
@@ -84,51 +84,50 @@ public class UserUI {
             houseUI.show(email, selected.getId(), selected.getName());
 
         } catch (UserNotFoundException | HouseNotFoundException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println("  Error: " + e.getMessage());
         }
     }
 
     private void createHouse(String email) {
-        System.out.print("House name: ");
+        System.out.print(Ansi.prompt("House name"));
         String name = sc.nextLine();
         try {
             House house = model.createHouse(email, name);
-            System.out.printf("House '%s' created.%n", house.getName());
+            System.out.printf("  House '%s' created.%n", house.getName());
         } catch (UserNotFoundException | HouseAlreadyExistsException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println("  Error: " + e.getMessage());
         }
     }
 
     private void myProfile(String email) {
         try {
             User user = model.getUserByEmail(email);
-            System.out.println("\n==| Profile |==");
+            System.out.println();
             showUserDetails(user);
-
         } catch (UserNotFoundException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println("  Error: " + e.getMessage());
             return;
         }
 
-        Menu menu = new Menu(new String[]{"Change Name", "Change Password"});
+        Menu menu = new Menu("Profile", new String[]{"Change Name", "Change Password"});
         menu.setHandler(1, () -> {
-            System.out.print("New name: ");
+            System.out.print(Ansi.prompt("New name"));
             String name = sc.nextLine();
             try {
                 model.updateUserName(email, name);
-                System.out.println("Name updated.");
+                System.out.println("  Name updated.");
             } catch (UserNotFoundException ex) {
-                System.out.println("Error: " + ex.getMessage());
+                System.out.println("  Error: " + ex.getMessage());
             }
         });
         menu.setHandler(2, () -> {
-            System.out.print("New password: ");
+            System.out.print(Ansi.prompt("New password"));
             String pass = sc.nextLine();
             try {
                 model.updateUserPassword(email, pass);
-                System.out.println("Password updated.");
+                System.out.println("  Password updated.");
             } catch (UserNotFoundException ex) {
-                System.out.println("Error: " + ex.getMessage());
+                System.out.println("  Error: " + ex.getMessage());
             }
         });
         menu.run();
@@ -140,34 +139,33 @@ public class UserUI {
      */
     public void showUserDetails(User user) {
         if (user == null) {
-            System.out.println("No user to display.");
+            System.out.println("  No user to display.");
             return;
         }
-        System.out.println("User Details:");
-        System.out.println("ID: " + user.getId());
-        System.out.println("Name: " + user.getName());
-        System.out.println("Email: " + user.getEmail());
-        System.out.println("Roles:");
+        Ansi.listTitle("Profile");
+        Ansi.listRow(String.format("%-10s %s", "ID", user.getId()));
+        Ansi.listRow(String.format("%-10s %s", "Name", user.getName()));
+        Ansi.listRow(String.format("%-10s %s", "Email", user.getEmail()));
 
         Map<Integer, UserRole> roles = user.getRolesByHouseId();
+        Ansi.listSeparator();
         if (roles.isEmpty()) {
-            System.out.println("  No roles assigned.");
+            Ansi.listRow("No roles assigned.");
         } else {
             for (Map.Entry<Integer, UserRole> entry : roles.entrySet()) {
                 try {
-                    // Usar o novo método para obter o nome da casa pelo ID
                     String houseName = this.model.getHouseById(entry.getKey()).getName();
-                    System.out.println("  " + houseName + ": " + entry.getValue());
+                    Ansi.listRow(String.format("%-22s %s", houseName, entry.getValue()));
                 } catch (HouseNotFoundException e) {
-                    // Esta exceção pode acontecer se uma casa for removida mas a referência no user permanecer
-                    System.out.println("  House with ID " + entry.getKey() + " not found: " + entry.getValue());
+                    Ansi.listRow("House ID " + entry.getKey() + " not found");
                 }
             }
         }
+        Ansi.listSeparator();
     }
 
     private void statistics(String email) {
-        Menu menu = new Menu(new String[]{
+        Menu menu = new Menu("Statistics", new String[]{
                 "Most consuming houseses",
                 "Top 3 devices by time on",
                 "Top 3 devices by activations",
@@ -177,7 +175,7 @@ public class UserUI {
         menu.setHandler(1, () -> {
             List<House> topHouses = model.getTop3MostConsumingHouses(email);
             if (topHouses.isEmpty()) {
-                System.out.println("No houses in the system.");
+                System.out.println("  No houses in the system.");
             } else {
                 for (int i = 0; i < topHouses.size(); i++) {
                     House h = topHouses.get(i);
@@ -188,7 +186,7 @@ public class UserUI {
         menu.setHandler(2, () -> {
             List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalMinutesOn);
             if (topDevices.isEmpty()) {
-                System.out.println("No devices found for your houses.");
+                System.out.println("  No devices found for your houses.");
             } else {
                 for (int i = 0; i < topDevices.size(); i++) {
                     Device d = topDevices.get(i);
@@ -200,7 +198,7 @@ public class UserUI {
         menu.setHandler(3, () -> {
             List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalActivations);
             if (topDevices.isEmpty()) {
-                System.out.println("No devices found for your houses.");
+                System.out.println("  No devices found for your houses.");
             } else {
                 for (int i = 0; i < topDevices.size(); i++) {
                     Device d = topDevices.get(i);
@@ -213,11 +211,11 @@ public class UserUI {
             List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterion(email, 3, div -> div.house.getDivisions().get(div.divisionName).size());
 
             if (topDivisions.isEmpty()) {
-                System.out.println("No divisions found for your houses.");
+                System.out.println("  No divisions found for your houses.");
             } else {
                 for (int i = 0; i < topDivisions.size(); i++) {
                     DivisionInfo div = topDivisions.get(i);
-                    System.out.printf("%d. Divisão: %s (Casa: %s) — %d dispositivos%n", 
+                    System.out.printf("  %d. Divisão: %s (Casa: %s) — %d dispositivos%n", 
                         i + 1, 
                         div.divisionName, 
                         div.house.getName(), 
@@ -230,23 +228,23 @@ public class UserUI {
     }
 
     private void advanceSimulation() {
-        System.out.print("Minutes to advance: ");
+        System.out.print(Ansi.prompt("Minutes to advance"));
         int minutes = readInt();
-        if (minutes <= 0) { System.out.println("Must be a positive number."); return; }
+        if (minutes <= 0) { System.out.println("  Must be a positive number."); return; }
         model.tick(minutes);
-        System.out.println("Simulation advanced by " + minutes + " minute(s).");
+        System.out.println("  Simulation advanced by " + minutes + " minute(s).");
     }
 
     private void saveState() {
-        System.out.print("File name: ");
+        System.out.print(Ansi.prompt("File name"));
         String name = sc.nextLine().trim();
         String path = "saves/" + name;
         new java.io.File("saves").mkdirs();
         try {
             model.saveState(path);
-            System.out.println("State saved to: " + path);
+            System.out.println("  State saved to: " + path);
         } catch (IOException e) {
-            System.out.println("Error saving state: " + e.getMessage());
+            System.out.println("  Error saving state: " + e.getMessage());
         }
     }
 

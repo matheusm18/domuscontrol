@@ -1,5 +1,6 @@
 package domuscontrol.menu;
 
+import domuscontrol.utils.Ansi;
 import java.util.*;
 
 public class Menu {
@@ -12,20 +13,27 @@ public class Menu {
         boolean validate();
     }
 
+    private static final int WIDTH = Ansi.WIDTH;
     private static Scanner is = new Scanner(System.in);
 
+    private final String title;
     private List<String> opcoes;
     private List<PreCondition> disponivel;
     private List<Handler> handlers;
     private boolean stopped = false;
 
     public Menu(String[] opcoes) {
+        this("DomusControl", opcoes);
+    }
+
+    public Menu(String title, String[] opcoes) {
+        this.title = title;
         this.opcoes = Arrays.asList(opcoes);
         this.disponivel = new ArrayList<>();
         this.handlers = new ArrayList<>();
         this.opcoes.forEach(s -> {
             this.disponivel.add(() -> true);
-            this.handlers.add(() -> System.out.println("\nATENÇÃO: Opção não implementada!"));
+            this.handlers.add(() -> System.out.println(Ansi.YELLOW + "  Option not implemented." + Ansi.RESET));
         });
     }
 
@@ -40,7 +48,7 @@ public class Menu {
             show();
             op = readOption();
             if (op > 0 && !this.disponivel.get(op - 1).validate()) {
-                System.out.println("Opção indisponível! Tente novamente.");
+                System.out.println(Ansi.DIM + "  Option unavailable." + Ansi.RESET);
             } else if (op > 0) {
                 this.handlers.get(op - 1).execute();
             }
@@ -56,28 +64,51 @@ public class Menu {
     }
 
     private void show() {
-        System.out.println("\n===== DomusControl Menu =====\n");
-        for (int i = 0; i < this.opcoes.size(); i++) {
-            System.out.print(i + 1);
-            System.out.print(" - ");
-            System.out.println(this.disponivel.get(i).validate() ? this.opcoes.get(i) : "---");
+        String horiz = "═".repeat(WIDTH);
+        System.out.println();
+        System.out.println(Ansi.CYAN + " ╔" + horiz + "╗" + Ansi.RESET);
+        printTitle(title);
+        System.out.println(Ansi.CYAN + " ╠" + horiz + "╣" + Ansi.RESET);
+        for (int i = 0; i < opcoes.size(); i++) {
+            boolean avail = disponivel.get(i).validate();
+            printOption(String.valueOf(i + 1), avail ? opcoes.get(i) : "---", avail);
         }
-        System.out.println("0 - Back");
-        System.out.println("\n=============================\n");
+        System.out.println(Ansi.CYAN + " ╠" + horiz + "╣" + Ansi.RESET);
+        printOption("0", "Back", true);
+        System.out.println(Ansi.CYAN + " ╚" + horiz + "╝" + Ansi.RESET);
+    }
+
+    private void printTitle(String text) {
+        int pad = Math.max(0, WIDTH - text.length());
+        int left = pad / 2;
+        int right = pad - left;
+        String content = " ".repeat(left) + Ansi.BOLD + Ansi.WHITE + text + Ansi.RESET + " ".repeat(right);
+        System.out.println(Ansi.CYAN + " ║" + Ansi.RESET + content + Ansi.CYAN + "║" + Ansi.RESET);
+    }
+
+    private void printOption(String num, String text, boolean available) {
+        String visible = "  " + num + "  " + text;
+        int pad = Math.max(0, WIDTH - visible.length());
+        String content;
+        if (available) {
+            content = "  " + Ansi.YELLOW + Ansi.BOLD + num + Ansi.RESET + "  " + text + " ".repeat(pad);
+        } else {
+            content = Ansi.DIM + visible + " ".repeat(pad) + Ansi.RESET;
+        }
+        System.out.println(Ansi.CYAN + " ║" + Ansi.RESET + content + Ansi.CYAN + "║" + Ansi.RESET);
     }
 
     private int readOption() {
         int op;
-        System.out.print("> Option: ");
+        System.out.print(Ansi.prompt("Option"));
         try {
             String line = is.nextLine();
-            op = Integer.parseInt(line);
-        }
-        catch (NumberFormatException e) {
+            op = Integer.parseInt(line.trim());
+        } catch (NumberFormatException e) {
             op = -1;
         }
         if (op < 0 || op > this.opcoes.size()) {
-            System.out.println("Invalid option!");
+            System.out.println(Ansi.DIM + "  Invalid option." + Ansi.RESET);
             op = -1;
         }
         return op;
