@@ -8,24 +8,30 @@ import domuscontrol.exceptions.LastAdminException;
 import domuscontrol.exceptions.LoginInvalidPasswordException;
 import domuscontrol.exceptions.UserAlreadyExistsException;
 import domuscontrol.exceptions.UserNotFoundException;
+import domuscontrol.houses.DivisionInfo;
+import domuscontrol.houses.House;
+import domuscontrol.houses.HouseManager;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfAdjustableDeviceException;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfColorAdjustableDeviceException;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfOpenableDeviceException;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfSwitchableDeviceException;
 import domuscontrol.exceptions.NameAlreadyExistsException;
 import domuscontrol.exceptions.ScheduleWithConditionDifferentFromTimeException;
-import domuscontrol.model.routines.Automation;
-import domuscontrol.model.suggestions.AutomationSuggestion;
-import domuscontrol.model.suggestions.DeviceInteraction;
-import domuscontrol.model.suggestions.InteractionType;
-import domuscontrol.model.device.Device;
-import domuscontrol.model.device.types.AdjustableDevice;
-import domuscontrol.model.device.types.ColorAdjustableDevice;
-import domuscontrol.model.device.types.OpenableDevice;
-import domuscontrol.model.device.types.SwitchableDevice;
-import domuscontrol.model.houses.House;
-import domuscontrol.model.houses.HouseManager;
-import domuscontrol.model.houses.DivisionInfo;
+import domuscontrol.devices.Device;
+import domuscontrol.devices.types.AdjustableDevice;
+import domuscontrol.devices.types.ColorAdjustableDevice;
+import domuscontrol.devices.types.OpenableDevice;
+import domuscontrol.devices.types.SwitchableDevice;
+import domuscontrol.exceptions.AutomationDoesntExistException;
+import domuscontrol.exceptions.ScenarioDoesntExistException;
+import domuscontrol.exceptions.UserDoesntHaveScenarios;
+import domuscontrol.routines.Automation;
+import domuscontrol.routines.Scenario;
+import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.SimulationState;
+import domuscontrol.suggestions.AutomationSuggestion;
+import domuscontrol.suggestions.DeviceInteraction;
+import domuscontrol.suggestions.InteractionType;
 import domuscontrol.user.User;
 import domuscontrol.user.UserManager;
 import domuscontrol.user.UserRole;
@@ -54,72 +60,65 @@ public class DomusControl implements Serializable {
 
     private final UserManager userManager;
     private final HouseManager houseManager;
-    private static Simulation globalSimulation = new Simulation(LocalDateTime.of(2026, 1, 1, 12, 0), 20.0, 100.0, Simulation.WeatherCondition.SUNNY);
+    private Simulation simulation;
 
-    public static Simulation getSimulation() {
-        return globalSimulation;
+    public LocalDateTime getCurrentDateTime() {
+        return this.simulation.getCurrentDateTime();
     }
 
-    public static LocalDateTime getCurrentDateTime(){
-        return globalSimulation.getCurrentDateTime(); 
+    public LocalDateTime getLastTickDateTime() {
+        return this.simulation.getPreviousDateTime();
     }
 
-    public static LocalDateTime getLastTickDateTime(){
-        return globalSimulation.getPreviousDateTime(); 
+    public void setCurrentTime(LocalDateTime newTime) {
+        this.simulation.setPreviousDateTime(this.simulation.getCurrentDateTime());
+        this.simulation.setCurrentDateTime(newTime);
     }
 
-    public static void setCurrentTime(LocalDateTime newTime){
-        globalSimulation.setPreviousDateTime(globalSimulation.getCurrentDateTime()); 
-        globalSimulation.setCurrentDateTime(newTime); 
+    public LocalTime getCurrentTime() {
+        return this.simulation.getCurrentDateTime().toLocalTime();
     }
 
-    public static LocalTime getCurrentTime(){
-        return globalSimulation.getCurrentDateTime().toLocalTime(); 
+    public LocalTime getLastTickTime() {
+        return this.simulation.getPreviousDateTime().toLocalTime();
     }
 
-    public static LocalTime getLastTickTime(){
-        return globalSimulation.getPreviousDateTime().toLocalTime();
+    public double getTemperature() {
+        return this.simulation.getTemperature();
     }
 
-    public State getCurrentState() {
-        State state = new State(globalSimulation.getCurrentDateTime(), (int) Math.round(globalSimulation.getTemperature()), globalSimulation.getWeather());
-        return state;
+    public Simulation.WeatherCondition getWeather() {
+        return this.simulation.getWeather();
     }
 
-    public class State {
-        private LocalDateTime currentDateTime;
-        private Integer temperature;
-        private Simulation.WeatherCondition weather;
-
-        public State(LocalDateTime currentDateTime, Integer temperature, Simulation.WeatherCondition weather) {
-            this.currentDateTime = currentDateTime;
-            this.temperature = temperature;
-            this.weather = weather;
-        }
-
-        public LocalDateTime getCurrentDateTime() {
-            return currentDateTime;
-        }
-
-        public Integer getTemperature() {
-            return temperature;
-        }
-
-        public Simulation.WeatherCondition getWeather() {
-            return weather;
-        }
+    public SimulationState getCurrentState() {
+        return new SimulationState(
+            this.simulation.getCurrentDateTime(),
+            (int) Math.round(this.simulation.getTemperature()),
+            this.simulation.getWeather()
+        );
     }
 
     public DomusControl() {
         this.userManager  = new UserManager();
         this.houseManager = new HouseManager();
+        this.simulation = new Simulation(
+            LocalDateTime.of(2026, 1, 1, 12, 0),
+            20.0,
+            100.0,
+            Simulation.WeatherCondition.SUNNY
+        );
     }
 
     public List<String> tick(int minutes) {
-        List<String> activatedAll = new java.util.ArrayList<>();
+        if (minutes < 0) {
+            throw new IllegalArgumentException("Minutes cannot be negative.");
+        }
+
+        List<String> activatedAll = new ArrayList<>();
         for (int i = 0; i < minutes; i++) {
-            globalSimulation.advanceSimulation(1);
-            List<String> activatedNow = this.houseManager.tick(1);
+            this.simulation.advanceSimulation(1);
+            List<String> activatedNow = this.houseManager.tick(this.simulation);
             for (String act : activatedNow) {
                 if (!activatedAll.contains(act)) {
                     activatedAll.add(act);
@@ -483,19 +482,31 @@ public class DomusControl implements Serializable {
         this.houseManager.addAutomation(houseId, automation);
     }
 
-    public void removeAutomation(int houseId, String name) throws HouseNotFoundException, domuscontrol.exceptions.AutomationDoesntExistException {
+    public void removeAutomation(int houseId, String name) throws HouseNotFoundException, AutomationDoesntExistException {
         this.houseManager.removeAutomation(houseId, name);
     }
 
-    public void addScenario(int houseId, int userId, domuscontrol.model.routines.Scenario scenario) throws HouseNotFoundException, NameAlreadyExistsException {
+    public List<Automation> getAutomations(int houseId) throws HouseNotFoundException {
+        return this.houseManager.getAutomations(houseId);
+    }
+
+    public List<Automation> getSchedules(int houseId) throws HouseNotFoundException {
+        return this.houseManager.getSchedules(houseId);
+    }
+
+    public void addScenario(int houseId, int userId, Scenario scenario) throws HouseNotFoundException, NameAlreadyExistsException {
         this.houseManager.addScenario(houseId, userId, scenario);
     }
 
-    public void removeScenario(int houseId, int userId, String name) throws HouseNotFoundException, domuscontrol.exceptions.UserDoesntHaveScenarios, domuscontrol.exceptions.ScenarioDoesntExistException {
+    public List<Scenario> getScenarios(int houseId, int userId) throws HouseNotFoundException, UserDoesntHaveScenarios {
+        return this.houseManager.getScenarios(houseId, userId);
+    }
+
+    public void removeScenario(int houseId, int userId, String name) throws HouseNotFoundException, UserDoesntHaveScenarios, ScenarioDoesntExistException {
         this.houseManager.removeScenario(houseId, userId, name);
     }
 
-    public void executeScenario(int houseId, int userId, String name) throws HouseNotFoundException, domuscontrol.exceptions.UserDoesntHaveScenarios, domuscontrol.exceptions.ScenarioDoesntExistException {
+    public void executeScenario(int houseId, int userId, String name) throws HouseNotFoundException, UserDoesntHaveScenarios, ScenarioDoesntExistException {
         this.houseManager.executeScenario(houseId, userId, name);
     }
 
@@ -517,25 +528,6 @@ public class DomusControl implements Serializable {
      */
     public House getMostConsumingHouse() {
         return this.houseManager.getMostConsumingHouse();
-    }
-
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-        out.writeObject(globalSimulation.getCurrentDateTime());
-        out.writeObject(globalSimulation.getPreviousDateTime());
-        out.writeDouble(globalSimulation.getTemperature());
-        out.writeObject(globalSimulation.getWeather());
-    }
-
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        LocalDateTime curr = (LocalDateTime) in.readObject();
-        LocalDateTime prev = (LocalDateTime) in.readObject();
-        double temp = in.readDouble();
-        Simulation.WeatherCondition weather = (Simulation.WeatherCondition) in.readObject();
-        
-        globalSimulation = new Simulation(curr, temp, 100.0, weather);
-        globalSimulation.setPreviousDateTime(prev);
     }
 
     /**

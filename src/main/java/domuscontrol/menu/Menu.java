@@ -1,7 +1,9 @@
 package domuscontrol.menu;
 
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.utils.Ansi;
 import java.util.*;
+import java.util.function.Supplier;
 
 public class Menu {
 
@@ -17,17 +19,17 @@ public class Menu {
     private static Scanner is = new Scanner(System.in);
 
     private final String title;
-    private final java.util.function.Supplier<domuscontrol.DomusControl.State> state;
+    private final Supplier<SimulationState> state;
     private List<String> opcoes;
     private List<PreCondition> disponivel;
     private List<Handler> handlers;
     private boolean stopped = false;
 
-    public Menu(String[] opcoes, java.util.function.Supplier<domuscontrol.DomusControl.State> state) {
+    public Menu(String[] opcoes, Supplier<SimulationState> state) {
         this("DomusControl", opcoes, state);
     }
 
-    public Menu(String title, String[] opcoes, java.util.function.Supplier<domuscontrol.DomusControl.State> state) {
+    public Menu(String title, String[] opcoes, Supplier<SimulationState> state) {
         this.title = title;
         this.state = state;
         this.opcoes = Arrays.asList(opcoes);
@@ -90,7 +92,7 @@ public class Menu {
         System.out.println(Ansi.CYAN + " ║" + Ansi.RESET + content + Ansi.CYAN + "║" + Ansi.RESET);
     }
 
-    private void printState(domuscontrol.DomusControl.State stateObj) {
+    private void printState(SimulationState stateObj) {
         String line1 = stateObj.getCurrentDateTime().toLocalDate().toString() + "  " + stateObj.getCurrentDateTime().toLocalTime().toString();
         String line2 = stateObj.getTemperature() + "ºC  " + stateObj.getWeather().toString();
 

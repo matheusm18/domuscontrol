@@ -1,17 +1,18 @@
 package domuscontrol.ui;
 
 import domuscontrol.DomusControl;
+import domuscontrol.devices.Device;
 import domuscontrol.exceptions.HouseAlreadyExistsException;
 import domuscontrol.exceptions.HouseNotFoundException;
 import domuscontrol.exceptions.UserNotFoundException;
+import domuscontrol.houses.DivisionInfo;
+import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
-import domuscontrol.model.device.Device;
-import domuscontrol.model.houses.House;
-import domuscontrol.model.houses.DivisionInfo;
 import domuscontrol.user.User;
 import domuscontrol.user.UserRole;
 import domuscontrol.utils.Ansi;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -256,7 +257,7 @@ public class UserUI {
         System.out.print(Ansi.prompt("File name"));
         String name = sc.nextLine().trim();
         String path = "saves/" + name;
-        new java.io.File("saves").mkdirs();
+        new File("saves").mkdirs();
         try {
             model.saveState(path);
             System.out.println("  State saved to: " + path);

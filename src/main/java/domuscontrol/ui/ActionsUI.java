@@ -1,16 +1,17 @@
 package domuscontrol.ui;
 
 import domuscontrol.DomusControl;
+import domuscontrol.devices.Device;
+import domuscontrol.devices.types.AdjustableDevice;
+import domuscontrol.devices.types.OpenableDevice;
+import domuscontrol.devices.types.SwitchableDevice;
 import domuscontrol.exceptions.*;
+import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
-import domuscontrol.model.device.Device;
-import domuscontrol.model.device.types.AdjustableDevice;
-import domuscontrol.model.device.types.OpenableDevice;
-import domuscontrol.model.device.types.SwitchableDevice;
-import domuscontrol.model.houses.House;
-import domuscontrol.model.routines.*;
-import domuscontrol.model.routines.actions.*;
-import domuscontrol.model.routines.conditions.*;
+import domuscontrol.routines.*;
+import domuscontrol.routines.actions.*;
+import domuscontrol.routines.conditions.*;
+import domuscontrol.simulation.Simulation;
 import domuscontrol.user.User;
 import domuscontrol.utils.Ansi;
 
@@ -51,11 +52,9 @@ public class ActionsUI {
         }, model::getCurrentState);
 
         House house = model.getHouseById(houseId);
-        RoutineManager rm = house.getRoutineFacade();
-
-        menu.setPreCondition(1, () -> !rm.getOnlySchedules().isEmpty());
+        menu.setPreCondition(1, () -> !model.getAutomations(houseId).isEmpty());
         menu.setPreCondition(2, () -> house.getDevices().size() > 0);
-        menu.setPreCondition(3, () -> !rm.getOnlySchedules().isEmpty());
+        menu.setPreCondition(3, () -> !model.getAutomations(houseId).isEmpty());
         
         menu.setHandler(1, () -> listAutomations(houseId));
         menu.setHandler(2, () -> addAutomation(houseId));
@@ -65,9 +64,7 @@ public class ActionsUI {
 
     private void listAutomations(int houseId) {
         try {
-            House house = model.getHouseById(houseId);
-            RoutineManager rm = house.getRoutineFacade();
-            List<Automation> automations = rm.getOnlyAutomations();
+            List<Automation> automations = model.getAutomations(houseId);
             if (automations.isEmpty()) {
                 System.out.println("  No automations.");
                 return;
@@ -110,8 +107,6 @@ public class ActionsUI {
 
         try {
             House house = model.getHouseById(houseId);
-            RoutineManager rm = house.getRoutineFacade();
-
             List<Action> actions = readActionsDialog(house);
 
             Ansi.listTitle("Selected Actions");
@@ -129,7 +124,7 @@ public class ActionsUI {
             Ansi.listSeparator();
 
             Automation automation = new Automation(name, AutomationType.AUTOMATION, conditions, actions);
-            rm.addAutomation(automation);
+            model.addAutomation(houseId, automation);
             System.out.println("  Automation '" + name + "' added.");
 
             for (Condition c : conditions) {
@@ -142,7 +137,7 @@ public class ActionsUI {
                     }
                     Automation endAutomation = new Automation(name + " [END]", AutomationType.SCHEDULE, endConditions,
                             actions);
-                    rm.addAutomation(endAutomation);
+                    model.addAutomation(houseId, endAutomation);
                     break;
                 }
             }
@@ -155,9 +150,7 @@ public class ActionsUI {
 
     private void removeAutomation(int houseId) {
         try {
-            House house = model.getHouseById(houseId);
-            RoutineManager rm = house.getRoutineFacade();
-            List<Automation> automations = rm.getOnlyAutomations();
+            List<Automation> automations = model.getAutomations(houseId);
             
             if (automations.isEmpty()) {
                 System.out.println("  No automations to remove.");
@@ -179,7 +172,7 @@ public class ActionsUI {
             }
 
             String name = automations.get(choice - 1).getName();
-            rm.removeAutomation(name);
+            model.removeAutomation(houseId, name);
             System.out.println("  Automation '" + name + "' removed.");
             
         } catch (HouseNotFoundException | AutomationDoesntExistException e) {
@@ -199,11 +192,9 @@ public class ActionsUI {
         }, model::getCurrentState);
 
         House house = model.getHouseById(houseId);
-        RoutineManager rm = house.getRoutineFacade();
-
-        menu.setPreCondition(1, () -> !rm.getOnlySchedules().isEmpty());
+        menu.setPreCondition(1, () -> !model.getSchedules(houseId).isEmpty());
         menu.setPreCondition(2, () -> house.getDevices().size() > 0);
-        menu.setPreCondition(3, () -> !rm.getOnlySchedules().isEmpty());
+        menu.setPreCondition(3, () -> !model.getSchedules(houseId).isEmpty());
 
         menu.setHandler(1, () -> listSchedules(houseId));
         menu.setHandler(2, () -> addSchedule(houseId));
@@ -213,9 +204,7 @@ public class ActionsUI {
 
     private void listSchedules(int houseId) {
         try {
-            House house = model.getHouseById(houseId);
-            RoutineManager rm = house.getRoutineFacade();
-            List<Automation> schedules = rm.getOnlySchedules();
+            List<Automation> schedules = model.getSchedules(houseId);
             if (schedules.isEmpty()) {
                 System.out.println("  No schedules.");
                 return;
@@ -258,13 +247,11 @@ public class ActionsUI {
 
         try {
             House house = model.getHouseById(houseId);
-            RoutineManager rm = house.getRoutineFacade();
-
             List<Action> actions = readActionsDialog(house);
             List<Condition> conditions = readConditionsDialog(house, true);
 
             Automation schedule = new Automation(name, AutomationType.SCHEDULE, conditions, actions);
-            rm.addAutomation(schedule);
+            model.addAutomation(houseId, schedule);
             System.out.println("  Schedule '" + name + "' added.");
 
             for (Condition c : conditions) {
@@ -277,7 +264,7 @@ public class ActionsUI {
                     }
                     Automation endAutomation = new Automation(name + " [END]", AutomationType.SCHEDULE, endConditions,
                             actions);
-                    rm.addAutomation(endAutomation);
+                    model.addAutomation(houseId, endAutomation);
                     break;
                 }
             }
@@ -291,9 +278,7 @@ public class ActionsUI {
 
     private void removeSchedule(int houseId) {
         try {
-            House house = model.getHouseById(houseId);
-            RoutineManager rm = house.getRoutineFacade();
-            List<Automation> schedules = rm.getOnlySchedules();
+            List<Automation> schedules = model.getSchedules(houseId);
 
             if (schedules.isEmpty()) {
                 System.out.println("  No schedules to remove.");
@@ -315,7 +300,7 @@ public class ActionsUI {
             }
 
             String name = schedules.get(choice - 1).getName();
-            rm.removeAutomation(name);
+            model.removeAutomation(houseId, name);
             System.out.println("  Schedule '" + name + "' removed.");
 
         } catch (HouseNotFoundException | AutomationDoesntExistException e) {
@@ -338,10 +323,10 @@ public class ActionsUI {
         House house = model.getHouseById(houseId);
         User user = model.getUserByEmail(email);
 
-        menu.setPreCondition(1, () -> !house.getRoutineFacade().getScenariosForUser(user.getId()).isEmpty());
-        menu.setPreCondition(2, () -> !house.getRoutineFacade().getScenariosForUser(user.getId()).isEmpty());
+        menu.setPreCondition(1, () -> !model.getScenarios(houseId, user.getId()).isEmpty());
+        menu.setPreCondition(2, () -> !model.getScenarios(houseId, user.getId()).isEmpty());
         menu.setPreCondition(3, () -> house.getDevices().size() > 0);
-        menu.setPreCondition(4, () -> !house.getRoutineFacade().getScenariosForUser(user.getId()).isEmpty());
+        menu.setPreCondition(4, () -> !model.getScenarios(houseId, user.getId()).isEmpty());
 
         menu.setHandler(1, () -> listScenarios(houseId, email));
         menu.setHandler(2, () -> executeScenario(houseId, email));
@@ -352,9 +337,8 @@ public class ActionsUI {
 
     private void listScenarios(int houseId, String email) {
         try {
-            House house = model.getHouseById(houseId);
             User user = model.getUserByEmail(email);
-            List<Scenario> scenarios = house.getRoutineFacade().getScenariosForUser(user.getId());
+            List<Scenario> scenarios = model.getScenarios(houseId, user.getId());
 
             if (scenarios.isEmpty()) {
                 System.out.println("  No scenarios.");
@@ -392,9 +376,8 @@ public class ActionsUI {
 
     private void executeScenario(int houseId, String email) {
         try {
-            House house = model.getHouseById(houseId);
             User user = model.getUserByEmail(email);
-            List<Scenario> scenarios = house.getRoutineFacade().getScenariosForUser(user.getId());
+            List<Scenario> scenarios = model.getScenarios(houseId, user.getId());
 
             if (scenarios.isEmpty()) {
                 System.out.println("  No scenarios.");
@@ -417,7 +400,7 @@ public class ActionsUI {
                     .orElse(null);
 
             if (selected != null) {
-                house.getRoutineFacade().executeScenarioByName(user.getId(), selected.getName());
+                model.executeScenario(houseId, user.getId(), selected.getName());
                 System.out.print(String.format("  Scenario %s executed.\n", selected.getName()));
             }
         } catch (HouseNotFoundException | UserNotFoundException e) {
@@ -440,7 +423,7 @@ public class ActionsUI {
             User user = model.getUserByEmail(email);
             List<Action> actions = readActionsDialog(house);
             Scenario scenario = new Scenario(name, actions);
-            house.getRoutineFacade().addScenario(user.getId(), scenario);
+            model.addScenario(houseId, user.getId(), scenario);
             System.out.println("  Scenario '" + name + "' added.");
         } catch (Exception e) {
             System.out.println("  Error: " + e.getMessage());
@@ -449,9 +432,8 @@ public class ActionsUI {
 
     private void removeScenario(int houseId, String email) {
         try {
-            House house = model.getHouseById(houseId);
             User user = model.getUserByEmail(email);
-            List<Scenario> scenarios = house.getRoutineFacade().getScenariosForUser(user.getId());
+            List<Scenario> scenarios = model.getScenarios(houseId, user.getId());
 
             if (scenarios.isEmpty()) {
                 System.out.println("  No scenarios to remove.");
@@ -473,7 +455,7 @@ public class ActionsUI {
             }
 
             String name = scenarios.get(choice - 1).getName();
-            house.getRoutineFacade().removeScenario(user.getId(), name);
+            model.removeScenario(houseId, user.getId(), name);
             System.out.println("  Scenario '" + name + "' removed.");
 
         } catch (HouseNotFoundException | UserNotFoundException e) {
@@ -530,7 +512,7 @@ public class ActionsUI {
         typeMenu.setPreCondition(4, () -> device instanceof OpenableDevice);
 
         typeMenu.setHandler(1, () -> {
-            actions.add(new TurnOnAction((SwitchableDevice) device));
+            actions.add(new TurnOnAction(device.getId()));
             System.out.println(Ansi.GREEN + "  Action added." + Ansi.RESET);
             typeMenu.stop();
         });
@@ -634,10 +616,10 @@ public class ActionsUI {
             int devId = readInt();
             try {
                 Device dev = house.getDevice(devId);
-                if (dev instanceof SwitchableDevice d) {
+                if (dev instanceof SwitchableDevice) {
                     System.out.print(Ansi.prompt("Trigger when ON? (true/false)"));
                     boolean on = Boolean.parseBoolean(sc.nextLine().trim());
-                    conditions.add(new DeviceStateCondition(d, on));
+                    conditions.add(new DeviceStateCondition(devId, on));
                     System.out.println("  Device condition added.");
                 } else {
                     System.out.println("  Incompatible device.");
@@ -653,10 +635,10 @@ public class ActionsUI {
             int devId = readInt();
             try {
                 Device dev = house.getDevice(devId);
-                if (dev instanceof AdjustableDevice d) {
+                if (dev instanceof AdjustableDevice) {
                     System.out.print(Ansi.prompt("Trigger level"));
                     int lvl = readInt();
-                    conditions.add(new DeviceLevelCondition(d, lvl, Operator.EQUALS));
+                    conditions.add(new DeviceLevelCondition(devId, lvl, Operator.EQUALS));
                     System.out.println("  Device condition added.");
                 } else {
                     System.out.println("  Incompatible device.");
@@ -671,7 +653,7 @@ public class ActionsUI {
     }
 
     private void handleAddWeatherCondition(List<Condition> conditions) {
-        domuscontrol.Simulation.WeatherCondition[] weathers = domuscontrol.Simulation.WeatherCondition.values();
+        Simulation.WeatherCondition[] weathers = Simulation.WeatherCondition.values();
         String[] weatherNames = new String[weathers.length];
         for (int i = 0; i < weathers.length; i++) weatherNames[i] = weathers[i].name();
 

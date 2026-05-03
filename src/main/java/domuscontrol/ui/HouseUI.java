@@ -1,6 +1,16 @@
 package domuscontrol.ui;
 
 import domuscontrol.DomusControl;
+import domuscontrol.devices.Curtain;
+import domuscontrol.devices.Device;
+import domuscontrol.devices.Gate;
+import domuscontrol.devices.Lamp;
+import domuscontrol.devices.Plug;
+import domuscontrol.devices.Relay;
+import domuscontrol.devices.Speaker;
+import domuscontrol.devices.types.AdjustableDevice;
+import domuscontrol.devices.types.OpenableDevice;
+import domuscontrol.devices.types.SwitchableDevice;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfAdjustableDeviceException;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfOpenableDeviceException;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfSwitchableDeviceException;
@@ -11,19 +21,9 @@ import domuscontrol.exceptions.LastAdminException;
 import domuscontrol.exceptions.UserAlreadyExistsException;
 import domuscontrol.exceptions.NameAlreadyExistsException;
 import domuscontrol.exceptions.UserNotFoundException;
-import domuscontrol.model.suggestions.AutomationSuggestion;
+import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
-import domuscontrol.model.device.Curtain;
-import domuscontrol.model.device.Device;
-import domuscontrol.model.device.Gate;
-import domuscontrol.model.device.Lamp;
-import domuscontrol.model.device.Plug;
-import domuscontrol.model.device.Relay;
-import domuscontrol.model.device.Speaker;
-import domuscontrol.model.device.types.AdjustableDevice;
-import domuscontrol.model.device.types.OpenableDevice;
-import domuscontrol.model.device.types.SwitchableDevice;
-import domuscontrol.model.houses.House;
+import domuscontrol.suggestions.AutomationSuggestion;
 import domuscontrol.user.UserRole;
 import domuscontrol.utils.Ansi;
 
@@ -130,6 +130,8 @@ public class HouseUI {
 
     private void manageDivisions(int houseId) {
         Menu menu = new Menu("Divisions", new String[]{"List Divisions", "Add Division", "Remove Division"}, model::getCurrentState);
+        menu.setPreCondition(1, () -> model.getHouseById(houseId).getDivisions().size() > 0);
+        menu.setPreCondition(3, () -> model.getHouseById(houseId).getDivisions().size() > 0);
         menu.setHandler(1, () -> listDivisions(houseId));
         menu.setHandler(2, () -> addDivision(houseId));
         menu.setHandler(3, () -> removeDivision(houseId));
@@ -211,8 +213,13 @@ public class HouseUI {
             Map<Integer, Device> devices = house.getDevices();
             if (devices.isEmpty()) { System.out.println("  No devices."); return; }
             Ansi.listTitle("Select Device");
-            for (int i = 0; i < devices.size(); i++)
-                Ansi.listRow(String.format("%d  %s", i + 1, devices.get(i)));
+            devices.values().forEach(device ->
+                Ansi.listRow(String.format("%d  %-10s %-12s %s",
+                    device.getId(),
+                    device.getClass().getSimpleName(),
+                    device.getBrand(),
+                    device.getModel()))
+            );
             Ansi.listSeparator();
             System.out.print(Ansi.prompt("Devices (0 to cancel)"));
             
