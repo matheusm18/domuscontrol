@@ -53,7 +53,10 @@ public class UserUI {
                 "Statistics",
                 "Advance Simulation",
                 "Save State"
-        });
+        }, model::getCurrentState);
+
+        menu.setPreCondition(1, () -> !model.getHousesByUser(email).isEmpty());
+        menu.setPreCondition(4, () -> !model.getHousesByUser(email).isEmpty());
 
         menu.setHandler(1, () -> myHouses(email));
         menu.setHandler(2, () -> createHouse(email));
@@ -109,7 +112,7 @@ public class UserUI {
             return;
         }
 
-        Menu menu = new Menu("Profile", new String[]{"Change Name", "Change Password"});
+        Menu menu = new Menu("Profile", new String[]{"Change Name", "Change Password"}, model::getCurrentState);
         menu.setHandler(1, () -> {
             System.out.print(Ansi.prompt("New name"));
             String name = sc.nextLine();
@@ -170,7 +173,7 @@ public class UserUI {
                 "Top 3 devices by time on",
                 "Top 3 devices by activations",
                 "Top 3 divisions by device count"
-        });
+        }, model::getCurrentState);
 
         menu.setHandler(1, () -> {
             List<House> topHouses = model.getTop3MostConsumingHouses(email);
@@ -190,7 +193,7 @@ public class UserUI {
             } else {
                 for (int i = 0; i < topDevices.size(); i++) {
                     Device d = topDevices.get(i);
-                    System.out.printf("[%d] %d. %s %s — %d minutes on%n", 
+                    System.out.printf("[%s] %d. %s %s — %d minutes on%n", 
                         d.getClass().getSimpleName(), i + 1, d.getBrand(), d.getModel(), d.getTotalMinutesOn());
                 }
             }
@@ -202,7 +205,7 @@ public class UserUI {
             } else {
                 for (int i = 0; i < topDevices.size(); i++) {
                     Device d = topDevices.get(i);
-                    System.out.printf("[%d] %d. %s %s — %d activations%n", 
+                    System.out.printf("[%s] %d. %s %s — %d activations%n", 
                         d.getClass().getSimpleName(), i + 1, d.getBrand(), d.getModel(), d.getTotalActivations());
                 }
             }

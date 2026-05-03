@@ -175,7 +175,7 @@ public class House implements Serializable {
      * @return A cloned RoutineManager object.
      */
     public RoutineManager getRoutineFacade() {
-        return this.routineFacade.clone();
+        return this.routineFacade;
     }
 
     /**

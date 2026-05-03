@@ -192,6 +192,22 @@ public class HouseManager implements Serializable {
         getHouseInternal(houseId).addAutomation(automation);
     }
 
+    public void removeAutomation(int houseId, String name) throws HouseNotFoundException, domuscontrol.exceptions.AutomationDoesntExistException {
+        getHouseInternal(houseId).removeAutomation(name);
+    }
+
+    public void addScenario(int houseId, int userId, domuscontrol.model.routines.Scenario scenario) throws HouseNotFoundException, NameAlreadyExistsException {
+        getHouseInternal(houseId).addScenario(userId, scenario);
+    }
+
+    public void removeScenario(int houseId, int userId, String name) throws HouseNotFoundException, domuscontrol.exceptions.UserDoesntHaveScenarios, domuscontrol.exceptions.ScenarioDoesntExistException {
+        getHouseInternal(houseId).removeScenario(userId, name);
+    }
+
+    public void executeScenario(int houseId, int userId, String name) throws HouseNotFoundException, domuscontrol.exceptions.UserDoesntHaveScenarios, domuscontrol.exceptions.ScenarioDoesntExistException {
+        getHouseInternal(houseId).executeScenario(userId, name);
+    }
+
     /** Returns the live (non-cloned) House reference for internal mutation. */
     private House getHouseInternal(int houseId) throws HouseNotFoundException {
         House h = this.housesById.get(houseId);

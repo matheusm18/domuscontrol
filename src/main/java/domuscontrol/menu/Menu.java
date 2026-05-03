@@ -17,17 +17,19 @@ public class Menu {
     private static Scanner is = new Scanner(System.in);
 
     private final String title;
+    private final java.util.function.Supplier<domuscontrol.DomusControl.State> state;
     private List<String> opcoes;
     private List<PreCondition> disponivel;
     private List<Handler> handlers;
     private boolean stopped = false;
 
-    public Menu(String[] opcoes) {
-        this("DomusControl", opcoes);
+    public Menu(String[] opcoes, java.util.function.Supplier<domuscontrol.DomusControl.State> state) {
+        this("DomusControl", opcoes, state);
     }
 
-    public Menu(String title, String[] opcoes) {
+    public Menu(String title, String[] opcoes, java.util.function.Supplier<domuscontrol.DomusControl.State> state) {
         this.title = title;
+        this.state = state;
         this.opcoes = Arrays.asList(opcoes);
         this.disponivel = new ArrayList<>();
         this.handlers = new ArrayList<>();
@@ -68,6 +70,8 @@ public class Menu {
         System.out.println();
         System.out.println(Ansi.CYAN + " ╔" + horiz + "╗" + Ansi.RESET);
         printTitle(title);
+        System.out.println(Ansi.CYAN + " ║" + " ".repeat(WIDTH) + "║" + Ansi.RESET);
+        printState(state.get());
         System.out.println(Ansi.CYAN + " ╠" + horiz + "╣" + Ansi.RESET);
         for (int i = 0; i < opcoes.size(); i++) {
             boolean avail = disponivel.get(i).validate();
@@ -83,6 +87,22 @@ public class Menu {
         int left = pad / 2;
         int right = pad - left;
         String content = " ".repeat(left) + Ansi.BOLD + Ansi.WHITE + text + Ansi.RESET + " ".repeat(right);
+        System.out.println(Ansi.CYAN + " ║" + Ansi.RESET + content + Ansi.CYAN + "║" + Ansi.RESET);
+    }
+
+    private void printState(domuscontrol.DomusControl.State stateObj) {
+        String line1 = stateObj.getCurrentDateTime().toLocalDate().toString() + "  " + stateObj.getCurrentDateTime().toLocalTime().toString();
+        String line2 = stateObj.getTemperature() + "ºC  " + stateObj.getWeather().toString();
+
+        printCenteredLine(line1);
+        printCenteredLine(line2);
+    }
+    
+    private void printCenteredLine(String text) {
+        int pad = Math.max(0, WIDTH - text.length());
+        int left = pad / 2;
+        int right = pad - left;
+        String content = " ".repeat(left) + Ansi.WHITE + text + Ansi.RESET + " ".repeat(right);
         System.out.println(Ansi.CYAN + " ║" + Ansi.RESET + content + Ansi.CYAN + "║" + Ansi.RESET);
     }
 

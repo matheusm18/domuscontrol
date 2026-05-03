@@ -31,7 +31,7 @@ public class DomusControlUI {
                 "Login",
                 "Register",
                 "Load State"
-        });
+        }, model::getCurrentState);
 
         menu.setHandler(1, this::doLogin);
         menu.setHandler(2, this::doRegister);

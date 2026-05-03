@@ -41,6 +41,7 @@ public class HouseUI {
 
     private DomusControl model;
     private final Scanner sc;
+    private final ActionsUI actionsUI;
 
     /**
      * Initialises the model and shared Scanner (created once in DomusControlUI).
@@ -51,6 +52,7 @@ public class HouseUI {
     public HouseUI(DomusControl model, Scanner sc) {
         this.model = model;
         this.sc = sc;
+        this.actionsUI = new ActionsUI(model, sc);
     }
 
     public void setModel(DomusControl model) {
@@ -76,21 +78,26 @@ public class HouseUI {
                 "Automations",
                 "Schedules",
                 "Scenarios"
-        });
+        }, model::getCurrentState);
 
         menu.setPreCondition(2, () -> isAdmin(email, houseId));
-        menu.setPreCondition(3, () -> isAdmin(email, houseId));
+        menu.setPreCondition(3, () -> isAdmin(email, houseId) && model.getHouseById(houseId).getDivisions().size() > 0);
         menu.setPreCondition(4, () -> isAdmin(email, houseId));
+        menu.setPreCondition(5, () -> model.getHouseById(houseId).getDevices().size() > 0);
+        menu.setPreCondition(6, () -> model.getHouseById(houseId).getDevices().size() > 0);
+        menu.setPreCondition(7, () -> model.getHouseById(houseId).getDevices().size() > 0);
+        menu.setPreCondition(8, () -> model.getHouseById(houseId).getDevices().size() > 0);
+        menu.setPreCondition(9, () -> model.getHouseById(houseId).getDevices().size() > 0);
 
         menu.setHandler(1, () -> viewHouseDetails(houseId));
         menu.setHandler(2, () -> manageDivisions(houseId));
         menu.setHandler(3, () -> manageDevices(houseId));
-        menu.setHandler(4, () -> { if (manageUsers(houseId, email)) menu.stop(); });
+        menu.setHandler(4, () -> manageUsers(houseId, email));
         menu.setHandler(5, () -> operateDevice(houseId, userId));
         menu.setHandler(6, () -> showSuggestions(houseId, userId));
-        menu.setHandler(7, () -> System.out.println("  Automations not yet implemented."));
-        menu.setHandler(8, () -> System.out.println("  Schedules not yet implemented."));
-        menu.setHandler(9, () -> System.out.println("  Scenarios not yet implemented."));
+        menu.setHandler(7, () -> actionsUI.manageAutomations(houseId, email));
+        menu.setHandler(8, () -> actionsUI.manageSchedules(houseId, email));
+        menu.setHandler(9, () -> actionsUI.manageScenarios(houseId, email));
 
         menu.run();
     }
@@ -122,7 +129,7 @@ public class HouseUI {
     // ---- Divisions ----
 
     private void manageDivisions(int houseId) {
-        Menu menu = new Menu("Divisions", new String[]{"List Divisions", "Add Division", "Remove Division"});
+        Menu menu = new Menu("Divisions", new String[]{"List Divisions", "Add Division", "Remove Division"}, model::getCurrentState);
         menu.setHandler(1, () -> listDivisions(houseId));
         menu.setHandler(2, () -> addDivision(houseId));
         menu.setHandler(3, () -> removeDivision(houseId));
@@ -181,7 +188,17 @@ public class HouseUI {
     // ---- Devices ----
 
     private void manageDevices(int houseId) {
-        Menu menu = new Menu("Devices", new String[]{"List Devices", "Add Device", "Remove Device"});
+        Menu menu = new Menu("Devices", 
+                            new String[]{
+                                "List Devices", 
+                                "Add Device", 
+                                "Remove Device"
+                            }, model::getCurrentState);
+
+        menu.setPreCondition(1, () -> model.getHouseById(houseId).getDevices().size() > 0);
+        menu.setPreCondition(2, () -> model.getHouseById(houseId).getDivisions().size() > 0);
+        menu.setPreCondition(3, () -> model.getHouseById(houseId).getDevices().size() > 0);
+
         menu.setHandler(1, () -> listDevices(houseId));
         menu.setHandler(2, () -> addDevice(houseId));
         menu.setHandler(3, () -> removeDevice(houseId));
@@ -193,13 +210,27 @@ public class HouseUI {
             House house = model.getHouseById(houseId);
             Map<Integer, Device> devices = house.getDevices();
             if (devices.isEmpty()) { System.out.println("  No devices."); return; }
-            Ansi.listTitle("Devices");
-            devices.values().forEach(d ->
-                Ansi.listRow(String.format("%-10s %-10s %-10s %s",
-                        d.getBrand(), d.getModel(),
-                        d.getClass().getSimpleName(), d.getStatus()))
-            );
+            Ansi.listTitle("Select Device");
+            for (int i = 0; i < devices.size(); i++)
+                Ansi.listRow(String.format("%d  %s", i + 1, devices.get(i)));
             Ansi.listSeparator();
+            System.out.print(Ansi.prompt("Devices (0 to cancel)"));
+            
+            String input = sc.nextLine().trim();
+            if (input.equals("0")) return;
+            
+            try {
+                int selectedId = Integer.parseInt(input);
+                if (devices.containsKey(selectedId)) {
+                    System.out.println("\n" + Ansi.CYAN + "--- Device Info ---" + Ansi.RESET);
+                    System.out.println(devices.get(selectedId).toString());
+                    System.out.println(Ansi.CYAN + "-------------------" + Ansi.RESET);
+                } else {
+                    System.out.println("  Invalid Device ID.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("  Invalid input.");
+            }
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: " + e.getMessage());
         }
@@ -221,7 +252,7 @@ public class HouseUI {
             if (divChoice < 1 || divChoice > divNames.size()) return;
             String division = divNames.get(divChoice - 1);
 
-            Menu typeMenu = new Menu("Device Type", new String[]{"Lamp", "Speaker", "Curtain", "Gate", "Plug", "Relay"});
+            Menu typeMenu = new Menu("Device Type", new String[]{"Lamp", "Speaker", "Curtain", "Gate", "Plug", "Relay"}, model::getCurrentState);
             typeMenu.setHandler(1, () -> addLamp(houseId, division));
             typeMenu.setHandler(2, () -> addSpeaker(houseId, division));
             typeMenu.setHandler(3, () -> addCurtain(houseId, division));
@@ -244,15 +275,34 @@ public class HouseUI {
         String modelName = sc.nextLine();
         System.out.print(Ansi.prompt("Consumption per hour (Wh/h)"));
         double consumption = readDouble();
+        if (consumption < 0) {
+            System.out.println("  Error: Consumption cannot be negative.");
+            throw new IllegalArgumentException("Consumption cannot be negative.");
+        }
         return new DeviceBase(brand, modelName, consumption);
     }
 
     private void addLamp(int houseId, String division) {
-        DeviceBase base = readBaseFields();
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: " + e.getMessage());
+            return;
+        }
         System.out.print(Ansi.prompt("Brightness (0-100)"));
         int brightness = readInt();
+        if (brightness < 0 || brightness > 100) {
+            System.out.println("  Error: Brightness must be between 0 and 100.");
+            return;
+        }
         System.out.print(Ansi.prompt("Color temperature (K, e.g. 2700-4000)"));
         int colorTemp = readInt();
+        if (colorTemp < 2700 || colorTemp > 4000) {
+            System.out.println("  Error: Color temperature must be between 2700 and 4000 K.");
+            return;
+        }
         try {
             Lamp lamp = new Lamp(base.brand(), base.modelName(), base.consumption(), brightness, colorTemp);
             model.addDeviceToDivision(houseId, lamp, division);
@@ -263,9 +313,20 @@ public class HouseUI {
     }
 
     private void addSpeaker(int houseId, String division) {
-        DeviceBase base = readBaseFields();
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: " + e.getMessage());
+            return;
+        }
         System.out.print(Ansi.prompt("Volume (0-100)"));
         int volume = readInt();
+        if (volume < 0 || volume > 100) {
+            System.out.println("  Error: Volume must be between 0 and 100.");
+            return;
+        }
         System.out.print(Ansi.prompt("Source"));
         String source = sc.nextLine();
         try {
@@ -278,9 +339,20 @@ public class HouseUI {
     }
 
     private void addCurtain(int houseId, String division) {
-        DeviceBase base = readBaseFields();
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: " + e.getMessage());
+            return;
+        }
         System.out.print(Ansi.prompt("Opening level (0-100)"));
         int opening = readInt();
+        if (opening < 0 || opening > 100) {
+            System.out.println("  Error: Opening level must be between 0 and 100.");
+            return;
+        }
         try {
             Curtain curtain = new Curtain(base.brand(), base.modelName(), base.consumption(), opening);
             model.addDeviceToDivision(houseId, curtain, division);
@@ -291,9 +363,20 @@ public class HouseUI {
     }
 
     private void addGate(int houseId, String division) {
-        DeviceBase base = readBaseFields();
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: " + e.getMessage());
+            return;
+        }
         System.out.print(Ansi.prompt("Opening level (0-100)"));
         int opening = readInt();
+        if (opening < 0 || opening > 100) {
+            System.out.println("  Error: Opening level must be between 0 and 100.");
+            return;
+        }
         try {
             Gate gate = new Gate(base.brand(), base.modelName(), base.consumption(), opening);
             model.addDeviceToDivision(houseId, gate, division);
@@ -304,7 +387,14 @@ public class HouseUI {
     }
 
     private void addPlug(int houseId, String division) {
-        DeviceBase base = readBaseFields();
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: " + e.getMessage());
+            return;
+        }
         try {
             Plug plug = new Plug(base.brand(), base.modelName(), base.consumption());
             model.addDeviceToDivision(houseId, plug, division);
@@ -315,7 +405,14 @@ public class HouseUI {
     }
 
     private void addRelay(int houseId, String division) {
-        DeviceBase base = readBaseFields();
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: " + e.getMessage());
+            return;
+        }
         try {
             Relay relay = new Relay(base.brand(), base.modelName(), base.consumption());
             model.addDeviceToDivision(houseId, relay, division);
@@ -344,7 +441,13 @@ public class HouseUI {
 
     private boolean manageUsers(int houseId, String email) {
         boolean[] leftHouse = {false};
-        Menu menu = new Menu("Users", new String[]{"List Users", "Add User", "Remove User"});
+        Menu menu = new Menu("Users", 
+                            new String[]{
+                                "List Users", 
+                                "Add User", 
+                                "Remove User"
+                            }, model::getCurrentState);
+
         menu.setHandler(1, () -> listUsers(houseId));
         menu.setHandler(2, () -> addUser(houseId));
         menu.setHandler(3, () -> {
@@ -468,16 +571,16 @@ public class HouseUI {
             Ansi.listSeparator();
 
             if (dev instanceof AdjustableDevice) {
-                Menu opMenu = new Menu("Operate Device", new String[]{"Toggle ON/OFF", "Set Level (0-100)"});
+                Menu opMenu = new Menu("Operate Device", new String[]{"Toggle ON/OFF", "Set Level (0-100)"}, model::getCurrentState);
                 opMenu.setHandler(1, () -> toggleDevice(houseId, deviceId, userId));
                 opMenu.setHandler(2, () -> setDeviceLevel(houseId, deviceId, userId));
                 opMenu.run();
             } else if (dev instanceof SwitchableDevice) {
-                Menu opMenu = new Menu("Operate Device", new String[]{"Toggle ON/OFF"});
+                Menu opMenu = new Menu("Operate Device", new String[]{"Toggle ON/OFF"}, model::getCurrentState);
                 opMenu.setHandler(1, () -> toggleDevice(houseId, deviceId, userId));
                 opMenu.run();
             } else if (dev instanceof OpenableDevice) {
-                Menu opMenu = new Menu("Operate Device", new String[]{"Set Opening (%)"});
+                Menu opMenu = new Menu("Operate Device", new String[]{"Set Opening (%)"}, model::getCurrentState);
                 opMenu.setHandler(1, () -> setDeviceOpening(houseId, deviceId, userId));
                 opMenu.run();
             } else {

@@ -1,7 +1,7 @@
 package domuscontrol.model.device.types;
 
 import java.util.Objects;
-import domuscontrol.model.device.DeviceStatus;
+//import domuscontrol.model.device.DeviceStatus;
 
 /**
  * Represents switchable devices that also have an adjustable level (e.g., volume, brightness).
