@@ -1,5 +1,7 @@
 package domuscontrol.devices;
 
+import java.util.Objects;
+
 import domuscontrol.devices.types.OpenableDevice;
 
 /**
@@ -44,6 +46,31 @@ public class Curtain extends OpenableDevice {
     }
 
     /**
+     * Checks if this curtain is equal to another object.
+     *
+     * @param o The object to compare with this curtain.
+     * @return true if the given object is a curtain with the same properties as this curtain, false otherwise.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+
+        Curtain curtain = (Curtain) o;
+        return super.equals(curtain);
+    }
+
+    /**
+     * Calculates the hash code of this curtain.
+     *
+     * @return The hash code of this curtain.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode());
+    }
+
+    /**
      * Creates a copy of the Curtain instance.
      * 
      * @return A new Curtain instance with the same properties.
@@ -51,5 +78,15 @@ public class Curtain extends OpenableDevice {
     @Override
     public Curtain clone() {
         return new Curtain(this);
+    }
+
+    /**
+     * Creates a string representation of this curtain.
+     *
+     * @return A string representing this curtain.
+     */
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }

@@ -29,7 +29,9 @@ public abstract class AdjustableDevice extends SwitchableDevice {
     }
 
     /**
-     * Sets the level and ensures physical status consistency (Auto-ON / Auto-OFF).
+     * Sets the adjustable level, clamping it to the 0-100 range.
+     * Subclasses decide whether level changes affect their physical ON/OFF state.
+     *
      * @param level The new level (0-100).
      */
     public void setLevel(int level) {
@@ -39,12 +41,6 @@ public abstract class AdjustableDevice extends SwitchableDevice {
             this.level = 100;
         } else {
             this.level = level;
-        }
-
-        if (this.level > 0 && !this.isOn()) {
-            this.turnOn();
-        } else if (this.level == 0 && this.isOn()) {
-            this.turnOff();
         }
     }
 

@@ -1,13 +1,17 @@
 package domuscontrol.ui;
 
 import domuscontrol.DomusControl;
+import domuscontrol.devices.AirConditioner;
 import domuscontrol.devices.Curtain;
 import domuscontrol.devices.Device;
+import domuscontrol.devices.Fan;
 import domuscontrol.devices.Gate;
+import domuscontrol.devices.Heater;
 import domuscontrol.devices.Lamp;
 import domuscontrol.devices.Plug;
 import domuscontrol.devices.Relay;
 import domuscontrol.devices.Speaker;
+import domuscontrol.devices.Television;
 import domuscontrol.devices.types.AdjustableDevice;
 import domuscontrol.devices.types.ColorAdjustableDevice;
 import domuscontrol.devices.types.OpenableDevice;
@@ -222,7 +226,7 @@ public class HouseUI {
             if (devices.isEmpty()) { System.out.println("  No devices."); return; }
             Ansi.listTitle("Select Device");
             devices.values().forEach(device ->
-                Ansi.listRow(String.format("%d  %-10s %-12s %s",
+                Ansi.listRow(String.format("%d  %-15s %-12s %s",
                     device.getId(),
                     device.getClass().getSimpleName(),
                     device.getBrand(),
@@ -268,6 +272,9 @@ public class HouseUI {
         if (device instanceof Speaker speaker) {
             Ansi.listRow(String.format("%-13s %s", "Source", speaker.getSource()));
         }
+        if (device instanceof Television television) {
+            Ansi.listRow(String.format("%-13s %s", "Source", television.getSource()));
+        }
         if (device instanceof OpenableDevice openableDevice) {
             Ansi.listRow(String.format("%-13s %d%%", "Opening", openableDevice.getOpeningLevel()));
         }
@@ -290,13 +297,20 @@ public class HouseUI {
             if (divChoice < 1 || divChoice > divNames.size()) return;
             String division = divNames.get(divChoice - 1);
 
-            Menu typeMenu = new Menu("Device Type", new String[]{"Lamp", "Speaker", "Curtain", "Gate", "Plug", "Relay"}, model::getCurrentState);
+            Menu typeMenu = new Menu("Device Type", new String[]{
+                    "Lamp", "Speaker", "Curtain", "Gate", "Plug", "Relay",
+                    "Heater", "Fan", "Air Conditioner", "Television"
+            }, model::getCurrentState);
             typeMenu.setHandler(1, () -> addLamp(houseId, division));
             typeMenu.setHandler(2, () -> addSpeaker(houseId, division));
             typeMenu.setHandler(3, () -> addCurtain(houseId, division));
             typeMenu.setHandler(4, () -> addGate(houseId, division));
             typeMenu.setHandler(5, () -> addPlug(houseId, division));
             typeMenu.setHandler(6, () -> addRelay(houseId, division));
+            typeMenu.setHandler(7, () -> addHeater(houseId, division));
+            typeMenu.setHandler(8, () -> addFan(houseId, division));
+            typeMenu.setHandler(9, () -> addAirConditioner(houseId, division));
+            typeMenu.setHandler(10, () -> addTelevision(houseId, division));
             typeMenu.run();
 
         } catch (HouseNotFoundException e) {
@@ -471,6 +485,112 @@ public class HouseUI {
         }
     }
 
+    private void addHeater(int houseId, String division) {
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: consumption cannot be negative.");
+            return;
+        }
+        System.out.print(Ansi.prompt("Heating power (0-100)"));
+        int power = readInt();
+        if (power < 0 || power > 100) {
+            System.out.println("  Error: Heating power must be between 0 and 100.");
+            return;
+        }
+        try {
+            Heater heater = new Heater(base.brand(), base.modelName(), base.consumption(), power);
+            model.addDeviceToDivision(houseId, heater, division);
+            System.out.println("  Heater added.");
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (DivisionNotFoundException e) {
+            System.out.println("  Error: division not found.");
+        }
+    }
+
+    private void addFan(int houseId, String division) {
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: consumption cannot be negative.");
+            return;
+        }
+        System.out.print(Ansi.prompt("Speed (0-100)"));
+        int speed = readInt();
+        if (speed < 0 || speed > 100) {
+            System.out.println("  Error: Speed must be between 0 and 100.");
+            return;
+        }
+        try {
+            Fan fan = new Fan(base.brand(), base.modelName(), base.consumption(), speed);
+            model.addDeviceToDivision(houseId, fan, division);
+            System.out.println("  Fan added.");
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (DivisionNotFoundException e) {
+            System.out.println("  Error: division not found.");
+        }
+    }
+
+    private void addAirConditioner(int houseId, String division) {
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: consumption cannot be negative.");
+            return;
+        }
+        System.out.print(Ansi.prompt("Cooling power (0-100)"));
+        int coolingPower = readInt();
+        if (coolingPower < 0 || coolingPower > 100) {
+            System.out.println("  Error: Cooling power must be between 0 and 100.");
+            return;
+        }
+        try {
+            AirConditioner airConditioner = new AirConditioner(base.brand(), base.modelName(), base.consumption(), coolingPower);
+            model.addDeviceToDivision(houseId, airConditioner, division);
+            System.out.println("  Air conditioner added.");
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (DivisionNotFoundException e) {
+            System.out.println("  Error: division not found.");
+        }
+    }
+
+    private void addTelevision(int houseId, String division) {
+        DeviceBase base;
+        try {
+            base = readBaseFields();
+        }
+        catch (IllegalArgumentException e) {
+            System.out.println("  Error: consumption cannot be negative.");
+            return;
+        }
+        System.out.print(Ansi.prompt("Volume (0-100)"));
+        int volume = readInt();
+        if (volume < 0 || volume > 100) {
+            System.out.println("  Error: Volume must be between 0 and 100.");
+            return;
+        }
+        System.out.print(Ansi.prompt("Source"));
+        String source = sc.nextLine();
+        try {
+            Television television = new Television(base.brand(), base.modelName(), base.consumption(), volume, source);
+            model.addDeviceToDivision(houseId, television, division);
+            System.out.println("  Television added.");
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (DivisionNotFoundException e) {
+            System.out.println("  Error: division not found.");
+        }
+    }
+
     private void removeDevice(int houseId) {
         try {
             Device device = pickDevice(houseId);
@@ -604,7 +724,7 @@ public class HouseUI {
         Ansi.listTitle("Select Device");
         for (int i = 0; i < deviceList.size(); i++) {
             Device d = deviceList.get(i);
-            Ansi.listRow(String.format("%d  %-10s %-12s %s",
+            Ansi.listRow(String.format("%d  %-15s %-12s %s",
                     i + 1, d.getClass().getSimpleName(),
                     d.getBrand(), d.getModel()));
         }
@@ -626,6 +746,12 @@ public class HouseUI {
             }
             if (dev instanceof ColorAdjustableDevice colorAdjustableDevice) {
                 Ansi.listRow(String.format("%-12s %dK", "Color Temp", colorAdjustableDevice.getColorTemperature()));
+            }
+            if (dev instanceof Speaker speaker) {
+                Ansi.listRow(String.format("%-12s %s", "Source", speaker.getSource()));
+            }
+            if (dev instanceof Television television) {
+                Ansi.listRow(String.format("%-12s %s", "Source", television.getSource()));
             }
             if (dev instanceof OpenableDevice openableDevice) {
                 Ansi.listRow(String.format("%-12s %d%%", "Opening", openableDevice.getOpeningLevel()));

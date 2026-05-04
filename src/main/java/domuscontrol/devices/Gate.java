@@ -1,5 +1,7 @@
 package domuscontrol.devices;
 
+import java.util.Objects;
+
 import domuscontrol.devices.types.OpenableDevice;
 
 /**
@@ -51,6 +53,31 @@ public class Gate extends OpenableDevice {
     }
 
     /**
+     * Checks if this gate is equal to another object.
+     *
+     * @param o The object to compare with this gate.
+     * @return true if the given object is a gate with the same properties as this gate, false otherwise.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+
+        Gate gate = (Gate) o;
+        return super.equals(gate);
+    }
+
+    /**
+     * Calculates the hash code of this gate.
+     *
+     * @return The hash code of this gate.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode());
+    }
+
+    /**
      * Creates a copy of this gate.
      *
      * @return A copy of this gate.
@@ -58,5 +85,15 @@ public class Gate extends OpenableDevice {
     @Override
     public Gate clone() {
         return new Gate(this);
+    }
+
+    /**
+     * Creates a string representation of this gate.
+     *
+     * @return A string representing this gate.
+     */
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }

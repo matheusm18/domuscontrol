@@ -53,6 +53,23 @@ public class Lamp extends AdjustableDevice implements ColorAdjustableDevice {
     }
 
     /**
+     * Sets the brightness level and keeps the lamp's ON/OFF state consistent.
+     * Brightness greater than 0 turns the lamp on; brightness 0 turns it off.
+     *
+     * @param level The new brightness level (0-100).
+     */
+    @Override
+    public void setLevel(int level) {
+        super.setLevel(level);
+
+        if (this.getLevel() > 0 && !this.isOn()) {
+            this.turnOn();
+        } else if (this.getLevel() == 0 && this.isOn()) {
+            this.turnOff();
+        }
+    }
+
+    /**
      * Sets the color temperature of the lamp. 
      * The value is fixed between 2700K and 4000K as per typical scale.
      * 
@@ -80,8 +97,7 @@ public class Lamp extends AdjustableDevice implements ColorAdjustableDevice {
 
     /**
      * Sets the brightness level of the lamp.
-     * This uses the inherited level logic, which automatically keeps the value 
-     * between 0 and 100, and manages the Auto-ON / Auto-OFF physical state.
+     * Brightness greater than 0 turns the lamp on; brightness 0 turns it off.
      * 
      * @param brightness The new brightness level.
      */

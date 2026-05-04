@@ -1,5 +1,7 @@
 package domuscontrol.devices;
 
+import java.util.Objects;
+
 import domuscontrol.devices.types.SwitchableDevice;
 
 /**
@@ -31,6 +33,31 @@ public class Plug extends SwitchableDevice {
     public Plug(Plug plug) {
         super(plug);
     }
+
+    /**
+     * Checks if this plug is equal to another object.
+     *
+     * @param o The object to compare with this plug.
+     * @return true if the given object is a plug with the same properties as this plug, false otherwise.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+
+        Plug plug = (Plug) o;
+        return super.equals(plug);
+    }
+
+    /**
+     * Calculates the hash code of this plug.
+     *
+     * @return The hash code of this plug.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode());
+    }
     
     /**
      * Creates a copy of the Plug instance.
@@ -40,5 +67,15 @@ public class Plug extends SwitchableDevice {
     @Override
     public Plug clone() {
         return new Plug(this);
+    }
+
+    /**
+     * Creates a string representation of this plug.
+     *
+     * @return A string representing this plug.
+     */
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }

@@ -72,8 +72,7 @@ public class Speaker extends AdjustableDevice {
 
     /**
      * Sets the volume of the speaker. 
-     * This uses the inherited level logic, which automatically keeps the value 
-     * between 0 and 100, and manages the Auto-ON / Auto-OFF physical state.
+     * This keeps the value between 0 and 100 without changing the ON/OFF state.
      * 
      * @param volume The new volume level.
      */

@@ -568,7 +568,7 @@ public class ActionsUI {
             List<Device> deviceList = new ArrayList<>(house.getDevices().values());
 
             for (Device d : deviceList) {
-                Ansi.listRow(String.format("%d  %-10s %-12s %s",
+                Ansi.listRow(String.format("%d  %-15s %-12s %s",
                     num++, d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
             }
             Ansi.listSeparator();

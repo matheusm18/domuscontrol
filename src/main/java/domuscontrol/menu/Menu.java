@@ -115,11 +115,13 @@ public class Menu {
     }
 
     private void printOption(String num, String text, boolean available) {
-        String visible = "  " + num + "  " + text;
+        int numberWidth = Math.max(2, String.valueOf(this.opcoes.size()).length());
+        String paddedNum = String.format("%" + numberWidth + "s", num);
+        String visible = "  " + paddedNum + "  " + text;
         int pad = Math.max(0, WIDTH - visible.length());
         String content;
         if (available) {
-            content = "  " + Ansi.YELLOW + Ansi.BOLD + num + Ansi.RESET + "  " + text + " ".repeat(pad);
+            content = "  " + Ansi.YELLOW + Ansi.BOLD + paddedNum + Ansi.RESET + "  " + text + " ".repeat(pad);
         } else {
             content = Ansi.DIM + visible + " ".repeat(pad) + Ansi.RESET;
         }

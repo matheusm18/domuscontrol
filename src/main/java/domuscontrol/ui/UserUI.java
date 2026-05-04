@@ -199,7 +199,7 @@ public class UserUI {
                     Ansi.listTitle("Top Devices By Active Time");
                     for (int i = 0; i < topDevices.size(); i++) {
                         Device d = topDevices.get(i);
-                        Ansi.listRow(String.format("%d  %-10s %-12s %-10s %d min active",
+                        Ansi.listRow(String.format("%d  %-15s %-12s %-15s %d min active",
                             i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalMinutesOn()));
                     }
                     Ansi.listSeparator();
@@ -219,7 +219,7 @@ public class UserUI {
                     Ansi.listTitle("Top Devices By Activations");
                     for (int i = 0; i < topDevices.size(); i++) {
                         Device d = topDevices.get(i);
-                        Ansi.listRow(String.format("%d  %-10s %-12s %-10s %d activation(s)",
+                        Ansi.listRow(String.format("%d  %-15s %-12s %-15s %d activation(s)",
                             i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalActivations()));
                     }
                     Ansi.listSeparator();

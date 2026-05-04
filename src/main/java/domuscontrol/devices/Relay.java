@@ -1,5 +1,7 @@
 package domuscontrol.devices;
 
+import java.util.Objects;
+
 import domuscontrol.devices.types.SwitchableDevice;
 
 /**
@@ -40,6 +42,31 @@ public class Relay extends SwitchableDevice {
     }
 
     /**
+     * Checks if this relay is equal to another object.
+     *
+     * @param o The object to compare with this relay.
+     * @return true if the given object is a relay with the same properties as this relay, false otherwise.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+
+        Relay relay = (Relay) o;
+        return super.equals(relay);
+    }
+
+    /**
+     * Calculates the hash code of this relay.
+     *
+     * @return The hash code of this relay.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode());
+    }
+
+    /**
      * Creates a copy of this relay.
      *
      * @return A copy of this relay.
@@ -47,5 +74,15 @@ public class Relay extends SwitchableDevice {
     @Override
     public Relay clone() {
         return new Relay(this);
+    }
+
+    /**
+     * Creates a string representation of this relay.
+     *
+     * @return A string representing this relay.
+     */
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }
