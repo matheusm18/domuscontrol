@@ -5,11 +5,12 @@ import java.util.List;
 //Auxiliar class for transporting division info.
 public class DivisionInfo {
     // The house the division belongs to.
-    public final House house;
+    private final House house;
     // The name of the division.
-    public final String divisionName;
+    private final String divisionName;
     // The list of devices in the division.
-    public final List<String> devices;
+    private final List<String> devices;
+
     /**
      * Constructor for DivisionInfo.
      * @param house The house the division belongs to.
@@ -20,5 +21,29 @@ public class DivisionInfo {
         this.house = house;
         this.divisionName = divisionName;
         this.devices = devices;
+    }
+
+    /**
+     * Gets the house the division belongs to.
+     * @return The house the division belongs to.
+     */
+    public House getHouse() {
+        return house;
+    }
+
+    /**
+     * Gets the name of the division.
+     * @return The name of the division.
+     */
+    public String getDivisionName() {
+        return divisionName;
+    }
+
+    /**
+     * Gets the list of devices in the division.
+     * @return The list of devices in the division.
+     */
+    public List<String> getDevices() {
+        return devices;
     }
 }

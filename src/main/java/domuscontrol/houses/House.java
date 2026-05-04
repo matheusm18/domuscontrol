@@ -446,6 +446,9 @@ public class House implements Serializable {
      * all automations and schedules.
      *
      * @param minutes The number of minutes elapsed since the last tick.
+     * 
+     * @return A list of strings describing the actions taken during this tick, such as
+     *         which automations were triggered and which devices were affected.
      */
     public List<String> tick(Simulation simulation) {
         int minutes = simulation.getTimeElapsed().intValue();

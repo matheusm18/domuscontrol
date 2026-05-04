@@ -232,7 +232,7 @@ public class UserUI {
         });
         menu.setHandler(4, () -> {
             try {
-                List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterion(email, 3, div -> div.house.getDivisions().get(div.divisionName).size());
+                List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterion(email, 3, div -> div.getHouse().getDivisions().get(div.getDivisionName()).size());
                 if (topDivisions.isEmpty()) {
                     System.out.println("  No divisions found for your houses.");
                 } else {
@@ -240,7 +240,7 @@ public class UserUI {
                     for (int i = 0; i < topDivisions.size(); i++) {
                         DivisionInfo div = topDivisions.get(i);
                         Ansi.listRow(String.format("%d  %-18s %-12s %d device(s)",
-                            i + 1, div.divisionName, div.house.getName(), div.devices.size()));
+                            i + 1, div.getDivisionName(), div.getHouse().getName(), div.getDevices().size()));
                     }
                     Ansi.listSeparator();
                 }
