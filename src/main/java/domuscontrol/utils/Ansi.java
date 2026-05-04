@@ -9,7 +9,7 @@ public class Ansi {
     public static final String GREEN  = "\033[32m";
     public static final String WHITE  = "\033[97m";
 
-    public static final int WIDTH = 42;
+    public static final int WIDTH = 47;
 
     public static String prompt(String label) {
         return CYAN + "  › " + RESET + label + ": ";

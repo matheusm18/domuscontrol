@@ -270,9 +270,7 @@ public class House implements Serializable {
      * @param interaction The interaction to record.
      */
     public void logInteraction(DeviceInteraction interaction) {
-        System.out.println("[HOUSE] A gravar interação: " + interaction);
         this.interactionLogger.log(interaction);
-        System.out.println("[HOUSE] Total logs agora: " + this.interactionLogger.size());
     }
 
     /**

@@ -31,7 +31,7 @@ public class DomusControlUI {
                 "Login",
                 "Register",
                 "Load State"
-        }, model::getCurrentState);
+        }, () -> model.getCurrentState());
 
         menu.setHandler(1, this::doLogin);
         menu.setHandler(2, this::doRegister);
@@ -41,7 +41,7 @@ public class DomusControlUI {
     }
 
     private void printWelcome() {
-        int w = 42;
+        int w = Ansi.WIDTH;
         String horiz = "═".repeat(w);
         String blank = Ansi.CYAN + " ║" + " ".repeat(w) + "║" + Ansi.RESET;
         String line1 = centeredRow("D O M U S  C O N T R O L", w, true);

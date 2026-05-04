@@ -1,6 +1,6 @@
 package domuscontrol.exceptions;
 
-public class DivisionNotFoundException extends RuntimeException {
+public class DivisionNotFoundException extends Exception {
 
     /** Exception thrown when a requested division is not found in the system. */
     public DivisionNotFoundException(String exception) {

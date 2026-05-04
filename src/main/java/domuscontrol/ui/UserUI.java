@@ -2,9 +2,7 @@ package domuscontrol.ui;
 
 import domuscontrol.DomusControl;
 import domuscontrol.devices.Device;
-import domuscontrol.exceptions.HouseAlreadyExistsException;
-import domuscontrol.exceptions.HouseNotFoundException;
-import domuscontrol.exceptions.UserNotFoundException;
+import domuscontrol.exceptions.*;
 import domuscontrol.houses.DivisionInfo;
 import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
@@ -18,23 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-/**
- * Handles the authenticated user's dashboard.
- * Receives the model and Scanner from {@link DomusControlUI} and delegates
- * house-level operations to {@link HouseUI}.
- */
 public class UserUI {
 
     private DomusControl model;
     private final Scanner sc;
     private final HouseUI houseUI;
 
-    /**
-     * Initialises the UserUI with the shared model and Scanner, and creates the HouseUI sub-component.
-     * 
-     * @param model shared model instance.
-     * @param sc    shared Scanner (created once in DomusControlUI).
-     */
     public UserUI(DomusControl model, Scanner sc) {
         this.model = model;
         this.sc = sc;
@@ -56,8 +43,8 @@ public class UserUI {
                 "Save State"
         }, model::getCurrentState);
 
-        menu.setPreCondition(1, () -> !model.getHousesByUser(email).isEmpty());
-        menu.setPreCondition(4, () -> !model.getHousesByUser(email).isEmpty());
+        menu.setPreCondition(1, () -> hasHouses(email));
+        menu.setPreCondition(4, () -> hasHouses(email));
 
         menu.setHandler(1, () -> myHouses(email));
         menu.setHandler(2, () -> createHouse(email));
@@ -67,6 +54,14 @@ public class UserUI {
         menu.setHandler(6, this::saveState);
 
         menu.run();
+    }
+
+    private boolean hasHouses(String email) {
+        try {
+            return !model.getHousesByUser(email).isEmpty();
+        } catch (UserNotFoundException | HouseNotFoundException e) {
+            return false;
+        }
     }
 
     private void myHouses(String email) {
@@ -87,8 +82,10 @@ public class UserUI {
             House selected = houses.get(choice - 1);
             houseUI.show(email, selected.getId(), selected.getName());
 
-        } catch (UserNotFoundException | HouseNotFoundException e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (UserNotFoundException e) {
+            System.out.println("  Error: user not found.");
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: one of your houses was not found.");
         }
     }
 
@@ -98,8 +95,10 @@ public class UserUI {
         try {
             House house = model.createHouse(email, name);
             System.out.printf("  House '%s' created.%n", house.getName());
-        } catch (UserNotFoundException | HouseAlreadyExistsException e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (UserNotFoundException e) {
+            System.out.println("  Error: user not found.");
+        } catch (HouseAlreadyExistsException | UserAlreadyExistsException e) {
+            System.out.println("  Error: conflict creating house.");
         }
     }
 
@@ -109,7 +108,7 @@ public class UserUI {
             System.out.println();
             showUserDetails(user);
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: " + e.getMessage());
+            System.out.println("  Error: user not found.");
             return;
         }
 
@@ -120,7 +119,7 @@ public class UserUI {
             try {
                 model.updateUserName(email, name);
                 System.out.println("  Name updated.");
-            } catch (UserNotFoundException ex) {
+            } catch (UserNotFoundException | UserAlreadyExistsException ex) {
                 System.out.println("  Error: " + ex.getMessage());
             }
         });
@@ -130,17 +129,13 @@ public class UserUI {
             try {
                 model.updateUserPassword(email, pass);
                 System.out.println("  Password updated.");
-            } catch (UserNotFoundException ex) {
+            } catch (UserNotFoundException | UserAlreadyExistsException ex) {
                 System.out.println("  Error: " + ex.getMessage());
             }
         });
         menu.run();
     }
 
-/**
-     * Displays the details of a user.
-     * @param user The user to display.
-     */
     public void showUserDetails(User user) {
         if (user == null) {
             System.out.println("  No user to display.");
@@ -170,61 +165,89 @@ public class UserUI {
 
     private void statistics(String email) {
         Menu menu = new Menu("Statistics", new String[]{
-                "Most consuming houseses",
-                "Top 3 devices by time on",
+                "Most consuming houses",
+                "Top 3 devices by active time",
                 "Top 3 devices by activations",
                 "Top 3 divisions by device count"
         }, model::getCurrentState);
 
         menu.setHandler(1, () -> {
-            List<House> topHouses = model.getTop3MostConsumingHouses(email);
-            if (topHouses.isEmpty()) {
-                System.out.println("  No houses in the system.");
-            } else {
-                for (int i = 0; i < topHouses.size(); i++) {
-                    House h = topHouses.get(i);
-                    System.out.printf("%d. %s — %.2f Wh%n", i + 1, h.getName(), h.calculateTotalConsumption());
+            try {
+                List<House> topHouses = model.getTop3MostConsumingHouses(email);
+                if (topHouses.isEmpty()) {
+                    System.out.println("  No houses in the system.");
+                } else {
+                    Ansi.listTitle("Most Consuming Houses");
+                    for (int i = 0; i < topHouses.size(); i++) {
+                        House h = topHouses.get(i);
+                        Ansi.listRow(String.format("%d  %-22s %.2f Wh", i + 1, h.getName(), h.calculateTotalConsumption()));
+                    }
+                    Ansi.listSeparator();
                 }
+            } catch (UserNotFoundException e) {
+                System.out.println("  Error: user not found.");
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
             }
         });
         menu.setHandler(2, () -> {
-            List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalMinutesOn);
-            if (topDevices.isEmpty()) {
-                System.out.println("  No devices found for your houses.");
-            } else {
-                for (int i = 0; i < topDevices.size(); i++) {
-                    Device d = topDevices.get(i);
-                    System.out.printf("[%s] %d. %s %s — %d minutes on%n", 
-                        d.getClass().getSimpleName(), i + 1, d.getBrand(), d.getModel(), d.getTotalMinutesOn());
+            try {
+                List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalMinutesOn);
+                if (topDevices.isEmpty()) {
+                    System.out.println("  No devices found for your houses.");
+                } else {
+                    Ansi.listTitle("Top Devices By Active Time");
+                    for (int i = 0; i < topDevices.size(); i++) {
+                        Device d = topDevices.get(i);
+                        Ansi.listRow(String.format("%d  %-10s %-12s %-10s %d min active",
+                            i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalMinutesOn()));
+                    }
+                    Ansi.listSeparator();
                 }
+            } catch (UserNotFoundException e) {
+                System.out.println("  Error: user not found.");
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
             }
         });
         menu.setHandler(3, () -> {
-            List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalActivations);
-            if (topDevices.isEmpty()) {
-                System.out.println("  No devices found for your houses.");
-            } else {
-                for (int i = 0; i < topDevices.size(); i++) {
-                    Device d = topDevices.get(i);
-                    System.out.printf("[%s] %d. %s %s — %d activations%n", 
-                        d.getClass().getSimpleName(), i + 1, d.getBrand(), d.getModel(), d.getTotalActivations());
+            try {
+                List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalActivations);
+                if (topDevices.isEmpty()) {
+                    System.out.println("  No devices found for your houses.");
+                } else {
+                    Ansi.listTitle("Top Devices By Activations");
+                    for (int i = 0; i < topDevices.size(); i++) {
+                        Device d = topDevices.get(i);
+                        Ansi.listRow(String.format("%d  %-10s %-12s %-10s %d activation(s)",
+                            i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalActivations()));
+                    }
+                    Ansi.listSeparator();
                 }
+            } catch (UserNotFoundException e) {
+                System.out.println("  Error: user not found.");
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
             }
         });
         menu.setHandler(4, () -> {
-            List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterion(email, 3, div -> div.house.getDivisions().get(div.divisionName).size());
-
-            if (topDivisions.isEmpty()) {
-                System.out.println("  No divisions found for your houses.");
-            } else {
-                for (int i = 0; i < topDivisions.size(); i++) {
-                    DivisionInfo div = topDivisions.get(i);
-                    System.out.printf("  %d. Divisão: %s (Casa: %s) — %d dispositivos%n", 
-                        i + 1, 
-                        div.divisionName, 
-                        div.house.getName(), 
-                        div.devices.size());
+            try {
+                List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterion(email, 3, div -> div.house.getDivisions().get(div.divisionName).size());
+                if (topDivisions.isEmpty()) {
+                    System.out.println("  No divisions found for your houses.");
+                } else {
+                    Ansi.listTitle("Top Divisions By Device Count");
+                    for (int i = 0; i < topDivisions.size(); i++) {
+                        DivisionInfo div = topDivisions.get(i);
+                        Ansi.listRow(String.format("%d  %-18s %-12s %d device(s)",
+                            i + 1, div.divisionName, div.house.getName(), div.devices.size()));
+                    }
+                    Ansi.listSeparator();
                 }
+            } catch (UserNotFoundException e) {
+                System.out.println("  Error: user not found.");
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
             }
         });
 
@@ -245,11 +268,11 @@ public class UserUI {
         System.out.println("  Simulation advanced by " + minutes + " minute(s).");
 
         if (!activated.isEmpty()) {
-            System.out.println();
-            System.out.println("  Automations activated:");
+            Ansi.listTitle("Routines Activated");
             for (String name : activated) {
-                System.out.println("  - " + name);
+                Ansi.listRow(" - " + name);
             }
+            Ansi.listSeparator();
         }
     }
 

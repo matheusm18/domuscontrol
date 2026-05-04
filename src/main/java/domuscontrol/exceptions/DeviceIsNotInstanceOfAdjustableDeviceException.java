@@ -1,6 +1,6 @@
 package domuscontrol.exceptions;
 
-public class DeviceIsNotInstanceOfAdjustableDeviceException extends RuntimeException {
+public class DeviceIsNotInstanceOfAdjustableDeviceException extends Exception {
     public DeviceIsNotInstanceOfAdjustableDeviceException(String message) {
         super(message);
     }

@@ -62,43 +62,6 @@ public class DomusControl implements Serializable {
     private final HouseManager houseManager;
     private Simulation simulation;
 
-    public LocalDateTime getCurrentDateTime() {
-        return this.simulation.getCurrentDateTime();
-    }
-
-    public LocalDateTime getLastTickDateTime() {
-        return this.simulation.getPreviousDateTime();
-    }
-
-    public void setCurrentTime(LocalDateTime newTime) {
-        this.simulation.setPreviousDateTime(this.simulation.getCurrentDateTime());
-        this.simulation.setCurrentDateTime(newTime);
-    }
-
-    public LocalTime getCurrentTime() {
-        return this.simulation.getCurrentDateTime().toLocalTime();
-    }
-
-    public LocalTime getLastTickTime() {
-        return this.simulation.getPreviousDateTime().toLocalTime();
-    }
-
-    public double getTemperature() {
-        return this.simulation.getTemperature();
-    }
-
-    public Simulation.WeatherCondition getWeather() {
-        return this.simulation.getWeather();
-    }
-
-    public SimulationState getCurrentState() {
-        return new SimulationState(
-            this.simulation.getCurrentDateTime(),
-            (int) Math.round(this.simulation.getTemperature()),
-            this.simulation.getWeather()
-        );
-    }
-
     public DomusControl() {
         this.userManager  = new UserManager();
         this.houseManager = new HouseManager();
@@ -200,7 +163,7 @@ public class DomusControl implements Serializable {
      * @param newName The new name.
      * @throws UserNotFoundException If no user is registered with that email.
      */
-    public void updateUserName(String email, String newName) throws UserNotFoundException {
+    public void updateUserName(String email, String newName) throws UserNotFoundException, UserAlreadyExistsException {
         User user = this.userManager.getUserByEmail(email);
         user.setName(newName);
         this.userManager.updateUser(user);
@@ -213,7 +176,7 @@ public class DomusControl implements Serializable {
      * @param newPassword The new password.
      * @throws UserNotFoundException If no user is registered with that email.
      */
-    public void updateUserPassword(String email, String newPassword) throws UserNotFoundException {
+    public void updateUserPassword(String email, String newPassword) throws UserNotFoundException, UserAlreadyExistsException {
         User user = this.userManager.getUserByEmail(email);
         user.setPassword(newPassword);
         this.userManager.updateUser(user);
@@ -251,7 +214,7 @@ public class DomusControl implements Serializable {
      * @throws UserNotFoundException If the owner email does not correspond to a registered user.
      * @throws HouseAlreadyExistsException If a house with the same ID already exists.
      */
-    public House createHouse(String ownerEmail, String houseName) throws UserNotFoundException, HouseAlreadyExistsException {
+    public House createHouse(String ownerEmail, String houseName) throws UserNotFoundException, HouseAlreadyExistsException, UserAlreadyExistsException {
         User owner = this.userManager.getUserByEmail(ownerEmail);
         House newHouse = this.houseManager.createHouse(houseName);
 
@@ -271,9 +234,11 @@ public class DomusControl implements Serializable {
      */
     public List<House> getHousesByUser(String email) throws UserNotFoundException, HouseNotFoundException {
         User user = this.userManager.getUserByEmail(email);
-        return user.getHouseIds().stream()
-                .map(this.houseManager::getHouseById)
-                .collect(Collectors.toList());
+        List<House> houses = new ArrayList<>();
+        for (Integer houseId : user.getHouseIds()) {
+            houses.add(this.houseManager.getHouseById(houseId));
+        }
+        return houses;
     }
 
     /**
@@ -326,9 +291,11 @@ public class DomusControl implements Serializable {
      */
     public List<House> getAllHousesByUser(String email) throws UserNotFoundException, HouseNotFoundException {
         User user = this.userManager.getUserByEmail(email);
-        return user.getHouseIds().stream()
-                .map(this.houseManager::getHouseById)
-                .collect(Collectors.toList());
+        List<House> houses = new ArrayList<>();
+        for (Integer houseId : user.getHouseIds()) {
+            houses.add(this.houseManager.getHouseById(houseId));
+        }
+        return houses;
     }
 
     /**
@@ -339,7 +306,7 @@ public class DomusControl implements Serializable {
      * @throws UserNotFoundException If the user with the given ID does not exist.
      * @throws HouseNotFoundException If the house with the given ID does not exist.
      */
-    public void assignUserToHouse(int houseId, Integer userId, UserRole role) throws UserNotFoundException, HouseNotFoundException {
+    public void assignUserToHouse(int houseId, Integer userId, UserRole role) throws UserNotFoundException, HouseNotFoundException, UserAlreadyExistsException {
         this.houseManager.getHouseById(houseId); // validate house exists
         User user = this.userManager.getUserById(userId);
         if (user.getHouseIds().contains(houseId)) {
@@ -356,7 +323,7 @@ public class DomusControl implements Serializable {
      * @throws UserNotFoundException
      * @throws HouseNotFoundException
      */
-    public void deleteUserFromHouse(int houseId, int userId) throws UserNotFoundException, HouseNotFoundException {
+    public void deleteUserFromHouse(int houseId, int userId) throws UserNotFoundException, HouseNotFoundException, LastAdminException, UserAlreadyExistsException {
         User user = this.userManager.getUserById(userId);
         UserRole role = user.getRoleForHouse(houseId);
         if (role == UserRole.ADMINISTRATOR) {
@@ -414,7 +381,7 @@ public class DomusControl implements Serializable {
      * @return The device.
      * @throws HouseNotFoundException If no house with the given ID exists, or the device is not found.
      */
-    public Device getDevice(int houseId, int deviceId) throws HouseNotFoundException {
+    public Device getDevice(int houseId, int deviceId) throws HouseNotFoundException, DeviceNotFoundException {
         return this.houseManager.getDevice(houseId, deviceId);
     }
 
@@ -530,6 +497,43 @@ public class DomusControl implements Serializable {
         return this.houseManager.getMostConsumingHouse();
     }
 
+    public LocalDateTime getCurrentDateTime() {
+        return this.simulation.getCurrentDateTime();
+    }
+
+    public LocalDateTime getLastTickDateTime() {
+        return this.simulation.getPreviousDateTime();
+    }
+
+    public void setCurrentTime(LocalDateTime newTime) {
+        this.simulation.setPreviousDateTime(this.simulation.getCurrentDateTime());
+        this.simulation.setCurrentDateTime(newTime);
+    }
+
+    public LocalTime getCurrentTime() {
+        return this.simulation.getCurrentDateTime().toLocalTime();
+    }
+
+    public LocalTime getLastTickTime() {
+        return this.simulation.getPreviousDateTime().toLocalTime();
+    }
+
+    public double getTemperature() {
+        return this.simulation.getTemperature();
+    }
+
+    public Simulation.WeatherCondition getWeather() {
+        return this.simulation.getWeather();
+    }
+
+    public SimulationState getCurrentState() {
+        return new SimulationState(
+            this.simulation.getCurrentDateTime(),
+            (int) Math.round(this.simulation.getTemperature()),
+            this.simulation.getWeather()
+        );
+    }
+
     /**
      * Saves the full state of the model to a binary file.
      *
@@ -579,7 +583,7 @@ public class DomusControl implements Serializable {
      * @param email The email of the user whose devices we want to retrieve.
      * @return A list of all devices associated with the user's houses.
      */
-    protected List<Device> getAllDevicesForUser(String email) {
+    protected List<Device> getAllDevicesForUser(String email) throws UserNotFoundException, HouseNotFoundException {
         List<Device> devices = new ArrayList<>();
         for (House house : this.getHousesByUser(email)) {
             devices.addAll(house.getDevices().values());
@@ -587,7 +591,7 @@ public class DomusControl implements Serializable {
         return devices;
     }
 
-    public List<Device> getTopDevicesByCriterion(String email, int n, ToIntFunction<Device> criterion) {
+    public List<Device> getTopDevicesByCriterion(String email, int n, ToIntFunction<Device> criterion) throws UserNotFoundException, HouseNotFoundException {
         return getAllDevicesForUser(email).stream()
             .sorted(Comparator.comparingInt(criterion).reversed())
             .limit(n)
@@ -596,7 +600,7 @@ public class DomusControl implements Serializable {
     }
 
 
-    protected List<DivisionInfo> getAllDivisionsForUser(String email) {
+    protected List<DivisionInfo> getAllDivisionsForUser(String email) throws UserNotFoundException, HouseNotFoundException {
         List<DivisionInfo> divisions = new ArrayList<>();
         for (House house : this.getHousesByUser(email)) {
             house.getDivisions().forEach((name, devices) -> 
@@ -609,7 +613,7 @@ public class DomusControl implements Serializable {
         return divisions;
     }
 
-    public List<DivisionInfo> getTopDivisionsByCriterion(String email, int n, Function<DivisionInfo, Integer> criterion) {
+    public List<DivisionInfo> getTopDivisionsByCriterion(String email, int n, Function<DivisionInfo, Integer> criterion) throws UserNotFoundException, HouseNotFoundException {
         return getAllDivisionsForUser(email).stream()
             .sorted(Comparator.comparingInt(criterion::apply).reversed())
             .limit(n)
@@ -620,7 +624,7 @@ public class DomusControl implements Serializable {
      * Returns the top 3 most consuming houses based on total energy consumption.
      * @return A list of the top 3 most consuming houses.
      */
-    public List<House> getTop3MostConsumingHouses(String email) {
+    public List<House> getTop3MostConsumingHouses(String email) throws UserNotFoundException, HouseNotFoundException {
         return this.getHousesByUser(email).stream()
                 .sorted(Comparator.comparingDouble(House::calculateTotalConsumption).reversed())
                 .limit(3)

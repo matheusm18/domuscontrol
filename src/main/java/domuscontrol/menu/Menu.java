@@ -24,6 +24,7 @@ public class Menu {
     private List<PreCondition> disponivel;
     private List<Handler> handlers;
     private boolean stopped = false;
+    private String exitLabel = "Back";
 
     public Menu(String[] opcoes, Supplier<SimulationState> state) {
         this("DomusControl", opcoes, state);
@@ -43,6 +44,10 @@ public class Menu {
 
     public void stop() {
         this.stopped = true;
+    }
+
+    public void setExitLabel(String exitLabel) {
+        this.exitLabel = exitLabel;
     }
 
     public void run() {
@@ -80,7 +85,7 @@ public class Menu {
             printOption(String.valueOf(i + 1), avail ? opcoes.get(i) : "---", avail);
         }
         System.out.println(Ansi.CYAN + " ╠" + horiz + "╣" + Ansi.RESET);
-        printOption("0", "Back", true);
+        printOption("0", exitLabel, true);
         System.out.println(Ansi.CYAN + " ╚" + horiz + "╝" + Ansi.RESET);
     }
 

@@ -3,6 +3,7 @@ package domuscontrol.ui;
 import domuscontrol.DomusControl;
 import domuscontrol.devices.Device;
 import domuscontrol.devices.types.AdjustableDevice;
+import domuscontrol.devices.types.ColorAdjustableDevice;
 import domuscontrol.devices.types.OpenableDevice;
 import domuscontrol.devices.types.SwitchableDevice;
 import domuscontrol.exceptions.*;
@@ -16,18 +17,23 @@ import domuscontrol.user.User;
 import domuscontrol.utils.Ansi;
 
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class ActionsUI {
 
-    private final DomusControl model;
+    private DomusControl model;
     private final Scanner sc;
 
     public ActionsUI(DomusControl model, Scanner sc) {
         this.model = model;
         this.sc = sc;
+    }
+
+    public void setModel(DomusControl model) {
+        this.model = model;
     }
 
     private int readInt() {
@@ -37,6 +43,17 @@ public class ActionsUI {
             } catch (NumberFormatException e) {
                 System.out.print(Ansi.prompt("Invalid input. Please enter an integer"));
             }
+        }
+    }
+
+    private int readIntInRange(int min, int max, String prompt) {
+        while (true) {
+            int value = readInt();
+            if (value >= min && value <= max) {
+                return value;
+            }
+            System.out.printf("  Error: value must be between %d and %d.%n", min, max);
+            System.out.print(Ansi.prompt(prompt));
         }
     }
 
@@ -51,10 +68,9 @@ public class ActionsUI {
                 "Remove Automation"
         }, model::getCurrentState);
 
-        House house = model.getHouseById(houseId);
-        menu.setPreCondition(1, () -> !model.getAutomations(houseId).isEmpty());
-        menu.setPreCondition(2, () -> house.getDevices().size() > 0);
-        menu.setPreCondition(3, () -> !model.getAutomations(houseId).isEmpty());
+        menu.setPreCondition(1, () -> hasAutomations(houseId));
+        menu.setPreCondition(2, () -> houseHasDevices(houseId));
+        menu.setPreCondition(3, () -> hasAutomations(houseId));
         
         menu.setHandler(1, () -> listAutomations(houseId));
         menu.setHandler(2, () -> addAutomation(houseId));
@@ -71,11 +87,11 @@ public class ActionsUI {
             }
             Ansi.listTitle("Automations");
             for (int i = 0; i < automations.size(); i++) {
-                Ansi.listRow(String.format("%d | Name: %-15s", i + 1, automations.get(i).getName()));
+                Ansi.listRow(String.format("%d  %-22s", i + 1, automations.get(i).getName()));
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Enter Automation Number for details (or 0 to back)"));
+            System.out.print(Ansi.prompt("Automation (0 to back)"));
             int choice = readInt();
             if (choice == 0)
                 return;
@@ -86,22 +102,36 @@ public class ActionsUI {
                     .orElse(null);
 
             if (selected != null) {
-                System.out.println("\n" + Ansi.CYAN + "--- Automation Info ---" + Ansi.RESET);
-                System.out.println(selected);
-                System.out.println(Ansi.CYAN + "-----------------------" + Ansi.RESET);
+                showAutomationInfo(selected);
             } else {
                 System.out.println("  Invalid Automation Number.");
             }
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: " + e.getMessage());
+            System.out.println("  Error: house not found.");
         }
+    }
+
+    private void showAutomationInfo(Automation automation) {
+        Ansi.listTitle(automation.getType().toString());
+        Ansi.listRow(String.format("%-12s %s", "Name", automation.getName()));
+        Ansi.listRow(String.format("%-12s %s", "Type", automation.getType()));
+        Ansi.listRow(String.format("%-12s %d", "Conditions", automation.getConditions().size()));
+        Ansi.listRow(String.format("%-12s %d", "Actions", automation.getActions().size()));
+        Ansi.listSeparator();
+    }
+
+    private void showScenarioInfo(Scenario scenario) {
+        Ansi.listTitle("Scenario");
+        Ansi.listRow(String.format("%-12s %s", "Name", scenario.getName()));
+        Ansi.listRow(String.format("%-12s %d", "Actions", scenario.getActions().size()));
+        Ansi.listSeparator();
     }
 
     private void addAutomation(int houseId) {
         System.out.print(Ansi.prompt("Automation name"));
         String name = sc.nextLine().trim();
         if (name.isEmpty()) {
-            System.out.println("  Name cannot be empty.");
+            System.out.println("\n  Name cannot be empty.");
             return;
         }
 
@@ -142,9 +172,12 @@ public class ActionsUI {
                 }
             }
 
-        } catch (HouseNotFoundException | NameAlreadyExistsException
-                | ScheduleWithConditionDifferentFromTimeException e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (NameAlreadyExistsException e) {
+            System.out.println("  Error: routine name already exists.");
+        } catch (ScheduleWithConditionDifferentFromTimeException e) {
+            System.out.println("  Error: schedule conditions must be time-based.");
         }
     }
 
@@ -159,11 +192,11 @@ public class ActionsUI {
 
             Ansi.listTitle("Select Automation to Remove");
             for (int i = 0; i < automations.size(); i++) {
-                Ansi.listRow(String.format("%d | %s", i + 1, automations.get(i).getName()));
+                Ansi.listRow(String.format("%d  %s", i + 1, automations.get(i).getName()));
             }
             Ansi.listSeparator();
             
-            System.out.print(Ansi.prompt("Enter number (0 to cancel)"));
+            System.out.print(Ansi.prompt("Automation (0 to cancel)"));
             int choice = readInt();
             
             if (choice < 1 || choice > automations.size()) {
@@ -175,8 +208,10 @@ public class ActionsUI {
             model.removeAutomation(houseId, name);
             System.out.println("  Automation '" + name + "' removed.");
             
-        } catch (HouseNotFoundException | AutomationDoesntExistException e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (AutomationDoesntExistException e) {
+            System.out.println("  Error: automation not found.");
         }
     }
 
@@ -191,10 +226,9 @@ public class ActionsUI {
                 "Remove Schedule"
         }, model::getCurrentState);
 
-        House house = model.getHouseById(houseId);
-        menu.setPreCondition(1, () -> !model.getSchedules(houseId).isEmpty());
-        menu.setPreCondition(2, () -> house.getDevices().size() > 0);
-        menu.setPreCondition(3, () -> !model.getSchedules(houseId).isEmpty());
+        menu.setPreCondition(1, () -> hasSchedules(houseId));
+        menu.setPreCondition(2, () -> houseHasDevices(houseId));
+        menu.setPreCondition(3, () -> hasSchedules(houseId));
 
         menu.setHandler(1, () -> listSchedules(houseId));
         menu.setHandler(2, () -> addSchedule(houseId));
@@ -211,11 +245,11 @@ public class ActionsUI {
             }
             Ansi.listTitle("Schedules");
             for (int i = 0; i < schedules.size(); i++) {
-                Ansi.listRow(String.format("%d | Name: %-15s", i + 1, schedules.get(i).getName()));
+                Ansi.listRow(String.format("%d  %-22s", i + 1, schedules.get(i).getName()));
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Enter Schedule Number for details (or 0 to back)"));
+            System.out.print(Ansi.prompt("Schedule (0 to back)"));
             int choice = readInt();
             if (choice == 0)
                 return;
@@ -226,14 +260,12 @@ public class ActionsUI {
                     .orElse(null);
 
             if (selected != null) {
-                System.out.println("\n" + Ansi.CYAN + "--- Schedule Info ---" + Ansi.RESET);
-                System.out.println(selected);
-                System.out.println(Ansi.CYAN + "---------------------" + Ansi.RESET);
+                showAutomationInfo(selected);
             } else {
                 System.out.println("  Invalid Schedule Number.");
             }
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: " + e.getMessage());
+            System.out.println("  Error: house not found.");
         }
     }
 
@@ -241,7 +273,7 @@ public class ActionsUI {
         System.out.print(Ansi.prompt("Schedule name"));
         String name = sc.nextLine().trim();
         if (name.isEmpty()) {
-            System.out.println("  Name cannot be empty.");
+            System.out.println("\n  Name cannot be empty.");
             return;
         }
 
@@ -269,10 +301,12 @@ public class ActionsUI {
                 }
             }
 
-        } catch (HouseNotFoundException | NameAlreadyExistsException e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (NameAlreadyExistsException e) {
+            System.out.println("  Error: schedule name already exists.");
         } catch (ScheduleWithConditionDifferentFromTimeException e) {
-            System.out.println("  Error: Schedules only accept time conditions. " + e.getMessage());
+            System.out.println("  Error: schedules only accept time conditions.");
         }
     }
 
@@ -287,11 +321,11 @@ public class ActionsUI {
 
             Ansi.listTitle("Select Schedule to Remove");
             for (int i = 0; i < schedules.size(); i++) {
-                Ansi.listRow(String.format("%d | %s", i + 1, schedules.get(i).getName()));
+                Ansi.listRow(String.format("%d  %s", i + 1, schedules.get(i).getName()));
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Enter number (0 to cancel)"));
+            System.out.print(Ansi.prompt("Schedule (0 to cancel)"));
             int choice = readInt();
 
             if (choice < 1 || choice > schedules.size()) {
@@ -303,8 +337,10 @@ public class ActionsUI {
             model.removeAutomation(houseId, name);
             System.out.println("  Schedule '" + name + "' removed.");
 
-        } catch (HouseNotFoundException | AutomationDoesntExistException e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (AutomationDoesntExistException e) {
+            System.out.println("  Error: schedule not found.");
         }
     }
 
@@ -320,19 +356,60 @@ public class ActionsUI {
                 "Remove Scenario"
         }, model::getCurrentState);
         
-        House house = model.getHouseById(houseId);
-        User user = model.getUserByEmail(email);
+        if (!houseHasDevices(houseId)) {
+            System.out.println("  No devices in this house.");
+            return;
+        }
+        Integer userId;
+        try {
+            userId = model.getUserByEmail(email).getId();
+        } catch (UserNotFoundException e) {
+            System.out.println("  Error: user not found.");
+            return;
+        }
 
-        menu.setPreCondition(1, () -> !model.getScenarios(houseId, user.getId()).isEmpty());
-        menu.setPreCondition(2, () -> !model.getScenarios(houseId, user.getId()).isEmpty());
-        menu.setPreCondition(3, () -> house.getDevices().size() > 0);
-        menu.setPreCondition(4, () -> !model.getScenarios(houseId, user.getId()).isEmpty());
+        menu.setPreCondition(1, () -> hasScenarios(houseId, userId));
+        menu.setPreCondition(2, () -> hasScenarios(houseId, userId));
+        menu.setPreCondition(3, () -> true);
+        menu.setPreCondition(4, () -> hasScenarios(houseId, userId));
 
         menu.setHandler(1, () -> listScenarios(houseId, email));
         menu.setHandler(2, () -> executeScenario(houseId, email));
         menu.setHandler(3, () -> addScenario(houseId, email));
         menu.setHandler(4, () -> removeScenario(houseId, email));
         menu.run();
+    }
+
+    private boolean hasScenarios(int houseId, int userId) {
+        try {
+            return !model.getScenarios(houseId, userId).isEmpty();
+        } catch (HouseNotFoundException | UserDoesntHaveScenarios e) {
+            return false;
+        }
+    }
+
+    private boolean hasAutomations(int houseId) {
+        try {
+            return !model.getAutomations(houseId).isEmpty();
+        } catch (HouseNotFoundException e) {
+            return false;
+        }
+    }
+
+    private boolean hasSchedules(int houseId) {
+        try {
+            return !model.getSchedules(houseId).isEmpty();
+        } catch (HouseNotFoundException e) {
+            return false;
+        }
+    }
+
+    private boolean houseHasDevices(int houseId) {
+        try {
+            return !model.getHouseById(houseId).getDevices().isEmpty();
+        } catch (HouseNotFoundException e) {
+            return false;
+        }
     }
 
     private void listScenarios(int houseId, String email) {
@@ -346,11 +423,11 @@ public class ActionsUI {
             }
             Ansi.listTitle("Scenarios");
             for (int i = 0; i < scenarios.size(); i++) {
-                Ansi.listRow(String.format("%d | Name: %-15s", i + 1, scenarios.get(i).getName()));
+                Ansi.listRow(String.format("%d  %-22s", i + 1, scenarios.get(i).getName()));
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Enter Scenario Number for details (or 0 to back)"));
+            System.out.print(Ansi.prompt("Scenario (0 to back)"));
             int choice = readInt();
             if (choice == 0)
                 return;
@@ -361,14 +438,14 @@ public class ActionsUI {
                     .orElse(null);
 
             if (selected != null) {
-                System.out.println("\n" + Ansi.CYAN + "--- Scenario Info ---" + Ansi.RESET);
-                System.out.println(selected);
-                System.out.println(Ansi.CYAN + "---------------------" + Ansi.RESET);
+                showScenarioInfo(selected);
             } else {
                 System.out.println("  Invalid Scenario Number.");
             }
-        } catch (HouseNotFoundException | UserNotFoundException e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (UserNotFoundException e) {
+            System.out.println("  Error: user not found.");
         } catch (UserDoesntHaveScenarios e) {
             System.out.println("  No scenarios found for this user.");
         }
@@ -385,11 +462,11 @@ public class ActionsUI {
             }
             Ansi.listTitle("Scenarios");
             for (int i = 0; i < scenarios.size(); i++) {
-                Ansi.listRow(String.format("%d | Name: %-15s", i + 1, scenarios.get(i).getName()));
+                Ansi.listRow(String.format("%d  %-22s", i + 1, scenarios.get(i).getName()));
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Enter Scenario Number for details (or 0 to back)"));
+            System.out.print(Ansi.prompt("Scenario (0 to back)"));
             int choice = readInt();
             if (choice == 0)
                 return;
@@ -401,11 +478,15 @@ public class ActionsUI {
 
             if (selected != null) {
                 model.executeScenario(houseId, user.getId(), selected.getName());
-                System.out.print(String.format("  Scenario %s executed.\n", selected.getName()));
+                System.out.println("  Scenario '" + selected.getName() + "' executed.");
             }
-        } catch (HouseNotFoundException | UserNotFoundException e) {
-            System.out.println("  Error: " + e.getMessage());
-        } catch (UserDoesntHaveScenarios | ScenarioDoesntExistException e) {
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (UserNotFoundException e) {
+            System.out.println("  Error: user not found.");
+        } catch (UserDoesntHaveScenarios e) {
+            System.out.println("  Error: scenario not found.");
+        } catch (ScenarioDoesntExistException e) {
             System.out.println("  Error: Scenario not found.");
         }
     }
@@ -414,7 +495,7 @@ public class ActionsUI {
         System.out.print(Ansi.prompt("Scenario name"));
         String name = sc.nextLine().trim();
         if (name.isEmpty()) {
-            System.out.println("  Name cannot be empty.");
+            System.out.println("\n  Name cannot be empty.");
             return;
         }
 
@@ -425,8 +506,12 @@ public class ActionsUI {
             Scenario scenario = new Scenario(name, actions);
             model.addScenario(houseId, user.getId(), scenario);
             System.out.println("  Scenario '" + name + "' added.");
-        } catch (Exception e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (UserNotFoundException e) {
+            System.out.println("  Error: user not found.");
+        } catch (NameAlreadyExistsException e) {
+            System.out.println("  Error: scenario name already exists.");
         }
     }
 
@@ -442,11 +527,11 @@ public class ActionsUI {
 
             Ansi.listTitle("Select Scenario to Remove");
             for (int i = 0; i < scenarios.size(); i++) {
-                Ansi.listRow(String.format("%d | %s", i + 1, scenarios.get(i).getName()));
+                Ansi.listRow(String.format("%d  %s", i + 1, scenarios.get(i).getName()));
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Enter number (0 to cancel)"));
+            System.out.print(Ansi.prompt("Scenario (0 to cancel)"));
             int choice = readInt();
 
             if (choice < 1 || choice > scenarios.size()) {
@@ -458,12 +543,14 @@ public class ActionsUI {
             model.removeScenario(houseId, user.getId(), name);
             System.out.println("  Scenario '" + name + "' removed.");
 
-        } catch (HouseNotFoundException | UserNotFoundException e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        } catch (UserNotFoundException e) {
+            System.out.println("  Error: user not found.");
         } catch (UserDoesntHaveScenarios e) {
             System.out.println("  No scenarios found for this user.");
-        } catch (Exception e) {
-            System.out.println("  Error: " + e.getMessage());
+        } catch (ScenarioDoesntExistException e) {
+            System.out.println("  Error: scenario not found.");
         }
     }
 
@@ -478,15 +565,15 @@ public class ActionsUI {
         while (adding) {
             Ansi.listTitle("Available Devices");
             int num = 1;
-            // Criamos uma lista para mapear a seleção numérica ao dispositivo real
             List<Device> deviceList = new ArrayList<>(house.getDevices().values());
 
             for (Device d : deviceList) {
-                Ansi.listRow(String.format("%d | %-15s (%s)", num++, d.getModel(), d.getClass().getSimpleName()));
+                Ansi.listRow(String.format("%d  %-10s %-12s %s",
+                    num++, d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Select Device Number (0 to finish)"));
+            System.out.print(Ansi.prompt("Device (0 to finish)"));
             int choice = readInt();
 
             if (choice == 0) break;
@@ -503,20 +590,46 @@ public class ActionsUI {
 
     private void handleDeviceActionSelection(Device device, List<Action> actions) {
         Menu typeMenu = new Menu("Action: " + device.getModel(), 
-            new String[] { "Turn On", "Turn Off", "Set Level (0-100)", "Set Opening (0-100)" }, 
+            new String[] { "Turn On", "Turn Off", "Set Level", "Set Opening", "Set Color Temperature" },
             model::getCurrentState);
 
         typeMenu.setPreCondition(1, () -> device instanceof SwitchableDevice);
         typeMenu.setPreCondition(2, () -> device instanceof SwitchableDevice);
         typeMenu.setPreCondition(3, () -> device instanceof AdjustableDevice);
         typeMenu.setPreCondition(4, () -> device instanceof OpenableDevice);
+        typeMenu.setPreCondition(5, () -> device instanceof ColorAdjustableDevice);
 
         typeMenu.setHandler(1, () -> {
             actions.add(new TurnOnAction(device.getId()));
-            System.out.println(Ansi.GREEN + "  Action added." + Ansi.RESET);
+            System.out.println("  Action added.");
             typeMenu.stop();
         });
-        // ... (repetir lógica para Turn Off, Set Level e Set Opening com a mesma estética)
+        typeMenu.setHandler(2, () -> {
+            actions.add(new TurnOffAction(device.getId()));
+            System.out.println("  Action added.");
+            typeMenu.stop();
+        });
+        typeMenu.setHandler(3, () -> {
+            System.out.print(Ansi.prompt("Level (0-100)"));
+            int level = readIntInRange(0, 100, "Level (0-100)");
+            actions.add(new SetLevelAction(device.getId(), level));
+            System.out.println("  Action added.");
+            typeMenu.stop();
+        });
+        typeMenu.setHandler(4, () -> {
+            System.out.print(Ansi.prompt("Opening percentage (0-100)"));
+            int opening = readIntInRange(0, 100, "Opening percentage (0-100)");
+            actions.add(new SetOpeningAction(device.getId(), opening));
+            System.out.println("  Action added.");
+            typeMenu.stop();
+        });
+        typeMenu.setHandler(5, () -> {
+            System.out.print(Ansi.prompt("Color temperature (2700-4000K)"));
+            int temperature = readIntInRange(2700, 4000, "Color temperature (2700-4000K)");
+            actions.add(new SetColorTemperatureAction(device.getId(), temperature));
+            System.out.println("  Action added.");
+            typeMenu.stop();
+        });
 
         typeMenu.run();
     }
@@ -539,17 +652,16 @@ public class ActionsUI {
 
         while (adding[0]) {
             String[] options = {
-                "Time Condition" + (hasTime[0] ? Ansi.GREEN + " [Added]" + Ansi.RESET : ""),
+                "Time Condition",
                 "Device Condition",
                 "Temperature Condition",
-                "Weather Condition",
-                "Done"
+                "Weather Condition"
             };
 
             Menu menu = new Menu("Add Condition", options, model::getCurrentState);
+            menu.setExitLabel("Done");
 
-            // PreConditions baseadas no contexto (Automation vs Schedule)[cite: 2, 3]
-            menu.setPreCondition(1, () -> !hasTime[0]); // Só permite adicionar condição de tempo se ainda não houver uma
+            menu.setPreCondition(1, () -> !hasTime[0]);
             menu.setPreCondition(2, () -> !timeOnly);
             menu.setPreCondition(3, () -> !timeOnly);
             menu.setPreCondition(4, () -> !timeOnly);
@@ -558,9 +670,9 @@ public class ActionsUI {
             menu.setHandler(2, () -> handleAddDeviceCondition(conditions, house));
             menu.setHandler(3, () -> handleAddTemperatureCondition(conditions));
             menu.setHandler(4, () -> handleAddWeatherCondition(conditions));
-            menu.setHandler(5, () -> { adding[0] = false; menu.stop(); });
 
             menu.run();
+            adding[0] = false;
         }
         return conditions;
     }
@@ -582,7 +694,7 @@ public class ActionsUI {
                 conditions.add(new TimeCondition(trigger));
                 System.out.println("  Time condition added.");
                 hasTime[0] = true;
-            } catch (Exception e) {
+            } catch (DateTimeParseException e) {
                 System.out.println("  Invalid time format.");
             }
             timeMenu.stop();
@@ -597,7 +709,7 @@ public class ActionsUI {
                 conditions.add(new TimeWindowCondition(start, end));
                 System.out.println("  Time window condition added.");
                 hasTime[0] = true;
-            } catch (Exception e) {
+            } catch (DateTimeParseException e) {
                 System.out.println("  Invalid time format.");
             }
             timeMenu.stop();
@@ -663,7 +775,7 @@ public class ActionsUI {
             final int index = i;
             weatherMenu.setHandler(i + 1, () -> {
                 conditions.add(new OutsideWeatherCondition(weathers[index]));
-                System.out.println(Ansi.GREEN + "  Weather condition added." + Ansi.RESET);
+                System.out.println("  Weather condition added.");
                 weatherMenu.stop();
             });
         }
@@ -684,7 +796,7 @@ public class ActionsUI {
 
         if (op[0] != null) {
             conditions.add(new TemperatureCondition(temp, op[0]));
-            System.out.println(Ansi.GREEN + "  Temperature condition added." + Ansi.RESET);
+            System.out.println("  Temperature condition added.");
         }
     }
 }
