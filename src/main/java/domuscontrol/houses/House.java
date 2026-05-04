@@ -115,13 +115,12 @@ public class House implements Serializable {
      * @param divisions    A map of divisions to populate the house.
      * @param devices      A map of devices to populate the house.
      * @param name         The name of the house.
-     * @param usersInHouse A map of users and their roles in this house.
      */
     public House(Map<String, List<Device>> divisions, Map<Integer, Device> devices, String name) {
         this.id = House.nextId++;
         this.name = name;
         this.routineFacade = new RoutineManager();
-        this.usersInHouse = new HashMap<>(usersInHouse);
+        this.usersInHouse = new HashMap<>();
         this.interactionLogger = new InteractionLogger();
         this.setDevices(devices);
         this.setDivisions(divisions);
@@ -177,7 +176,7 @@ public class House implements Serializable {
      * @return A cloned RoutineManager object.
      */
     public RoutineManager getRoutineFacade() {
-        return this.routineFacade;
+        return this.routineFacade.clone();
     }
 
     /**
@@ -186,7 +185,7 @@ public class House implements Serializable {
      * @param facade The RoutineManager to assign.
      */
     public void setRoutineFacade(RoutineManager facade) {
-        this.routineFacade = facade.clone();
+        this.routineFacade = facade != null ? facade.clone() : new RoutineManager();
     }
 
     /**
@@ -568,12 +567,10 @@ public class House implements Serializable {
     }
 
     /**
-     * Retrieves the live reference to a device by its ID.
-     * This returns the actual object pointer, not a clone, and is intended
-     * to be used when constructing Actions and Conditions.
+     * Retrieves a copy of a device by its ID.
      *
      * @param deviceId The unique identifier of the device.
-     * @return The live Device object.
+     * @return A cloned Device object.
      * @throws DeviceNotFoundException if the device ID does not exist in the house.
      */
     public Device getDevice(int deviceId) throws DeviceNotFoundException {
@@ -581,7 +578,7 @@ public class House implements Serializable {
         if (device == null) {
             throw new DeviceNotFoundException("Device with ID " + deviceId + " not found in the house.");
         }
-        return device;
+        return device.clone();
     }
 
     /**

@@ -9,24 +9,31 @@ public class Simulation implements Serializable {
 
     private static final long serialVersionUID = 1L;
     public enum WeatherCondition {
-        SUNNY(1.0),
-        PARTLY_CLOUDY(0.8),
-        CLOUDY(0.5),
-        FOGGY(0.4),
-        RAINING(0.3),
-        STORMY(0.15),
-        SNOWING(0.6),
-        WINTER_IS_COMING(0.2),
-        APOCALYPSE(0.05);
+        SUNNY(1.0, "SUNNY"),
+        PARTLY_CLOUDY(0.8, "PARTLY_CLOUDY"),
+        CLOUDY(0.5, "CLOUDY"),
+        FOGGY(0.4, "FOGGY"),
+        RAINING(0.3, "RAINING"),
+        STORMY(0.15, "STORMY"),
+        SNOWING(0.6, "SNOWING"),
+        WINTER_IS_COMING(0.2, "WINTER"),
+        APOCALYPSE(0.05, "APOCALYPSE");
 
         private final double luminosityMultiplier;
+        private final String displayName;
 
-        WeatherCondition(double luminosityMultiplier) {
+        WeatherCondition(double luminosityMultiplier, String displayName) {
             this.luminosityMultiplier = luminosityMultiplier;
+            this.displayName = displayName;
         }
 
         public double getLuminosityMultiplier() {
             return luminosityMultiplier;
+        }
+
+        @Override
+        public String toString() {
+            return this.displayName;
         }
     }
 

@@ -2,6 +2,7 @@ package domuscontrol.user;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -102,7 +103,7 @@ public class User implements Serializable {
 	 * @return A set of house IDs where the user has a role.
 	 */
 	public Set<Integer> getHouseIds() {
-		return this.rolesByHouseId.keySet();
+		return new HashSet<>(this.rolesByHouseId.keySet());
 	}
 
 	/**

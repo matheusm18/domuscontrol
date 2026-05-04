@@ -19,7 +19,10 @@ import domuscontrol.routines.conditions.ColorTemperatureCondition;
 import domuscontrol.routines.conditions.DeviceLevelCondition;
 import domuscontrol.routines.conditions.DeviceOpenCondition;
 import domuscontrol.routines.conditions.DeviceStateCondition;
+import domuscontrol.routines.conditions.LuminosityCondition;
 import domuscontrol.routines.conditions.Operator;
+import domuscontrol.routines.conditions.OutsideWeatherCondition;
+import domuscontrol.routines.conditions.TemperatureCondition;
 import domuscontrol.routines.conditions.TimeCondition;
 
 import java.time.Duration;
@@ -37,6 +40,9 @@ import java.util.Map;
  * - Time-based (Schedule): the same device action occurs repeatedly around the same time of day.
  * - Sequence-based (Automation): one device interaction is consistently followed by another
  *   on a different device within a short time window.
+ * - Environment-based (Automation): the same device action occurs repeatedly under the same
+ *   weather condition, under consistently hot/cold outside temperatures, or under
+ *   consistently dark/bright outside luminosity.
  */
 public class SuggestionEngine {
 
@@ -48,6 +54,18 @@ public class SuggestionEngine {
 
     /** Maximum gap in minutes between two interactions to be considered a sequence. */
     private static final int SEQUENCE_WINDOW_MINUTES = 2;
+
+    /** Temperature threshold used to detect cold-weather behavior. */
+    private static final int COLD_TEMPERATURE_THRESHOLD = 16;
+
+    /** Temperature threshold used to detect hot-weather behavior. */
+    private static final int HOT_TEMPERATURE_THRESHOLD = 24;
+
+    /** Luminosity threshold used to detect dark environments. */
+    private static final int DARK_LUMINOSITY_THRESHOLD = 300;
+
+    /** Luminosity threshold used to detect bright environments. */
+    private static final int BRIGHT_LUMINOSITY_THRESHOLD = 700;
 
     /**
      * Private constructor — this class is not meant to be instantiated.
@@ -73,6 +91,77 @@ public class SuggestionEngine {
 
         suggestions.addAll(detectSchedulePatterns(interactions, devices));
         suggestions.addAll(detectSequencePatterns(interactions, devices));
+        suggestions.addAll(detectWeatherPatterns(interactions, devices));
+        suggestions.addAll(detectTemperaturePatterns(interactions, devices));
+        suggestions.addAll(detectLuminosityPatterns(interactions, devices));
+
+        return suggestions;
+    }
+
+    /**
+     * Detects repeated manual actions that happened during clearly dark or bright outside luminosity.
+     *
+     * @param interactions The user interaction list.
+     * @param devices      The live device map.
+     * @return A list of luminosity-based automation suggestions.
+     */
+    private static List<AutomationSuggestion> detectLuminosityPatterns(
+            List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
+
+        List<AutomationSuggestion> suggestions = new ArrayList<>();
+
+        Map<String, List<DeviceInteraction>> groups = new HashMap<>();
+        for (DeviceInteraction i : interactions) {
+            String band = luminosityBand(i.getLuminosity());
+            if (band == null) continue;
+
+            String key = i.getDeviceId() + "_" + i.getType() + "_" + roundedValue(i.getValue())
+                    + "_luminosity_" + band;
+            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(i);
+        }
+
+        for (Map.Entry<String, List<DeviceInteraction>> entry : groups.entrySet()) {
+            List<DeviceInteraction> group = entry.getValue();
+            if (group.size() < MIN_OCCURRENCES) continue;
+
+            DeviceInteraction sample = group.get(0);
+            Device device = devices.get(sample.getDeviceId());
+            if (device == null) continue;
+
+            Action action = buildAction(sample, device);
+            if (action == null) continue;
+
+            String band = luminosityBand(sample.getLuminosity());
+            if (band == null) continue;
+
+            Condition condition;
+            String conditionText;
+            if ("DARK".equals(band)) {
+                condition = new LuminosityCondition(DARK_LUMINOSITY_THRESHOLD, Operator.LESS_THAN);
+                conditionText = "below " + DARK_LUMINOSITY_THRESHOLD + " lx";
+            } else {
+                condition = new LuminosityCondition(BRIGHT_LUMINOSITY_THRESHOLD, Operator.GREATER_THAN);
+                conditionText = "above " + BRIGHT_LUMINOSITY_THRESHOLD + " lx";
+            }
+
+            List<Condition> conditions = new ArrayList<>();
+            conditions.add(condition);
+
+            List<Action> actions = new ArrayList<>();
+            actions.add(action);
+
+            String name = "Suggested Automation: when luminosity is " + band
+                    + " -> " + sample.getType() + valueDescription(sample)
+                    + " device " + sample.getDeviceId();
+            String description = "Device '" + device.getModel() + "' was manually "
+                    + sample.getType().toString().toLowerCase().replace("_", " ")
+                    + valueDescription(sample)
+                    + " at least " + MIN_OCCURRENCES + " times when outside luminosity was "
+                    + conditionText + ".";
+
+            Automation automation = new Automation(name, AutomationType.AUTOMATION, conditions, actions);
+            suggestions.add(new AutomationSuggestion(description, automation));
+        }
 
         return suggestions;
     }
@@ -123,9 +212,11 @@ public class SuggestionEngine {
             actions.add(action);
 
             String name = "Suggested Schedule: " + sample.getType()
+                    + valueDescription(sample)
                     + " device " + sample.getDeviceId() + " at " + clusterCenter;
             String description = "Device '" + device.getModel() + "' was manually "
                     + sample.getType().toString().toLowerCase().replace("_", " ")
+                    + valueDescription(sample)
                     + " at least " + MIN_OCCURRENCES + " times around " + clusterCenter + ".";
 
             Automation automation = new Automation(name, AutomationType.SCHEDULE, conditions, actions);
@@ -199,8 +290,10 @@ public class SuggestionEngine {
                     .append(triggerSample.getDeviceId())
                     .append(" ")
                     .append(triggerSample.getType())
+                    .append(valueDescription(triggerSample))
                     .append(" -> ")
                     .append(actionSample.getType())
+                    .append(valueDescription(actionSample))
                     .append(" device ")
                     .append(actionSample.getDeviceId());
             String name = nameBuilder.toString();
@@ -218,6 +311,128 @@ public class SuggestionEngine {
                     .append(entry.getValue())
                     .append(" times.");
             String description = descriptionBuilder.toString();
+            Automation automation = new Automation(name, AutomationType.AUTOMATION, conditions, actions);
+            suggestions.add(new AutomationSuggestion(description, automation));
+        }
+
+        return suggestions;
+    }
+
+    /**
+     * Detects repeated manual actions that happened under the same outside weather.
+     *
+     * @param interactions The user interaction list.
+     * @param devices      The live device map.
+     * @return A list of weather-based automation suggestions.
+     */
+    private static List<AutomationSuggestion> detectWeatherPatterns(
+            List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
+
+        List<AutomationSuggestion> suggestions = new ArrayList<>();
+
+        Map<String, List<DeviceInteraction>> groups = new HashMap<>();
+        for (DeviceInteraction i : interactions) {
+            if (i.getWeather() == null) continue;
+
+            String key = i.getDeviceId() + "_" + i.getType() + "_" + roundedValue(i.getValue())
+                    + "_weather_" + i.getWeather();
+            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(i);
+        }
+
+        for (Map.Entry<String, List<DeviceInteraction>> entry : groups.entrySet()) {
+            List<DeviceInteraction> group = entry.getValue();
+            if (group.size() < MIN_OCCURRENCES) continue;
+
+            DeviceInteraction sample = group.get(0);
+            Device device = devices.get(sample.getDeviceId());
+            if (device == null) continue;
+
+            Action action = buildAction(sample, device);
+            if (action == null) continue;
+
+            List<Condition> conditions = new ArrayList<>();
+            conditions.add(new OutsideWeatherCondition(sample.getWeather()));
+
+            List<Action> actions = new ArrayList<>();
+            actions.add(action);
+
+            String name = "Suggested Automation: when weather is " + sample.getWeather()
+                    + " -> " + sample.getType() + valueDescription(sample)
+                    + " device " + sample.getDeviceId();
+            String description = "Device '" + device.getModel() + "' was manually "
+                    + sample.getType().toString().toLowerCase().replace("_", " ")
+                    + valueDescription(sample)
+                    + " at least " + MIN_OCCURRENCES + " times while the weather was "
+                    + sample.getWeather() + ".";
+
+            Automation automation = new Automation(name, AutomationType.AUTOMATION, conditions, actions);
+            suggestions.add(new AutomationSuggestion(description, automation));
+        }
+
+        return suggestions;
+    }
+
+    /**
+     * Detects repeated manual actions that happened during clearly cold or hot outside temperatures.
+     *
+     * @param interactions The user interaction list.
+     * @param devices      The live device map.
+     * @return A list of temperature-based automation suggestions.
+     */
+    private static List<AutomationSuggestion> detectTemperaturePatterns(
+            List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
+
+        List<AutomationSuggestion> suggestions = new ArrayList<>();
+
+        Map<String, List<DeviceInteraction>> groups = new HashMap<>();
+        for (DeviceInteraction i : interactions) {
+            String band = temperatureBand(i.getOutsideTemperature());
+            if (band == null) continue;
+
+            String key = i.getDeviceId() + "_" + i.getType() + "_" + roundedValue(i.getValue())
+                    + "_temperature_" + band;
+            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(i);
+        }
+
+        for (Map.Entry<String, List<DeviceInteraction>> entry : groups.entrySet()) {
+            List<DeviceInteraction> group = entry.getValue();
+            if (group.size() < MIN_OCCURRENCES) continue;
+
+            DeviceInteraction sample = group.get(0);
+            Device device = devices.get(sample.getDeviceId());
+            if (device == null) continue;
+
+            Action action = buildAction(sample, device);
+            if (action == null) continue;
+
+            String band = temperatureBand(sample.getOutsideTemperature());
+            if (band == null) continue;
+
+            Condition condition;
+            String conditionText;
+            if ("COLD".equals(band)) {
+                condition = new TemperatureCondition(COLD_TEMPERATURE_THRESHOLD, Operator.LESS_THAN);
+                conditionText = "below " + COLD_TEMPERATURE_THRESHOLD + "C";
+            } else {
+                condition = new TemperatureCondition(HOT_TEMPERATURE_THRESHOLD, Operator.GREATER_THAN);
+                conditionText = "above " + HOT_TEMPERATURE_THRESHOLD + "C";
+            }
+
+            List<Condition> conditions = new ArrayList<>();
+            conditions.add(condition);
+
+            List<Action> actions = new ArrayList<>();
+            actions.add(action);
+
+            String name = "Suggested Automation: when temperature is " + band
+                    + " -> " + sample.getType() + valueDescription(sample)
+                    + " device " + sample.getDeviceId();
+            String description = "Device '" + device.getModel() + "' was manually "
+                    + sample.getType().toString().toLowerCase().replace("_", " ")
+                    + valueDescription(sample)
+                    + " at least " + MIN_OCCURRENCES + " times when outside temperature was "
+                    + conditionText + ".";
+
             Automation automation = new Automation(name, AutomationType.AUTOMATION, conditions, actions);
             suggestions.add(new AutomationSuggestion(description, automation));
         }
@@ -344,11 +559,19 @@ public class SuggestionEngine {
      * @return The average time.
      */
     private static LocalTime averageTime(List<LocalTime> times) {
-        long total = 0;
+        double sin = 0.0;
+        double cos = 0.0;
         for (LocalTime t : times) {
-            total += t.toSecondOfDay();
+            double angle = 2.0 * Math.PI * t.toSecondOfDay() / (24.0 * 60.0 * 60.0);
+            sin += Math.sin(angle);
+            cos += Math.cos(angle);
         }
-        return LocalTime.ofSecondOfDay(total / times.size());
+
+        double averageAngle = Math.atan2(sin / times.size(), cos / times.size());
+        if (averageAngle < 0) averageAngle += 2.0 * Math.PI;
+
+        long seconds = Math.round(averageAngle * 24.0 * 60.0 * 60.0 / (2.0 * Math.PI));
+        return LocalTime.ofSecondOfDay(seconds % (24 * 60 * 60));
     }
 
     /**
@@ -361,5 +584,41 @@ public class SuggestionEngine {
     private static String roundedValue(Double value) {
         if (value == null) return "null";
         return String.valueOf((int) (Math.round(value / 5.0) * 5));
+    }
+
+    /**
+     * Classifies outside temperatures into actionable automation bands.
+     *
+     * @param temperature The outside temperature, may be null.
+     * @return COLD, HOT, or null when the temperature is not extreme enough.
+     */
+    private static String temperatureBand(Double temperature) {
+        if (temperature == null) return null;
+        if (temperature < COLD_TEMPERATURE_THRESHOLD) return "COLD";
+        if (temperature > HOT_TEMPERATURE_THRESHOLD) return "HOT";
+        return null;
+    }
+
+    /**
+     * Classifies outside luminosity into actionable automation bands.
+     *
+     * @param luminosity The outside luminosity, may be null.
+     * @return DARK, BRIGHT, or null when the luminosity is not extreme enough.
+     */
+    private static String luminosityBand(Double luminosity) {
+        if (luminosity == null) return null;
+        if (luminosity < DARK_LUMINOSITY_THRESHOLD) return "DARK";
+        if (luminosity > BRIGHT_LUMINOSITY_THRESHOLD) return "BRIGHT";
+        return null;
+    }
+
+    /**
+     * Formats the optional interaction value for suggestion descriptions.
+     *
+     * @param interaction The recorded interaction.
+     * @return A formatted value suffix, or an empty string.
+     */
+    private static String valueDescription(DeviceInteraction interaction) {
+        return interaction.getValue() != null ? " to " + interaction.getValue().intValue() : "";
     }
 }

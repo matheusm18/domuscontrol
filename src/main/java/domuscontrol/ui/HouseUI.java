@@ -26,6 +26,8 @@ import domuscontrol.exceptions.ScheduleWithConditionDifferentFromTimeException;
 import domuscontrol.exceptions.UserNotFoundException;
 import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
+import domuscontrol.routines.Automation;
+import domuscontrol.routines.AutomationType;
 import domuscontrol.suggestions.AutomationSuggestion;
 import domuscontrol.user.UserRole;
 import domuscontrol.utils.Ansi;
@@ -729,8 +731,13 @@ public class HouseUI {
             if (choice < 1 || choice > suggestions.size()) return;
 
             AutomationSuggestion chosen = suggestions.get(choice - 1);
-            model.addAutomation(houseId, chosen.getAutomation());
-            System.out.println("  Automation added successfully.");
+            Automation automation = chosen.getAutomation();
+            model.addAutomation(houseId, automation);
+            if (automation.getType() == AutomationType.SCHEDULE) {
+                System.out.println("  Schedule added successfully.");
+            } else {
+                System.out.println("  Automation added successfully.");
+            }
         } catch (NameAlreadyExistsException e) {
             System.out.println("  Error: Automation already exists.");
         } catch (HouseNotFoundException e) {

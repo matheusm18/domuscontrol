@@ -12,7 +12,7 @@ import domuscontrol.menu.Menu;
 import domuscontrol.routines.*;
 import domuscontrol.routines.actions.*;
 import domuscontrol.routines.conditions.*;
-import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.Simulation.WeatherCondition;
 import domuscontrol.user.User;
 import domuscontrol.utils.Ansi;
 
@@ -58,7 +58,7 @@ public class ActionsUI {
     }
 
     // ------------------------------------------------------------------------
-    // AUTOMATIONS (may have any conditions: time, climate, temperature)
+    // AUTOMATIONS (may have any conditions: time, climate, temperature, luminosity)
     // ------------------------------------------------------------------------
 
     public void manageAutomations(int houseId, String email) {
@@ -655,7 +655,8 @@ public class ActionsUI {
                 "Time Condition",
                 "Device Condition",
                 "Temperature Condition",
-                "Weather Condition"
+                "Weather Condition",
+                "Luminosity Condition"
             };
 
             Menu menu = new Menu("Add Condition", options, model::getCurrentState);
@@ -665,11 +666,13 @@ public class ActionsUI {
             menu.setPreCondition(2, () -> !timeOnly);
             menu.setPreCondition(3, () -> !timeOnly);
             menu.setPreCondition(4, () -> !timeOnly);
+            menu.setPreCondition(5, () -> !timeOnly);
 
             menu.setHandler(1, () -> handleAddTimeCondition(conditions, hasTime));
             menu.setHandler(2, () -> handleAddDeviceCondition(conditions, house));
             menu.setHandler(3, () -> handleAddTemperatureCondition(conditions));
             menu.setHandler(4, () -> handleAddWeatherCondition(conditions));
+            menu.setHandler(5, () -> handleAddLuminosityCondition(conditions));
 
             menu.run();
             adding[0] = false;
@@ -765,9 +768,9 @@ public class ActionsUI {
     }
 
     private void handleAddWeatherCondition(List<Condition> conditions) {
-        Simulation.WeatherCondition[] weathers = Simulation.WeatherCondition.values();
+        WeatherCondition[] weathers = WeatherCondition.values();
         String[] weatherNames = new String[weathers.length];
-        for (int i = 0; i < weathers.length; i++) weatherNames[i] = weathers[i].name();
+        for (int i = 0; i < weathers.length; i++) weatherNames[i] = weathers[i].toString();
 
         Menu weatherMenu = new Menu("Select Weather", weatherNames, model::getCurrentState);
 
@@ -797,6 +800,24 @@ public class ActionsUI {
         if (op[0] != null) {
             conditions.add(new TemperatureCondition(temp, op[0]));
             System.out.println("  Temperature condition added.");
+        }
+    }
+
+    private void handleAddLuminosityCondition(List<Condition> conditions) {
+        System.out.print(Ansi.prompt("Target Luminosity (lx)"));
+        int luminosity = readInt();
+
+        Operator[] op = new Operator[1];
+        Menu opMenu = new Menu("Select Operator", new String[] { "EQUALS (==)", "GREATER THAN (>)", "LESS THAN (<)" }, model::getCurrentState);
+
+        opMenu.setHandler(1, () -> { op[0] = Operator.EQUALS; opMenu.stop(); });
+        opMenu.setHandler(2, () -> { op[0] = Operator.GREATER_THAN; opMenu.stop(); });
+        opMenu.setHandler(3, () -> { op[0] = Operator.LESS_THAN; opMenu.stop(); });
+        opMenu.run();
+
+        if (op[0] != null) {
+            conditions.add(new LuminosityCondition(luminosity, op[0]));
+            System.out.println("  Luminosity condition added.");
         }
     }
 }

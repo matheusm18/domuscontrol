@@ -99,7 +99,8 @@ public class Menu {
 
     private void printState(SimulationState stateObj) {
         String line1 = stateObj.getCurrentDateTime().toLocalDate().toString() + "  " + stateObj.getCurrentDateTime().toLocalTime().toString();
-        String line2 = stateObj.getTemperature() + "ºC  " + stateObj.getWeather().toString();
+        String line2 = stateObj.getTemperature() + "ºC  " + stateObj.getWeather().toString()
+                + "  " + stateObj.getLuminosity() + " lx";
 
         printCenteredLine(line1);
         printCenteredLine(line2);

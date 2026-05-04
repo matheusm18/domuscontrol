@@ -1,5 +1,6 @@
 package domuscontrol.houses;
 
+import java.util.ArrayList;
 import java.util.List;
 
 //Auxiliar class for transporting division info.
@@ -18,9 +19,9 @@ public class DivisionInfo {
      * @param devices The list of devices in the division.
      */
     public DivisionInfo(House house, String divisionName, List<String> devices) {
-        this.house = house;
+        this.house = house != null ? house.clone() : null;
         this.divisionName = divisionName;
-        this.devices = devices;
+        this.devices = devices != null ? new ArrayList<>(devices) : new ArrayList<>();
     }
 
     /**
@@ -28,7 +29,7 @@ public class DivisionInfo {
      * @return The house the division belongs to.
      */
     public House getHouse() {
-        return house;
+        return house != null ? house.clone() : null;
     }
 
     /**
@@ -44,6 +45,6 @@ public class DivisionInfo {
      * @return The list of devices in the division.
      */
     public List<String> getDevices() {
-        return devices;
+        return new ArrayList<>(devices);
     }
 }

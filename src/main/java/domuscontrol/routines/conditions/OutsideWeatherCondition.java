@@ -1,6 +1,7 @@
 package domuscontrol.routines.conditions;
 
 import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.Simulation.WeatherCondition;
 import domuscontrol.houses.House;
 import domuscontrol.routines.Condition;
 
@@ -12,13 +13,13 @@ import java.util.Objects;
  */
 public class OutsideWeatherCondition implements Condition {
 
-    private Simulation.WeatherCondition triggerWeather;
+    private WeatherCondition triggerWeather;
 
     public OutsideWeatherCondition() {
-        this.triggerWeather = Simulation.WeatherCondition.SUNNY;
+        this.triggerWeather = WeatherCondition.SUNNY;
     }
 
-    public OutsideWeatherCondition(Simulation.WeatherCondition triggerWeather) {
+    public OutsideWeatherCondition(WeatherCondition triggerWeather) {
         this.triggerWeather = triggerWeather;
     }
 
@@ -26,11 +27,11 @@ public class OutsideWeatherCondition implements Condition {
         this.triggerWeather = other.triggerWeather;
     }
 
-    public Simulation.WeatherCondition getTriggerWeather() {
+    public WeatherCondition getTriggerWeather() {
         return triggerWeather;
     }
 
-    public void setTriggerWeather(Simulation.WeatherCondition triggerWeather) {
+    public void setTriggerWeather(WeatherCondition triggerWeather) {
         this.triggerWeather = triggerWeather;
     }
 

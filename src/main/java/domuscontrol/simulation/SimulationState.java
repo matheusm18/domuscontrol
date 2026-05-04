@@ -1,5 +1,7 @@
 package domuscontrol.simulation;
 
+import domuscontrol.simulation.Simulation.WeatherCondition;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -8,11 +10,13 @@ public final class SimulationState implements Serializable {
 
     private final LocalDateTime currentDateTime;
     private final int temperature;
-    private final Simulation.WeatherCondition weather;
+    private final int luminosity;
+    private final WeatherCondition weather;
 
-    public SimulationState(LocalDateTime currentDateTime, int temperature, Simulation.WeatherCondition weather) {
+    public SimulationState(LocalDateTime currentDateTime, int temperature, int luminosity, WeatherCondition weather) {
         this.currentDateTime = currentDateTime;
         this.temperature = temperature;
+        this.luminosity = luminosity;
         this.weather = weather;
     }
 
@@ -24,7 +28,11 @@ public final class SimulationState implements Serializable {
         return this.temperature;
     }
 
-    public Simulation.WeatherCondition getWeather() {
+    public int getLuminosity() {
+        return this.luminosity;
+    }
+
+    public WeatherCondition getWeather() {
         return this.weather;
     }
 }

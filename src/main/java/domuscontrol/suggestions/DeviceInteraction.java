@@ -1,5 +1,7 @@
 package domuscontrol.suggestions;
 
+import domuscontrol.simulation.Simulation.WeatherCondition;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -28,6 +30,15 @@ public class DeviceInteraction implements Serializable {
     /** The simulation timestamp when this interaction occurred. */
     private LocalDateTime timestamp;
 
+    /** The outside weather when this interaction occurred. */
+    private WeatherCondition weather;
+
+    /** The outside temperature when this interaction occurred. */
+    private Double outsideTemperature;
+
+    /** The outside luminosity when this interaction occurred. */
+    private Double luminosity;
+
     /**
      * Default constructor initializing all fields to safe defaults.
      */
@@ -37,6 +48,9 @@ public class DeviceInteraction implements Serializable {
         this.value     = null;
         this.userId    = -1;
         this.timestamp = null;
+        this.weather   = null;
+        this.outsideTemperature = null;
+        this.luminosity = null;
     }
 
     /**
@@ -52,6 +66,26 @@ public class DeviceInteraction implements Serializable {
         this.value     = null;
         this.userId    = userId;
         this.timestamp = timestamp;
+        this.weather   = null;
+        this.outsideTemperature = null;
+        this.luminosity = null;
+    }
+
+    public DeviceInteraction(int deviceId, InteractionType type, int userId, LocalDateTime timestamp,
+                             WeatherCondition weather, Double outsideTemperature) {
+        this(deviceId, type, userId, timestamp, weather, outsideTemperature, null);
+    }
+
+    public DeviceInteraction(int deviceId, InteractionType type, int userId, LocalDateTime timestamp,
+                             WeatherCondition weather, Double outsideTemperature, Double luminosity) {
+        this.deviceId  = deviceId;
+        this.type      = type;
+        this.value     = null;
+        this.userId    = userId;
+        this.timestamp = timestamp;
+        this.weather   = weather;
+        this.outsideTemperature = outsideTemperature;
+        this.luminosity = luminosity;
     }
 
     public DeviceInteraction(int deviceId, InteractionType type, Double value, int userId, LocalDateTime timestamp) {
@@ -60,6 +94,26 @@ public class DeviceInteraction implements Serializable {
         this.value     = value;
         this.userId    = userId;
         this.timestamp = timestamp;
+        this.weather   = null;
+        this.outsideTemperature = null;
+        this.luminosity = null;
+    }
+
+    public DeviceInteraction(int deviceId, InteractionType type, Double value, int userId, LocalDateTime timestamp,
+                             WeatherCondition weather, Double outsideTemperature) {
+        this(deviceId, type, value, userId, timestamp, weather, outsideTemperature, null);
+    }
+
+    public DeviceInteraction(int deviceId, InteractionType type, Double value, int userId, LocalDateTime timestamp,
+                             WeatherCondition weather, Double outsideTemperature, Double luminosity) {
+        this.deviceId  = deviceId;
+        this.type      = type;
+        this.value     = value;
+        this.userId    = userId;
+        this.timestamp = timestamp;
+        this.weather   = weather;
+        this.outsideTemperature = outsideTemperature;
+        this.luminosity = luminosity;
     }
 
     /**
@@ -73,6 +127,9 @@ public class DeviceInteraction implements Serializable {
         this.value     = other.getValue();
         this.userId    = other.getUserId();
         this.timestamp = other.getTimestamp();
+        this.weather   = other.getWeather();
+        this.outsideTemperature = other.getOutsideTemperature();
+        this.luminosity = other.getLuminosity();
     }
 
     /**
@@ -136,6 +193,48 @@ public class DeviceInteraction implements Serializable {
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
 
     /**
+     * Returns the outside weather recorded when the interaction happened.
+     *
+     * @return The weather condition, or null for legacy interactions.
+     */
+    public WeatherCondition getWeather() { return weather; }
+
+    /**
+     * Sets the outside weather associated with this interaction.
+     *
+     * @param weather The weather condition.
+     */
+    public void setWeather(WeatherCondition weather) { this.weather = weather; }
+
+    /**
+     * Returns the outside temperature recorded when the interaction happened.
+     *
+     * @return The temperature in Celsius, or null for legacy interactions.
+     */
+    public Double getOutsideTemperature() { return outsideTemperature; }
+
+    /**
+     * Sets the outside temperature associated with this interaction.
+     *
+     * @param outsideTemperature The temperature in Celsius.
+     */
+    public void setOutsideTemperature(Double outsideTemperature) { this.outsideTemperature = outsideTemperature; }
+
+    /**
+     * Returns the outside luminosity recorded when the interaction happened.
+     *
+     * @return The luminosity in lux, or null for legacy interactions.
+     */
+    public Double getLuminosity() { return luminosity; }
+
+    /**
+     * Sets the outside luminosity associated with this interaction.
+     *
+     * @param luminosity The luminosity in lux.
+     */
+    public void setLuminosity(Double luminosity) { this.luminosity = luminosity; }
+
+    /**
      * Creates a deep copy of this interaction.
      *
      * @return A new DeviceInteraction instance.
@@ -160,7 +259,10 @@ public class DeviceInteraction implements Serializable {
                this.getUserId()   == that.getUserId()   &&
                this.getType()     == that.getType()     &&
                Objects.equals(this.getValue(), that.getValue()) &&
-               Objects.equals(this.getTimestamp(), that.getTimestamp());
+               Objects.equals(this.getTimestamp(), that.getTimestamp()) &&
+               this.getWeather() == that.getWeather() &&
+               Objects.equals(this.getOutsideTemperature(), that.getOutsideTemperature()) &&
+               Objects.equals(this.getLuminosity(), that.getLuminosity());
     }
 
     /**
@@ -170,7 +272,8 @@ public class DeviceInteraction implements Serializable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(this.getDeviceId(), this.getUserId(), this.getType(), this.getValue(), this.getTimestamp());
+        return Objects.hash(this.getDeviceId(), this.getUserId(), this.getType(), this.getValue(), this.getTimestamp(),
+                this.getWeather(), this.getOutsideTemperature(), this.getLuminosity());
     }
 
     /**
@@ -184,6 +287,9 @@ public class DeviceInteraction implements Serializable {
                ", userId=" + this.getUserId() +
                ", type=" + this.getType() +
                ", value=" + (this.getValue() != null ? this.getValue() : "N/A") +
-               ", timestamp=" + this.getTimestamp() + " }";
+               ", timestamp=" + this.getTimestamp() +
+               ", weather=" + (this.getWeather() != null ? this.getWeather() : "N/A") +
+               ", outsideTemperature=" + (this.getOutsideTemperature() != null ? this.getOutsideTemperature() : "N/A") +
+               ", luminosity=" + (this.getLuminosity() != null ? this.getLuminosity() : "N/A") + " }";
     }
 }

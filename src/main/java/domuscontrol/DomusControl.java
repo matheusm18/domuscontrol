@@ -28,6 +28,7 @@ import domuscontrol.exceptions.UserDoesntHaveScenarios;
 import domuscontrol.routines.Automation;
 import domuscontrol.routines.Scenario;
 import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.Simulation.WeatherCondition;
 import domuscontrol.simulation.SimulationState;
 import domuscontrol.suggestions.AutomationSuggestion;
 import domuscontrol.suggestions.DeviceInteraction;
@@ -69,7 +70,7 @@ public class DomusControl implements Serializable {
             LocalDateTime.of(2026, 1, 1, 12, 0),
             20.0,
             100.0,
-            Simulation.WeatherCondition.SUNNY
+            WeatherCondition.SUNNY
         );
     }
 
@@ -409,7 +410,7 @@ public class DomusControl implements Serializable {
             else           { sd.turnOn();  turnedOn[0] = true;  }
         });
         InteractionType type = turnedOn[0] ? InteractionType.TURN_ON : InteractionType.TURN_OFF;
-        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, type, userId, getCurrentDateTime()));
+        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, type, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
 
     /** Sets the level (0–100) of an adjustable device and logs the interaction. */
@@ -418,7 +419,7 @@ public class DomusControl implements Serializable {
         if (!(clone instanceof AdjustableDevice))
             throw new DeviceIsNotInstanceOfAdjustableDeviceException("Device " + deviceId + " is not adjustable.");
         this.houseManager.interactWithDevice(houseId, deviceId, d -> ((AdjustableDevice) d).setLevel(level));
-        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_LEVEL, (double) level, userId, getCurrentDateTime()));
+        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_LEVEL, (double) level, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
 
     /** Sets the opening percentage (0–100) of an openable device and logs the interaction. */
@@ -427,7 +428,7 @@ public class DomusControl implements Serializable {
         if (!(clone instanceof OpenableDevice))
             throw new DeviceIsNotInstanceOfOpenableDeviceException("Device " + deviceId + " is not openable.");
         this.houseManager.interactWithDevice(houseId, deviceId, d -> ((OpenableDevice) d).setOpening(percentage));
-        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_OPENING, (double) percentage, userId, getCurrentDateTime()));
+        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_OPENING, (double) percentage, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
 
     /** Sets the color temperature of a color-adjustable device and logs the interaction. */
@@ -436,7 +437,7 @@ public class DomusControl implements Serializable {
         if (!(clone instanceof ColorAdjustableDevice))
             throw new DeviceIsNotInstanceOfColorAdjustableDeviceException("Device " + deviceId + " is not color adjustable.");
         this.houseManager.interactWithDevice(houseId, deviceId, d -> ((ColorAdjustableDevice) d).setColorTemperature(temperature));
-        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_COLOR_TEMPERATURE, (double) temperature, userId, getCurrentDateTime()));
+        this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_COLOR_TEMPERATURE, (double) temperature, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
 
     /** Returns automation and schedule suggestions based on this user's interaction history in the house. */
@@ -522,7 +523,11 @@ public class DomusControl implements Serializable {
         return this.simulation.getTemperature();
     }
 
-    public Simulation.WeatherCondition getWeather() {
+    public double getLuminosity() {
+        return this.simulation.getLuminosity();
+    }
+
+    public WeatherCondition getWeather() {
         return this.simulation.getWeather();
     }
 
@@ -530,6 +535,7 @@ public class DomusControl implements Serializable {
         return new SimulationState(
             this.simulation.getCurrentDateTime(),
             (int) Math.round(this.simulation.getTemperature()),
+            (int) Math.round(this.simulation.getLuminosity()),
             this.simulation.getWeather()
         );
     }
