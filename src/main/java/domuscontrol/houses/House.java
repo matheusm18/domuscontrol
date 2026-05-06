@@ -14,12 +14,9 @@ import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
 import domuscontrol.exceptions.NameAlreadyExistsException;
 import domuscontrol.exceptions.ScheduleWithConditionDifferentFromTimeException;
-import domuscontrol.exceptions.UserNotFoundException;
-import domuscontrol.exceptions.UserAlreadyExistsException;
 import domuscontrol.routines.Automation;
 import domuscontrol.routines.RoutineManager;
 import domuscontrol.routines.Scenario;
-import domuscontrol.user.UserRole;
 import domuscontrol.exceptions.UserDoesntHaveScenarios;
 import domuscontrol.devices.Device;
 import domuscontrol.exceptions.AutomationDoesntExistException;
@@ -67,15 +64,9 @@ public class House implements Serializable {
     private Map<String, List<Device>> divisions;
 
     /**
-     * The facade managing all automations, schedules, and scenarios for this house.
+     * The manager for all automations, schedules, and scenarios for this house.
      */
-    private RoutineManager routineFacade;
-
-    /**
-     * A map storing the users that have access to this house and their respective roles.
-     * The key is the user's id, and the value is their role in the house.
-     */
-    private Map<Integer, UserRole> usersInHouse;
+    private RoutineManager routineManager;
 
     /**
      * The logger that records all manual device interactions performed in this house.
@@ -103,8 +94,7 @@ public class House implements Serializable {
         this.name = "";
         this.divisions = new HashMap<>();
         this.devices = new HashMap<>();
-        this.routineFacade = new RoutineManager();
-        this.usersInHouse = new HashMap<>();
+        this.routineManager = new RoutineManager();
         this.interactionLogger = new InteractionLogger();
     }
 
@@ -119,8 +109,7 @@ public class House implements Serializable {
     public House(Map<String, List<Device>> divisions, Map<Integer, Device> devices, String name) {
         this.id = House.nextId++;
         this.name = name;
-        this.routineFacade = new RoutineManager();
-        this.usersInHouse = new HashMap<>();
+        this.routineManager = new RoutineManager();
         this.interactionLogger = new InteractionLogger();
         this.setDevices(devices);
         this.setDivisions(divisions);
@@ -136,8 +125,7 @@ public class House implements Serializable {
     public House(House h) {
         this.id = h.getId();
         this.name = h.getName();
-        this.routineFacade = h.getRoutineFacade();
-        this.usersInHouse = new HashMap<>(h.getUserRoles());
+        this.routineManager = h.getRoutineManager();
         this.interactionLogger = h.getInteractionLogger();
         this.setDevices(h.getDevices());
         this.setDivisions(h.getDivisions());
@@ -171,26 +159,16 @@ public class House implements Serializable {
     }
 
     /**
-     * Retrieves a deep copy of the routine facade managing this house's automations.
+     * Retrieves a deep copy of the routine manager that manages this house's automations.
      *
      * @return A cloned RoutineManager object.
      */
-    public RoutineManager getRoutineFacade() {
-        return this.routineFacade.clone();
+    public RoutineManager getRoutineManager() {
+        return this.routineManager.clone();
     }
 
     /**
-     * Sets the routine facade for this house, performing a deep copy to preserve encapsulation.
-     *
-     * @param facade The RoutineManager to assign.
-     */
-    public void setRoutineFacade(RoutineManager facade) {
-        this.routineFacade = facade != null ? facade.clone() : new RoutineManager();
-    }
-
-    /**
-     * Sets the devices for this house.
-     * Each device is cloned and the interactionLogger is registered as observer.
+     * Sets the devices for this house. Each device is cloned to preserve encapsulation.
      *
      * @param devices A map of devices to be added to this house (will be cloned).
      */
@@ -203,7 +181,9 @@ public class House implements Serializable {
     }
 
     /**
-     * Sets the divisions for this house by creating a copy of the provided map's lists.
+     * Sets the divisions for this house by creating a copy of the provided map's lists,
+     * resolving each device by ID against {@code this.devices}.
+     * Must be called after {@link #setDevices} so that all referenced IDs are present.
      *
      * @param divisions A map of divisions to be added to this house.
      */
@@ -213,6 +193,7 @@ public class House implements Serializable {
             divisions.forEach((name, list) -> {
                 divisionsMap.put(name, list.stream()
                     .map(dev -> this.devices.get(dev.getId()))
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList()));
             });
         }
@@ -254,17 +235,7 @@ public class House implements Serializable {
     }
 
     /**
-     * Replaces the interaction logger with a deep copy of the provided one.
-     *
-     * @param interactionLogger The new InteractionLogger to assign.
-     */
-    public void setInteractionLogger(InteractionLogger interactionLogger) {
-        this.interactionLogger = interactionLogger != null ? interactionLogger.clone() : new InteractionLogger();
-    }
-
-    /**
      * Records a manual device interaction in the house's interaction history.
-     * Should be called from the controller layer after every successful manual device interaction.
      *
      * @param interaction The interaction to record.
      */
@@ -278,29 +249,22 @@ public class House implements Serializable {
      * Passes cloned devices to the SuggestionEngine so suggestions can validate
      * types and descriptions without receiving live device references.
      *
+     * @param userId The ID of the user to generate suggestions for.
      * @return A list of AutomationSuggestion objects ready to be presented to the user.
      * @throws ScheduleWithConditionDifferentFromTimeException if a suggested schedule
      *         is built with a non-time condition, which should never happen in practice.
      */
     public List<AutomationSuggestion> getSuggestions(int userId) throws ScheduleWithConditionDifferentFromTimeException {
-        return SuggestionEngine.suggest(this.interactionLogger, this.getDevices(), userId);
+        return SuggestionEngine.suggest(this.interactionLogger.clone(), this.getDevices(), userId);
     }
 
     /**
-     * Adds a single division to the house.
+     * Adds an empty division to the house.
      *
-     * @param name    The name of the division.
-     * @param devices The list of devices in the division.
+     * @param name The name of the division.
      */
-    public void addDivision(String name, List<Device> devices) {
-        if (devices == null) {
-            this.divisions.put(name, new ArrayList<>());
-        } else {
-            this.divisions.put(name, devices.stream()
-                .map(dev -> this.devices.get(dev.getId()))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList()));
-        }
+    public void addDivision(String name) {
+        this.divisions.put(name, new ArrayList<>());
     }
 
     /**
@@ -311,16 +275,105 @@ public class House implements Serializable {
      */
     public void deleteDivision(String name) throws DivisionNotFoundException {
         if (!this.divisions.containsKey(name)) {
-            throw new DivisionNotFoundException("Division not found: " + name);
+            throw new DivisionNotFoundException(name);
         }
         List<Device> devicesToRemove = this.divisions.get(name);
-        if (devicesToRemove != null) {
-            for (Device device : devicesToRemove) {
-                this.devices.remove(device.getId());
-            }
+        for (Device device : devicesToRemove) {
+            this.devices.remove(device.getId());
+            this.routineManager.removeDevice(device.getId());
         }
         this.divisions.remove(name);
     }
+
+    /**
+     * Adds a device to a specific division. If the device is not in the global map, it is added.
+     *
+     * @param device   The device to add.
+     * @param division The name of the division.
+     * @throws DivisionNotFoundException if the division does not exist.
+     */
+    public void addDeviceToDivision(Device device, String division) throws DivisionNotFoundException {
+        if (!this.divisions.containsKey(division)) throw new DivisionNotFoundException(division);
+        Device stored = this.devices.computeIfAbsent(device.getId(), k -> device.clone());
+        List<Device> divisionDevices = this.divisions.get(division);                                                                                                                                          
+        if (divisionDevices.stream().noneMatch(d -> d.getId() == device.getId())) {
+            divisionDevices.add(stored);                                                                                                                                                                      
+        }                
+    }
+
+    /**
+     * Completely removes a device from the house.
+     * Deletes the device from the global devices map, cascades the deletion to all
+     * divisions, and clears all associated actions and conditions from the routine manager.
+     *
+     * @param deviceId The unique identifier of the device to be removed.
+     * @throws DeviceNotFoundException if no device with the specified ID exists in the house.
+     */
+    public void removeDevice(int deviceId) throws DeviceNotFoundException {
+        if (!this.devices.containsKey(deviceId)) throw new DeviceNotFoundException("" + deviceId);
+        this.devices.remove(deviceId);
+        this.divisions.values().forEach(list -> list.removeIf(d -> d.getId() == deviceId));
+        this.routineManager.removeDevice(deviceId);
+    }
+
+    /**
+     * Removes a specific device from a designated division.
+     *
+     * @param deviceId The unique identifier of the device to remove from the division.
+     * @param division The name of the division from which the device should be removed.
+     * @throws DivisionNotFoundException if the specified division does not exist in the house.
+     * @throws DeviceNotFoundException   if the device is not found in the specified division.
+     */
+    public void removeDeviceFromDivision(int deviceId, String division) throws DivisionNotFoundException, DeviceNotFoundException {
+        if (!this.divisions.containsKey(division)) throw new DivisionNotFoundException(division);
+        List<Device> divisionDevices = this.divisions.get(division);
+        if (divisionDevices.stream().noneMatch(d -> d.getId() == deviceId)) throw new DeviceNotFoundException("" + deviceId);
+        divisionDevices.removeIf(d -> d.getId() == deviceId);
+    }
+
+    /**
+     * Retrieves a copy of a device by its ID.
+     *
+     * @param deviceId The unique identifier of the device.
+     * @return A cloned Device object.
+     * @throws DeviceNotFoundException if the device ID does not exist in the house.
+     */
+    public Device getDevice(int deviceId) throws DeviceNotFoundException {
+        Device device = this.devices.get(deviceId);
+        if (device == null) {
+            throw new DeviceNotFoundException("" + deviceId);
+        }
+        return device.clone();
+    }
+
+    /**
+     * Applies a consumer to a live device reference without exposing it externally.
+     *
+     * @param deviceId    The ID of the device to interact with.
+     * @param interaction The logic to apply to the device.
+     * @throws DeviceNotFoundException if the device is not found.
+     */
+    public void interactWithDevice(int deviceId, Consumer<Device> interaction) throws DeviceNotFoundException {
+        Device realDevice = this.devices.get(deviceId);
+        if (realDevice == null) throw new DeviceNotFoundException("" + deviceId);
+        interaction.accept(realDevice);
+    }
+
+    /**
+     * Reads a value from a specific device using a functional reader, without exposing the reference.
+     *
+     * @param deviceId The ID of the device to read from.
+     * @param reader   A function that extracts a value from the device.
+     * @param <T>      The return type of the reader.
+     * @return The value produced by the reader.
+     * @throws DeviceNotFoundException if the device is not found.
+     */
+    public <T> T readDevice(int deviceId, Function<Device, T> reader) throws DeviceNotFoundException {
+        Device realDevice = this.devices.get(deviceId);
+        if (realDevice == null) throw new DeviceNotFoundException("" + deviceId);
+        return reader.apply(realDevice);
+    }
+
 
     /**
      * Returns the total number of divisions currently existing in this house.
@@ -332,40 +385,67 @@ public class House implements Serializable {
     }
 
     /**
-     * Returns a map of users that have access to this house and their respective roles.
+     * Adds a new scenario for a specific user to the routine manager.
      *
-     * @return A map where the key is the user's id and the value is their role in the house.
+     * @param userId The ID of the user owning the scenario.
+     * @param s      The scenario to be added.
+     * @throws NameAlreadyExistsException if a scenario with the same name already exists for this user.
      */
-    public Map<Integer, UserRole> getUserRoles() {
-        return new HashMap<>(this.usersInHouse);
+    public void addScenario(int userId, Scenario s) throws NameAlreadyExistsException {
+        this.routineManager.addScenario(userId, s);
     }
 
     /**
-     * Assigns a user to this house with a specific role.
+     * Executes a specific scenario for a user.
      *
-     * @param userId The ID of the user to be assigned.
-     * @param role   The role to assign to the user in this house.
-     * @throws UserNotFoundException      if the user does not exist.
-     * @throws UserAlreadyExistsException if the user is already assigned to this house.
+     * @param userId The ID of the user triggering the scenario.
+     * @param name   The name of the scenario to execute.
+     * @throws UserDoesntHaveScenarios      if the user has no registered scenarios.
+     * @throws ScenarioDoesntExistException if the specified scenario does not exist.
      */
-    public void assignUser(int userId, UserRole role) throws UserNotFoundException, UserAlreadyExistsException {
-        if (this.usersInHouse.containsKey(userId)) {
-            throw new UserAlreadyExistsException("User with ID " + userId + " is already in this house.");
-        }
-        this.usersInHouse.put(userId, role);
+    public void executeScenario(int userId, String name) throws UserDoesntHaveScenarios, ScenarioDoesntExistException {
+        this.routineManager.executeScenarioByName(userId, name, this);
     }
 
     /**
-     * Removes a user from this house based on their ID.
+     * Adds a new automation to the routine manager.
      *
-     * @param userId The ID of the user to be removed.
-     * @throws UserNotFoundException if the user is not found in the house.
+     * @param a The automation to be added.
+     * @throws NameAlreadyExistsException if an automation with the same name already exists.
      */
-    public void removeUser(int userId) throws UserNotFoundException {
-        if (!this.usersInHouse.containsKey(userId)) {
-            throw new UserNotFoundException("User not found: " + userId);
-        }
-        this.usersInHouse.remove(userId);
+    public void addAutomation(Automation a) throws NameAlreadyExistsException {
+        this.routineManager.addAutomation(a);
+    }
+
+    /**
+     * Removes an automation from the routine manager by its name.
+     *
+     * @param name The name of the automation to remove.
+     * @throws AutomationDoesntExistException if the specified automation does not exist.
+     */
+    public void removeAutomation(String name) throws AutomationDoesntExistException {
+        this.routineManager.removeAutomation(name);
+    }
+
+    /**
+     * Removes a scenario from the routine manager for a specific user.
+     *
+     * @param userId The ID of the user who owns the scenario.
+     * @param name   The name of the scenario to remove.
+     * @throws UserDoesntHaveScenarios      if the user has no registered scenarios.
+     * @throws ScenarioDoesntExistException if the specified scenario does not exist.
+     */
+    public void removeScenario(int userId, String name) throws UserDoesntHaveScenarios, ScenarioDoesntExistException {
+        this.routineManager.removeScenario(userId, name);
+    }
+
+     /**
+     * Returns the total aggregate number of devices in the house.
+     *
+     * @return The global device count.
+     */
+    public int devicesNumber() {
+        return this.devices.size();
     }
 
     /**
@@ -378,6 +458,48 @@ public class House implements Serializable {
         return this.devices.values().stream()
                    .mapToDouble(Device::getEnergyConsumption)
                    .sum();
+    }
+
+    /**
+     * Returns the top 3 devices ranked by the given integer criterion.
+     *
+     * @param f A function that extracts an integer value from a device to rank by.
+     * @return A list of up to 3 cloned devices in descending order.
+     */
+    public List<Device> top3Devices(Function<Device, Integer> f) {
+        return this.devices.values().stream()
+            .sorted(Comparator.comparing(f).reversed())
+            .limit(3)
+            .map(Device::clone)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns the top 3 divisions ranked by the given integer criterion.
+     *
+     * @param f A function that extracts an integer value from a division's device list to rank by.
+     * @return A list of up to 3 division names in descending order.
+     */
+    public List<String> top3Divisions(Function<List<Device>, Integer> f) {
+        return this.divisions.entrySet().stream()
+            .sorted(Comparator.<Map.Entry<String, List<Device>>, Integer>comparing(e -> f.apply(e.getValue())).reversed())
+            .limit(3)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Simulates the passing of time for the house. Updates device logic and checks
+     * all automations and schedules.
+     *
+     * @param simulation The current simulation state.
+     * @return A list of strings describing the actions taken during this tick, such as
+     *         which automations were triggered and which devices were affected.
+     */
+    public List<String> tick(Simulation simulation) {
+        int minutes = (int) simulation.getTimeElapsed();
+        this.devices.values().forEach(device -> device.tick(minutes));
+        return this.routineManager.tick(this, simulation);
     }
 
     /**
@@ -421,12 +543,12 @@ public class House implements Serializable {
         if (o == this) return true;
         if (o == null || o.getClass() != this.getClass()) return false;
         House h = (House) o;
-        return Objects.equals(this.getName(), h.getName()) &&
-               this.getId() == h.getId() &&
-               this.getDivisions().equals(h.getDivisions()) &&
-               this.getDevices().equals(h.getDevices()) &&
-               Objects.equals(this.getRoutineFacade(), h.getRoutineFacade()) &&
-               Objects.equals(this.getInteractionLogger(), h.getInteractionLogger());
+        return this.id == h.getId() &&
+               Objects.equals(this.name, h.getName()) &&
+               this.divisions.equals(h.getDivisions()) &&
+               this.devices.equals(h.getDevices()) &&
+               Objects.equals(this.routineManager, h.getRoutineManager()) &&
+               Objects.equals(this.interactionLogger, h.getInteractionLogger());
     }
 
     /**
@@ -436,236 +558,7 @@ public class House implements Serializable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(this.getId(), this.getName(), this.getDivisions(),
-                            this.getDevices(), this.getRoutineFacade(), this.getInteractionLogger());
+        return Objects.hash(this.id, this.name, this.divisions, this.devices,
+                            this.routineManager, this.interactionLogger);
     }
-
-    /**
-     * Simulates the passing of time for the house. Updates device logic and checks
-     * all automations and schedules.
-     *
-     * @param minutes The number of minutes elapsed since the last tick.
-     * 
-     * @return A list of strings describing the actions taken during this tick, such as
-     *         which automations were triggered and which devices were affected.
-     */
-    public List<String> tick(Simulation simulation) {
-        int minutes = simulation.getTimeElapsed().intValue();
-        this.devices.values().forEach(device -> device.tick(minutes));
-        return this.routineFacade.tick(this, simulation);
-    }
-
-    /**
-     * Identifies the top 3 devices based on total usage time.
-     *
-     * @return A list containing the top 3 devices by minutes on.
-     */
-    public List<Device> top3DevicesTimeConsumption() {
-        return this.devices.values().stream()
-            .sorted(Comparator.comparingInt(Device::getTotalMinutesOn).reversed())
-            .limit(3)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Identifies the top 3 devices based on activation count.
-     *
-     * @return A list containing the top 3 devices by number of times turned on.
-     */
-    public List<Device> top3DevicesTurnedOnTimes() {
-        return this.devices.values().stream()
-            .sorted(Comparator.comparingInt(Device::getTotalActivations).reversed())
-            .limit(3)
-            .map(Device::clone)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Returns the total aggregate number of devices in the house.
-     *
-     * @return The global device count.
-     */
-    public int devicesNumber() {
-        return this.devices.size();
-    }
-
-    /**
-     * Identifies the top 3 divisions containing the most devices.
-     *
-     * @return A list containing the names of the top 3 divisions.
-     */
-    public List<String> top3DivisionsWithMostDevices() {
-        return this.divisions.entrySet().stream()
-            .sorted(Comparator.<Map.Entry<String, List<Device>>>comparingInt(e -> e.getValue().size()).reversed())
-            .limit(3)
-            .map(Map.Entry::getKey)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Adds a device to a specific division. If the device is not in the global map, it is added.
-     *
-     * @param device   The device to add.
-     * @param division The name of the division.
-     * @throws DivisionNotFoundException if the division does not exist.
-     */
-    public void addDeviceToDivision(Device device, String division) throws DivisionNotFoundException {
-        if (!this.divisions.containsKey(division)) throw new DivisionNotFoundException("Division not found: " + division);
-        Device device2 = this.devices.computeIfAbsent(device.getId(), k -> device.clone());
-        List<Device> list_dev = this.divisions.get(division);
-        if (list_dev.stream().noneMatch(d -> d.getId() == device.getId())) {
-            list_dev.add(device2);
-        }
-    }
-
-    /**
-     * Completely removes a device from the house.
-     * Deletes the device from the global devices map, cascades the deletion to all
-     * divisions, and clears all associated actions and conditions from the routine manager.
-     *
-     * @param deviceId The unique identifier of the device to be removed.
-     * @throws DeviceNotFoundException if no device with the specified ID exists in the house.
-     */
-    public void removeDevice(int deviceId) throws DeviceNotFoundException {
-        if (!this.devices.containsKey(deviceId)) throw new DeviceNotFoundException("Device not found: " + deviceId);
-        this.devices.remove(deviceId);
-        this.divisions.values().forEach(list -> list.removeIf(d -> d.getId() == deviceId));
-        this.routineFacade.removeDevice(deviceId);
-    }
-
-    /**
-     * Removes a specific device from a designated division.
-     *
-     * @param deviceId The unique identifier of the device to remove from the division.
-     * @param division The name of the division from which the device should be removed.
-     * @throws DivisionNotFoundException if the specified division does not exist in the house.
-     */
-    public void removeDeviceFromDivision(int deviceId, String division) throws DivisionNotFoundException {
-        if (!this.divisions.containsKey(division)) throw new DivisionNotFoundException("Division not found: " + division);
-        List<Device> list_dev = this.divisions.get(division);
-        list_dev.removeIf(d -> d.getId() == deviceId);
-    }
-
-    /**
-     * Updates a device's information globally and within its respective division.
-     *
-     * @param device The device with updated data.
-     * @throws DeviceNotFoundException if the device ID is not recognized.
-     */
-    public void updateDevice(Device device) throws DeviceNotFoundException {
-        if (!this.devices.containsKey(device.getId())) throw new DeviceNotFoundException("Device not found: " + device.getId());
-        Device updated = device.clone();
-        this.devices.put(device.getId(), updated);
-        this.divisions.forEach((name, list) -> {
-            for (int i = 0; i < list.size(); i++) {
-                if (list.get(i).getId() == device.getId()) {
-                    list.set(i, updated);
-                    break;
-                }
-            }
-        });
-    }
-
-    /**
-     * Retrieves a copy of a device by its ID.
-     *
-     * @param deviceId The unique identifier of the device.
-     * @return A cloned Device object.
-     * @throws DeviceNotFoundException if the device ID does not exist in the house.
-     */
-    public Device getDevice(int deviceId) throws DeviceNotFoundException {
-        Device device = this.devices.get(deviceId);
-        if (device == null) {
-            throw new DeviceNotFoundException("Device with ID " + deviceId + " not found in the house.");
-        }
-        return device.clone();
-    }
-
-    /**
-     * Safely interacts with a specific device using a functional consumer.
-     *
-     * @param targetId    The ID of the device to interact with.
-     * @param interaction The logic to apply to the device.
-     * @throws DeviceNotFoundException if the device is not found.
-     */
-    public void interactWithDevice(int targetId, Consumer<Device> interaction) throws DeviceNotFoundException {
-        Device realDevice = this.devices.get(targetId);
-        if (realDevice != null) {
-            interaction.accept(realDevice);
-        } else {
-            throw new DeviceNotFoundException("Device not found: " + targetId);
-        }
-    }
-
-    /**
-     * Reads a specific property or state from a device using a provided function.
-     *
-     * @param <T>      The return type of the property being read.
-     * @param targetId The unique identifier of the target device.
-     * @param reader   A function that extracts the desired data from the device.
-     * @return The data extracted from the device.
-     * @throws DeviceNotFoundException if no device with the given ID exists.
-     */
-    public <T> T readDevice(int targetId, Function<Device, T> reader) throws DeviceNotFoundException {
-        Device realDevice = this.devices.get(targetId);
-        if (realDevice == null)
-            throw new DeviceNotFoundException("Device not found: " + targetId);
-        return reader.apply(realDevice);
-    }
-
-    /**
-     * Adds a new scenario for a specific user to the routine facade.
-     *
-     * @param userId The ID of the user owning the scenario.
-     * @param s      The scenario to be added.
-     * @throws NameAlreadyExistsException if a scenario with the same name already exists for this user.
-     */
-    public void addScenario(int userId, Scenario s) throws NameAlreadyExistsException {
-        this.routineFacade.addScenario(userId, s);
-    }
-
-    /**
-     * Executes a specific scenario for a user.
-     *
-     * @param userId The ID of the user triggering the scenario.
-     * @param name   The name of the scenario to execute.
-     * @throws UserDoesntHaveScenarios      if the user has no registered scenarios.
-     * @throws ScenarioDoesntExistException if the specified scenario does not exist.
-     */
-    public void executeScenario(int userId, String name) throws UserDoesntHaveScenarios, ScenarioDoesntExistException {
-        this.routineFacade.executeScenarioByName(userId, name, this);
-    }
-
-    /**
-     * Adds a new automation to the routine facade.
-     *
-     * @param a The automation to be added.
-     * @throws NameAlreadyExistsException if an automation with the same name already exists.
-     */
-    public void addAutomation(Automation a) throws NameAlreadyExistsException {
-        this.routineFacade.addAutomation(a);
-    }
-
-    /**
-     * Removes an automation from the routine facade by its name.
-     *
-     * @param name The name of the automation to remove.
-     * @throws AutomationDoesntExistException if the specified automation does not exist.
-     */
-    public void removeAutomation(String name) throws AutomationDoesntExistException {
-        this.routineFacade.removeAutomation(name);
-    }
-
-    /**
-     * Removes a scenario from the routine facade for a specific user.
-     *
-     * @param userId The ID of the user who owns the scenario.
-     * @param name   The name of the scenario to remove.
-     * @throws UserDoesntHaveScenarios      if the user has no registered scenarios.
-     * @throws ScenarioDoesntExistException if the specified scenario does not exist.
-     */
-    public void removeScenario(int userId, String name) throws UserDoesntHaveScenarios, ScenarioDoesntExistException {
-        this.routineFacade.removeScenario(userId, name);
-    }
-
 }

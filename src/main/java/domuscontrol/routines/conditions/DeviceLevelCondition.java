@@ -8,8 +8,7 @@ import domuscontrol.houses.House;
 import domuscontrol.routines.Condition;
 
 /**
- * Condition that evaluates whether a device's numerical level (e.g., volume, brightness)
- * satisfies a specific comparison against a trigger value.
+ * Condition that compares the level of an adjustable device with a trigger value.
  */
 public class DeviceLevelCondition implements Condition {
     private int deviceId;
@@ -17,19 +16,20 @@ public class DeviceLevelCondition implements Condition {
     private Operator operator;
 
     /**
-     * Default constructor initializing device to null and operator to EQUALS.
+     * Creates a condition with no target device, trigger level 0, and EQUALS operator.
      */
     public DeviceLevelCondition() {
-        this.deviceId = -1; 
+        this.deviceId = -1;
         this.triggerLevel = 0;
         this.operator = Operator.EQUALS;
     }
 
     /**
-     * Parameterized constructor.
-     * @param device       The live reference to the adjustable device to monitor.
-     * @param triggerLevel The threshold value for comparison.
-     * @param operator     The comparison operator (EQUALS, GREATER_THAN, LESS_THAN).
+     * Creates a condition for the given device, trigger level, and operator.
+     *
+     * @param deviceId the target device identifier
+     * @param triggerLevel the trigger level for comparison
+     * @param operator the comparison operator
      */
     public DeviceLevelCondition(int deviceId, int triggerLevel, Operator operator) {
         this.deviceId = deviceId;
@@ -38,9 +38,9 @@ public class DeviceLevelCondition implements Condition {
     }
 
     /**
-     * Copy constructor for deep copying the condition itself.
-     * Note: The device pointer remains shared.
-     * @param other The existing DeviceLevelCondition instance to copy.
+     * Creates a copy of another device-level condition.
+     *
+     * @param other the condition to copy
      */
     public DeviceLevelCondition(DeviceLevelCondition other) {
         this.deviceId = other.getDeviceId();
@@ -49,57 +49,80 @@ public class DeviceLevelCondition implements Condition {
     }
 
     /**
-     * Retrieves the target device.
-     * @return The adjustable device reference.
+     * Gets the target device identifier.
+     *
+     * @return the target device identifier
      */
-    public int getDeviceId() { return deviceId; }
+    public int getDeviceId() {
+        return this.deviceId;
+    }
     
     /**
-     * Sets a new target device.
-     * @param device The new adjustable device reference.
+     * Sets the target device identifier.
+     *
+     * @param deviceId the target device identifier
      */
-    public void setDeviceId(int deviceId) { this.deviceId = deviceId; }
+    public void setDeviceId(int deviceId) {
+        this.deviceId = deviceId;
+    }
 
     /**
-     * Retrieves the trigger level value.
-     * @return The threshold level.
+     * Gets the trigger level.
+     *
+     * @return the trigger level
      */
-    public int getTriggerLevel() { return triggerLevel; }
+    public int getTriggerLevel() {
+        return this.triggerLevel;
+    }
     
     /**
-     * Sets a new trigger level value.
-     * @param triggerLevel The new threshold level.
+     * Sets the trigger level.
+     *
+     * @param triggerLevel the trigger level
      */
-    public void setTriggerLevel(int triggerLevel) { this.triggerLevel = triggerLevel; }
+    public void setTriggerLevel(int triggerLevel) {
+        this.triggerLevel = triggerLevel;
+    }
 
     /**
-     * Retrieves the comparison operator.
-     * @return The Operator enum value.
+     * Gets the comparison operator.
+     *
+     * @return the comparison operator
      */
-    public Operator getOperator() { return operator; }
+    public Operator getOperator() {
+        return this.operator;
+    }
     
     /**
-     * Sets a new comparison operator.
-     * @param operator The new Operator to be used.
+     * Sets the comparison operator.
+     *
+     * @param operator the comparison operator
      */
-    public void setOperator(Operator operator) { this.operator = operator != null ? operator : Operator.EQUALS; }
+    public void setOperator(Operator operator) {
+        this.operator = operator != null ? operator : Operator.EQUALS;
+    }
 
     /**
-     * Evaluates the condition by reading the current level of the live device reference.
+     * Evaluates this condition against the current level of the target device.
+     *
+     * @param house the house where the target device is stored
+     * @param simulation the current simulation state
      * @return true if the current level satisfies the operator comparison; false otherwise.
      */
     @Override
     public boolean evaluate(House house, Simulation simulation) {
         try {
             return house.readDevice(this.deviceId, d -> {
-                if (!(d instanceof AdjustableDevice ad)) return false;
+                if (!(d instanceof AdjustableDevice ad)) {
+                    return false;
+                }
                 int currentLevel = ad.getLevel();
-            switch (this.operator) {
-                case EQUALS:       return currentLevel == this.triggerLevel;
-                case GREATER_THAN: return currentLevel > this.triggerLevel;
-                case LESS_THAN:    return currentLevel < this.triggerLevel;
-                default:           return false;
-            }
+                switch (this.operator) {
+                    case EQUALS:       return currentLevel == this.triggerLevel;
+                    case GREATER_THAN: return currentLevel > this.triggerLevel;
+                    case LESS_THAN:    return currentLevel < this.triggerLevel;
+                    default:           return false;
+                }
             });
         } catch (DeviceNotFoundException e) {
             return false;
@@ -107,8 +130,9 @@ public class DeviceLevelCondition implements Condition {
     }
 
     /**
-     * Creates a deep copy of this condition.
-     * @return A new instance of DeviceLevelCondition.
+     * Creates a copy of this condition.
+     *
+     * @return a copied DeviceLevelCondition instance
      */
     @Override
     public Condition copy() {
@@ -117,7 +141,8 @@ public class DeviceLevelCondition implements Condition {
 
     /**
      * Compares this condition with another object for equality.
-     * @param o The object to compare with.
+     *
+     * @param o the object to compare with
      * @return true if device reference, trigger level, and operator match; false otherwise.
      */
     @Override
@@ -125,16 +150,17 @@ public class DeviceLevelCondition implements Condition {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
         
-        DeviceLevelCondition that = (DeviceLevelCondition) o;
+        DeviceLevelCondition condition = (DeviceLevelCondition) o;
         
-        return this.deviceId == that.getDeviceId() && 
-               this.triggerLevel == that.getTriggerLevel() &&
-               this.operator == that.getOperator();
+        return this.deviceId == condition.getDeviceId() &&
+               this.triggerLevel == condition.getTriggerLevel() &&
+               this.operator == condition.getOperator();
     }
 
     /**
      * Generates a hash code for this condition.
-     * @return The hash code.
+     *
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -142,8 +168,9 @@ public class DeviceLevelCondition implements Condition {
     }
 
     /**
-     * Clones the current condition instance.
-     * @return A cloned DeviceLevelCondition.
+     * Creates a copy of this condition.
+     *
+     * @return a copied DeviceLevelCondition instance
      */
     @Override
     public DeviceLevelCondition clone() {
@@ -152,7 +179,8 @@ public class DeviceLevelCondition implements Condition {
 
     /**
      * Returns a string representation of the condition.
-     * @return Formatted string containing device info and comparison logic.
+     *
+     * @return a formatted string with the condition information
      */
     @Override
     public String toString() {
@@ -165,12 +193,12 @@ public class DeviceLevelCondition implements Condition {
     }
 
     /**
-     * Checks if this condition is associated with a specific device ID.
-     * Used by the House/RoutineManager to clean up routines when a device is deleted.
-     * @param deviceId The ID to check.
+     * Checks whether this condition depends on the given device.
+     *
+     * @param deviceId the device identifier to check
      * @return true if the target device ID matches; false otherwise.
      */
-    @Override 
+    @Override
     public boolean hasDeviceId(int deviceId) {
         return this.deviceId == deviceId;
     }

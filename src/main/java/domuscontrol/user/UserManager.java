@@ -32,25 +32,9 @@ public class UserManager implements Serializable {
             throw new UserAlreadyExistsException(email);
         }
         User newUser = new User(name, email, password, new HashMap<>());
-        this.registerUser(newUser);
+        this.usersById.put(newUser.getId(), newUser);
+        this.usersByEmail.put(newUser.getEmail().toLowerCase(), newUser);
         return newUser.clone();
-    }
-
-    /**
-     * Registers an existing user object into the internal data structures.
-     *
-     * @param user the {@link User} object to register
-     * @throws UserAlreadyExistsException if a user with the same ID or email already exists
-     */
-    private void registerUser(User user) throws UserAlreadyExistsException {
-        if (existsUserWithId(user.getId())) {
-            throw new UserAlreadyExistsException("" + user.getId());
-        }
-        if (existsUserWithEmail(user.getEmail())) {
-            throw new UserAlreadyExistsException(user.getEmail());
-        }
-        this.usersById.put(user.getId(), user);
-        this.usersByEmail.put(user.getEmail().toLowerCase(), user);
     }
 
     /**
@@ -101,22 +85,6 @@ public class UserManager implements Serializable {
             throw new UserNotFoundException(email);
         }
         return user.clone();
-    }
-
-    /**
-     * Retrieves a user by their name. Since names are not guaranteed to be unique, this method searches through all users and returns the first match.
-     * 
-     * @param name the name of the user to retrieve
-     * @return a clone of the first {@link User} found with the given name
-     * @throws UserNotFoundException if no user with the given name exists
-     */
-    public User getUserByName(String name) throws UserNotFoundException {
-        for (User user : this.usersById.values()) {
-            if (user.getName().equals(name)) {
-                return user.clone();
-            }
-        }
-        throw new UserNotFoundException(name);
     }
 
     /**

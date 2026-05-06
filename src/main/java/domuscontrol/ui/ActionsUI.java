@@ -12,7 +12,7 @@ import domuscontrol.menu.Menu;
 import domuscontrol.routines.*;
 import domuscontrol.routines.actions.*;
 import domuscontrol.routines.conditions.*;
-import domuscontrol.simulation.Simulation.WeatherCondition;
+import domuscontrol.simulation.WeatherCondition;
 import domuscontrol.user.User;
 import domuscontrol.utils.Ansi;
 
@@ -138,6 +138,10 @@ public class ActionsUI {
         try {
             House house = model.getHouseById(houseId);
             List<Action> actions = readActionsDialog(house);
+            if (actions.isEmpty()) {
+                System.out.println("  Error: automation must have at least one action.");
+                return;
+            }
 
             Ansi.listTitle("Selected Actions");
             for (Action a : actions) {
@@ -146,6 +150,10 @@ public class ActionsUI {
             Ansi.listSeparator();
 
             List<Condition> conditions = readConditionsDialog(house, false);
+            if (conditions.isEmpty()) {
+                System.out.println("  Error: automation must have at least one condition.");
+                return;
+            }
 
             Ansi.listTitle("Selected Conditions");
             for (Condition c : conditions) {
@@ -153,24 +161,18 @@ public class ActionsUI {
             }
             Ansi.listSeparator();
 
+            TimeWindowCondition timeWindow = findTimeWindowCondition(conditions);
+            List<Action> endActions = readEndActionsIfNeeded(house, timeWindow);
+            if (timeWindow != null && endActions.isEmpty()) {
+                System.out.println("  Error: time window routines must have at least one end action.");
+                return;
+            }
+
             Automation automation = new Automation(name, AutomationType.AUTOMATION, conditions, actions);
             model.addAutomation(houseId, automation);
             System.out.println("  Automation '" + name + "' added.");
 
-            for (Condition c : conditions) {
-                if (c instanceof TimeWindowCondition twc) {
-                    List<Condition> endConditions = new ArrayList<>();
-                    endConditions.add(new TimeCondition(twc.getEndTime()));
-                    for (Condition other : conditions) {
-                        if (other != c)
-                            endConditions.add(other.copy());
-                    }
-                    Automation endAutomation = new Automation(name + " [END]", AutomationType.SCHEDULE, endConditions,
-                            actions);
-                    model.addAutomation(houseId, endAutomation);
-                    break;
-                }
-            }
+            addTimeWindowEndRoutine(houseId, name, AutomationType.AUTOMATION, conditions, timeWindow, endActions);
 
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
@@ -280,26 +282,29 @@ public class ActionsUI {
         try {
             House house = model.getHouseById(houseId);
             List<Action> actions = readActionsDialog(house);
+            if (actions.isEmpty()) {
+                System.out.println("  Error: schedule must have at least one action.");
+                return;
+            }
+
             List<Condition> conditions = readConditionsDialog(house, true);
+            if (conditions.isEmpty()) {
+                System.out.println("  Error: schedule must have at least one condition.");
+                return;
+            }
+
+            TimeWindowCondition timeWindow = findTimeWindowCondition(conditions);
+            List<Action> endActions = readEndActionsIfNeeded(house, timeWindow);
+            if (timeWindow != null && endActions.isEmpty()) {
+                System.out.println("  Error: time window schedules must have at least one end action.");
+                return;
+            }
 
             Automation schedule = new Automation(name, AutomationType.SCHEDULE, conditions, actions);
             model.addAutomation(houseId, schedule);
             System.out.println("  Schedule '" + name + "' added.");
 
-            for (Condition c : conditions) {
-                if (c instanceof TimeWindowCondition twc) {
-                    List<Condition> endConditions = new ArrayList<>();
-                    endConditions.add(new TimeCondition(twc.getEndTime()));
-                    for (Condition other : conditions) {
-                        if (other != c)
-                            endConditions.add(other.copy());
-                    }
-                    Automation endAutomation = new Automation(name + " [END]", AutomationType.SCHEDULE, endConditions,
-                            actions);
-                    model.addAutomation(houseId, endAutomation);
-                    break;
-                }
-            }
+            addTimeWindowEndRoutine(houseId, name, AutomationType.SCHEDULE, conditions, timeWindow, endActions);
 
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
@@ -308,6 +313,47 @@ public class ActionsUI {
         } catch (ScheduleWithConditionDifferentFromTimeException e) {
             System.out.println("  Error: schedules only accept time conditions.");
         }
+    }
+
+    private TimeWindowCondition findTimeWindowCondition(List<Condition> conditions) {
+        for (Condition c : conditions) {
+            if (c instanceof TimeWindowCondition twc) {
+                return twc;
+            }
+        }
+        return null;
+    }
+
+    private List<Action> readEndActionsIfNeeded(House house, TimeWindowCondition timeWindow) {
+        if (timeWindow == null) {
+            return new ArrayList<>();
+        }
+
+        Ansi.listTitle("End Actions");
+        Ansi.listRow("Select what should happen when the time window ends.");
+        Ansi.listSeparator();
+
+        return readActionsDialog(house);
+    }
+
+    private void addTimeWindowEndRoutine(int houseId, String name, AutomationType type, List<Condition> conditions,
+                                         TimeWindowCondition timeWindow, List<Action> endActions)
+            throws HouseNotFoundException, NameAlreadyExistsException, ScheduleWithConditionDifferentFromTimeException {
+        if (timeWindow == null || endActions.isEmpty()) {
+            return;
+        }
+
+        List<Condition> endConditions = new ArrayList<>();
+        endConditions.add(new TimeCondition(timeWindow.getEndTime()));
+        for (Condition condition : conditions) {
+            if (condition != timeWindow) {
+                endConditions.add(condition.copy());
+            }
+        }
+
+        Automation endAutomation = new Automation(name + " [END]", type, endConditions, endActions);
+        model.addAutomation(houseId, endAutomation);
+        System.out.println("  End routine '" + name + " [END]' added.");
     }
 
     private void removeSchedule(int houseId) {
@@ -503,6 +549,10 @@ public class ActionsUI {
             House house = model.getHouseById(houseId);
             User user = model.getUserByEmail(email);
             List<Action> actions = readActionsDialog(house);
+            if (actions.isEmpty()) {
+                System.out.println("  Error: scenario must have at least one action.");
+                return;
+            }
             Scenario scenario = new Scenario(name, actions);
             model.addScenario(houseId, user.getId(), scenario);
             System.out.println("  Scenario '" + name + "' added.");

@@ -8,25 +8,25 @@ import domuscontrol.routines.Action;
 import java.util.Objects;
 
 /**
- * Action responsible for setting a specific level on an adjustable device.
- * This can be used for dimming lights, setting volume on speakers, or adjusting temperature.
+ * Action that sets the level of an adjustable device.
  */
 public class SetLevelAction implements Action {
     private int deviceId;
-    private int targetLevel; 
+    private int targetLevel;
 
     /**
-     * Default constructor initializing device to null and level to zero.
+     * Creates an action with no target device and level 0.
      */
-    public SetLevelAction() { 
-        this.deviceId = -1; 
-        this.targetLevel = 0; 
+    public SetLevelAction() {
+        this.deviceId = -1;
+        this.targetLevel = 0;
     }
     
     /**
-     * Parameterized constructor.
-     * @param device      The live reference to the adjustable device.
-     * @param targetLevel The numerical value to be set on the device.
+     * Creates an action for the given device and target level.
+     *
+     * @param deviceId the target device identifier
+     * @param targetLevel the level to set on the device
      */
     public SetLevelAction(int deviceId, int targetLevel) {
         this.deviceId = deviceId;
@@ -34,9 +34,9 @@ public class SetLevelAction implements Action {
     }
     
     /**
-     * Copy constructor for deep copying the action itself.
-     * Note: The device pointer remains shared.
-     * @param other The existing SetLevelAction instance to copy.
+     * Creates a copy of another set-level action.
+     *
+     * @param other the action to copy
      */
     public SetLevelAction(SetLevelAction other) {
         this.deviceId = other.getDeviceId();
@@ -44,31 +44,45 @@ public class SetLevelAction implements Action {
     }
 
     /**
-     * Retrieves the target device.
-     * @return The adjustable device reference.
+     * Gets the target device identifier.
+     *
+     * @return the target device identifier
      */
-    public int getDeviceId() { return deviceId; }
+    public int getDeviceId() {
+        return this.deviceId;
+    }
     
     /**
-     * Sets a new target device.
-     * @param device The new adjustable device reference.
+     * Sets the target device identifier.
+     *
+     * @param deviceId the target device identifier
      */
-    public void setDeviceId(int deviceId) { this.deviceId = deviceId; }
+    public void setDeviceId(int deviceId) {
+        this.deviceId = deviceId;
+    }
 
     /**
-     * Retrieves the target level value.
-     * @return The level value.
+     * Gets the target level.
+     *
+     * @return the target level
      */
-    public int getTargetLevel() { return targetLevel; }
+    public int getTargetLevel() {
+        return this.targetLevel;
+    }
     
     /**
-     * Sets a new target level value.
-     * @param targetLevel The new level to be applied.
+     * Sets the target level.
+     *
+     * @param targetLevel the target level
      */
-    public void setTargetLevel(int targetLevel) { this.targetLevel = targetLevel; }
+    public void setTargetLevel(int targetLevel) {
+        this.targetLevel = targetLevel;
+    }
 
     /**
-     * Executes the action by interacting directly with the stored device reference.
+     * Executes this action in the given house.
+     *
+     * @param house the house where the target device level should be changed
      */
     @Override
     public void execute(House house) {
@@ -85,7 +99,8 @@ public class SetLevelAction implements Action {
 
     /**
      * Creates a copy of this action.
-     * @return A new instance of SetLevelAction.
+     *
+     * @return a copied SetLevelAction instance
      */
     @Override
     public Action copy() {
@@ -94,7 +109,8 @@ public class SetLevelAction implements Action {
 
     /**
      * Compares this action with another object for equality.
-     * @param o The object to compare with.
+     *
+     * @param o the object to compare with
      * @return true if the devices and levels match; false otherwise.
      */
     @Override
@@ -102,15 +118,16 @@ public class SetLevelAction implements Action {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
         
-        SetLevelAction that = (SetLevelAction) o;
+        SetLevelAction action = (SetLevelAction) o;
         
-        return this.deviceId == that.getDeviceId() && 
-               this.targetLevel == that.targetLevel;
+        return this.deviceId == action.getDeviceId() &&
+               this.targetLevel == action.getTargetLevel();
     }
 
     /**
      * Generates a hash code for this action.
-     * @return The hash code.
+     *
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -118,8 +135,9 @@ public class SetLevelAction implements Action {
     }
 
     /**
-     * Clones the current action instance.
-     * @return A cloned SetLevelAction.
+     * Creates a copy of this action.
+     *
+     * @return a copied SetLevelAction instance
      */
     @Override
     public SetLevelAction clone() {
@@ -128,7 +146,8 @@ public class SetLevelAction implements Action {
 
     /**
      * Returns a string representation of the action.
-     * @return Formatted string containing device info and level.
+     *
+     * @return a formatted string with the action information
      */
     @Override
     public String toString() {
@@ -141,10 +160,12 @@ public class SetLevelAction implements Action {
     }
 
     /**
-     * Checks if this action is associated with a specific device ID.
-     * Used by the House/RoutineManager to clean up routines when a device is deleted.
+     * Checks whether this action targets the given device.
+     *
+     * @param deviceId the device identifier to check
+     * @return true if the stored device's ID matches; false otherwise.
      */
-    @Override 
+    @Override
     public boolean hasDeviceId(int deviceId) {
         return this.deviceId == deviceId;
     }

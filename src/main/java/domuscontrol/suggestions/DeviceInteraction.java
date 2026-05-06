@@ -1,6 +1,6 @@
 package domuscontrol.suggestions;
 
-import domuscontrol.simulation.Simulation.WeatherCondition;
+import domuscontrol.simulation.WeatherCondition;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -8,7 +8,7 @@ import java.util.Objects;
 
 /**
  * Represents a single manual interaction performed on a device inside a house.
- * Stores what happened, on which device, when it happened, and the value applied if applicable.
+ * Stores what happened, who performed it, when it happened, and the simulation context.
  */
 public class DeviceInteraction implements Serializable {
 
@@ -40,7 +40,7 @@ public class DeviceInteraction implements Serializable {
     private Double luminosity;
 
     /**
-     * Default constructor initializing all fields to safe defaults.
+     * Creates an empty interaction.
      */
     public DeviceInteraction() {
         this.deviceId  = -1;
@@ -54,11 +54,12 @@ public class DeviceInteraction implements Serializable {
     }
 
     /**
-     * Parameterized constructor for interactions without a value (TURN_ON, TURN_OFF).
+     * Creates an interaction without an associated value.
      *
-     * @param deviceId  The ID of the device.
-     * @param type      The type of interaction.
-     * @param timestamp The simulation time of the interaction.
+     * @param deviceId the device identifier
+     * @param type the interaction type
+     * @param userId the user identifier
+     * @param timestamp the simulation timestamp
      */
     public DeviceInteraction(int deviceId, InteractionType type, int userId, LocalDateTime timestamp) {
         this.deviceId  = deviceId;
@@ -71,11 +72,32 @@ public class DeviceInteraction implements Serializable {
         this.luminosity = null;
     }
 
+    /**
+     * Creates an interaction without an associated value and with environmental context.
+     *
+     * @param deviceId the device identifier
+     * @param type the interaction type
+     * @param userId the user identifier
+     * @param timestamp the simulation timestamp
+     * @param weather the weather at the interaction time
+     * @param outsideTemperature the outside temperature at the interaction time
+     */
     public DeviceInteraction(int deviceId, InteractionType type, int userId, LocalDateTime timestamp,
                              WeatherCondition weather, Double outsideTemperature) {
         this(deviceId, type, userId, timestamp, weather, outsideTemperature, null);
     }
 
+    /**
+     * Creates an interaction without an associated value and with full environmental context.
+     *
+     * @param deviceId the device identifier
+     * @param type the interaction type
+     * @param userId the user identifier
+     * @param timestamp the simulation timestamp
+     * @param weather the weather at the interaction time
+     * @param outsideTemperature the outside temperature at the interaction time
+     * @param luminosity the luminosity at the interaction time
+     */
     public DeviceInteraction(int deviceId, InteractionType type, int userId, LocalDateTime timestamp,
                              WeatherCondition weather, Double outsideTemperature, Double luminosity) {
         this.deviceId  = deviceId;
@@ -88,6 +110,15 @@ public class DeviceInteraction implements Serializable {
         this.luminosity = luminosity;
     }
 
+    /**
+     * Creates an interaction with an associated value.
+     *
+     * @param deviceId the device identifier
+     * @param type the interaction type
+     * @param value the value applied by the interaction
+     * @param userId the user identifier
+     * @param timestamp the simulation timestamp
+     */
     public DeviceInteraction(int deviceId, InteractionType type, Double value, int userId, LocalDateTime timestamp) {
         this.deviceId  = deviceId;
         this.type      = type;
@@ -99,11 +130,34 @@ public class DeviceInteraction implements Serializable {
         this.luminosity = null;
     }
 
+    /**
+     * Creates an interaction with an associated value and environmental context.
+     *
+     * @param deviceId the device identifier
+     * @param type the interaction type
+     * @param value the value applied by the interaction
+     * @param userId the user identifier
+     * @param timestamp the simulation timestamp
+     * @param weather the weather at the interaction time
+     * @param outsideTemperature the outside temperature at the interaction time
+     */
     public DeviceInteraction(int deviceId, InteractionType type, Double value, int userId, LocalDateTime timestamp,
                              WeatherCondition weather, Double outsideTemperature) {
         this(deviceId, type, value, userId, timestamp, weather, outsideTemperature, null);
     }
 
+    /**
+     * Creates an interaction with an associated value and full environmental context.
+     *
+     * @param deviceId the device identifier
+     * @param type the interaction type
+     * @param value the value applied by the interaction
+     * @param userId the user identifier
+     * @param timestamp the simulation timestamp
+     * @param weather the weather at the interaction time
+     * @param outsideTemperature the outside temperature at the interaction time
+     * @param luminosity the luminosity at the interaction time
+     */
     public DeviceInteraction(int deviceId, InteractionType type, Double value, int userId, LocalDateTime timestamp,
                              WeatherCondition weather, Double outsideTemperature, Double luminosity) {
         this.deviceId  = deviceId;
@@ -117,9 +171,9 @@ public class DeviceInteraction implements Serializable {
     }
 
     /**
-     * Copy constructor using getters to access the other instance's state.
+     * Creates a copy of another device interaction.
      *
-     * @param other The existing DeviceInteraction instance to copy.
+     * @param other the interaction to copy
      */
     public DeviceInteraction(DeviceInteraction other) {
         this.deviceId  = other.getDeviceId();
@@ -133,111 +187,153 @@ public class DeviceInteraction implements Serializable {
     }
 
     /**
-     * Returns the ID of the device that was interacted with.
+     * Gets the interacted device identifier.
      *
-     * @return The device ID.
+     * @return the device identifier
      */
-    public int getDeviceId() { return deviceId; }
+    public int getDeviceId() {
+        return this.deviceId;
+    }
 
-    public int getUserId() { return userId; }
+    /**
+     * Gets the user identifier.
+     *
+     * @return the user identifier
+     */
+    public int getUserId() {
+        return this.userId;
+    }
 
-    public void setUserId(int userId) { this.userId = userId; }
+    /**
+     * Sets the user identifier.
+     *
+     * @param userId the user identifier
+     */
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
 
     /**
      * Sets the device ID.
      *
-     * @param deviceId The new device ID.
+     * @param deviceId the device identifier
      */
-    public void setDeviceId(int deviceId) { this.deviceId = deviceId; }
+    public void setDeviceId(int deviceId) {
+        this.deviceId = deviceId;
+    }
 
     /**
-     * Returns the type of interaction performed.
+     * Gets the type of interaction performed.
      *
-     * @return The InteractionType.
+     * @return the interaction type
      */
-    public InteractionType getType() { return type; }
+    public InteractionType getType() {
+        return this.type;
+    }
 
     /**
      * Sets the interaction type.
      *
-     * @param type The new InteractionType.
+     * @param type the interaction type
      */
-    public void setType(InteractionType type) { this.type = type; }
+    public void setType(InteractionType type) {
+        this.type = type;
+    }
 
     /**
-     * Returns the value applied during the interaction, or null if not applicable.
+     * Gets the value applied during the interaction.
      *
-     * @return The value, or null.
+     * @return the value, or null if not applicable
      */
-    public Double getValue() { return value; }
+    public Double getValue() {
+        return this.value;
+    }
 
     /**
      * Sets the value applied during the interaction.
      *
-     * @param value The new value, or null if not applicable.
+     * @param value the interaction value, or null if not applicable
      */
-    public void setValue(Double value) { this.value = value; }
+    public void setValue(Double value) {
+        this.value = value;
+    }
 
     /**
-     * Returns the simulation timestamp of the interaction.
+     * Gets the simulation timestamp of the interaction.
      *
-     * @return The LocalDateTime.
+     * @return the simulation timestamp
      */
-    public LocalDateTime getTimestamp() { return timestamp; }
+    public LocalDateTime getTimestamp() {
+        return this.timestamp;
+    }
 
     /**
      * Sets the simulation timestamp.
      *
-     * @param timestamp The new LocalDateTime.
+     * @param timestamp the simulation timestamp
      */
-    public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
 
     /**
-     * Returns the outside weather recorded when the interaction happened.
+     * Gets the outside weather recorded when the interaction happened.
      *
-     * @return The weather condition, or null for legacy interactions.
+     * @return the weather condition, or null if unavailable
      */
-    public WeatherCondition getWeather() { return weather; }
+    public WeatherCondition getWeather() {
+        return this.weather;
+    }
 
     /**
      * Sets the outside weather associated with this interaction.
      *
-     * @param weather The weather condition.
+     * @param weather the weather condition
      */
-    public void setWeather(WeatherCondition weather) { this.weather = weather; }
+    public void setWeather(WeatherCondition weather) {
+        this.weather = weather;
+    }
 
     /**
-     * Returns the outside temperature recorded when the interaction happened.
+     * Gets the outside temperature recorded when the interaction happened.
      *
-     * @return The temperature in Celsius, or null for legacy interactions.
+     * @return the outside temperature, or null if unavailable
      */
-    public Double getOutsideTemperature() { return outsideTemperature; }
+    public Double getOutsideTemperature() {
+        return this.outsideTemperature;
+    }
 
     /**
      * Sets the outside temperature associated with this interaction.
      *
-     * @param outsideTemperature The temperature in Celsius.
+     * @param outsideTemperature the outside temperature
      */
-    public void setOutsideTemperature(Double outsideTemperature) { this.outsideTemperature = outsideTemperature; }
+    public void setOutsideTemperature(Double outsideTemperature) {
+        this.outsideTemperature = outsideTemperature;
+    }
 
     /**
-     * Returns the outside luminosity recorded when the interaction happened.
+     * Gets the outside luminosity recorded when the interaction happened.
      *
-     * @return The luminosity in lux, or null for legacy interactions.
+     * @return the luminosity, or null if unavailable
      */
-    public Double getLuminosity() { return luminosity; }
+    public Double getLuminosity() {
+        return this.luminosity;
+    }
 
     /**
      * Sets the outside luminosity associated with this interaction.
      *
-     * @param luminosity The luminosity in lux.
+     * @param luminosity the luminosity
      */
-    public void setLuminosity(Double luminosity) { this.luminosity = luminosity; }
+    public void setLuminosity(Double luminosity) {
+        this.luminosity = luminosity;
+    }
 
     /**
-     * Creates a deep copy of this interaction.
+     * Creates a copy of this interaction.
      *
-     * @return A new DeviceInteraction instance.
+     * @return a copied DeviceInteraction instance
      */
     @Override
     public DeviceInteraction clone() {
@@ -245,30 +341,30 @@ public class DeviceInteraction implements Serializable {
     }
 
     /**
-     * Compares this interaction with another object for equality using getters.
+     * Compares this interaction with another object for equality.
      *
-     * @param o The object to compare with.
+     * @param o the object to compare with
      * @return true if all fields match; false otherwise.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
-        DeviceInteraction that = (DeviceInteraction) o;
-        return this.getDeviceId() == that.getDeviceId() &&
-               this.getUserId()   == that.getUserId()   &&
-               this.getType()     == that.getType()     &&
-               Objects.equals(this.getValue(), that.getValue()) &&
-               Objects.equals(this.getTimestamp(), that.getTimestamp()) &&
-               this.getWeather() == that.getWeather() &&
-               Objects.equals(this.getOutsideTemperature(), that.getOutsideTemperature()) &&
-               Objects.equals(this.getLuminosity(), that.getLuminosity());
+        DeviceInteraction interaction = (DeviceInteraction) o;
+        return this.getDeviceId() == interaction.getDeviceId() &&
+               this.getUserId() == interaction.getUserId() &&
+               this.getType() == interaction.getType() &&
+               Objects.equals(this.getValue(), interaction.getValue()) &&
+               Objects.equals(this.getTimestamp(), interaction.getTimestamp()) &&
+               this.getWeather() == interaction.getWeather() &&
+               Objects.equals(this.getOutsideTemperature(), interaction.getOutsideTemperature()) &&
+               Objects.equals(this.getLuminosity(), interaction.getLuminosity());
     }
 
     /**
      * Generates a hash code for this interaction.
      *
-     * @return The hash code.
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -279,17 +375,21 @@ public class DeviceInteraction implements Serializable {
     /**
      * Returns a string representation of this interaction.
      *
-     * @return Formatted string with all fields.
+     * @return a formatted string with the interaction information
      */
     @Override
     public String toString() {
-        return "DeviceInteraction { deviceId=" + this.getDeviceId() +
-               ", userId=" + this.getUserId() +
-               ", type=" + this.getType() +
-               ", value=" + (this.getValue() != null ? this.getValue() : "N/A") +
-               ", timestamp=" + this.getTimestamp() +
-               ", weather=" + (this.getWeather() != null ? this.getWeather() : "N/A") +
-               ", outsideTemperature=" + (this.getOutsideTemperature() != null ? this.getOutsideTemperature() : "N/A") +
-               ", luminosity=" + (this.getLuminosity() != null ? this.getLuminosity() : "N/A") + " }";
+        StringBuilder sb = new StringBuilder();
+        sb.append("DeviceInteraction { ")
+          .append("Device ID: ").append(this.getDeviceId())
+          .append(", User ID: ").append(this.getUserId())
+          .append(", Type: ").append(this.getType())
+          .append(", Value: ").append(this.getValue() != null ? this.getValue() : "N/A")
+          .append(", Timestamp: ").append(this.getTimestamp())
+          .append(", Weather: ").append(this.getWeather() != null ? this.getWeather() : "N/A")
+          .append(", Outside Temperature: ").append(this.getOutsideTemperature() != null ? this.getOutsideTemperature() : "N/A")
+          .append(", Luminosity: ").append(this.getLuminosity() != null ? this.getLuminosity() : "N/A")
+          .append(" }");
+        return sb.toString();
     }
 }

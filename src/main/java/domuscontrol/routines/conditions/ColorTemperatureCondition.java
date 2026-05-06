@@ -9,8 +9,7 @@ import domuscontrol.routines.Condition;
 import java.util.Objects;
 
 /**
- * Condition that evaluates whether the color temperature of a color-adjustable device
- * satisfies a specific comparison against a trigger value.
+ * Condition that compares the color temperature of a color-adjustable device with a trigger value.
  */
 public class ColorTemperatureCondition implements Condition {
 
@@ -19,7 +18,7 @@ public class ColorTemperatureCondition implements Condition {
     private Operator operator;
 
     /**
-     * Default constructor initializing device to null and operator to EQUALS.
+     * Creates a condition with no target device, trigger temperature 2700K, and EQUALS operator.
      */
     public ColorTemperatureCondition() {
         this.deviceId = -1;
@@ -28,11 +27,11 @@ public class ColorTemperatureCondition implements Condition {
     }
 
     /**
-     * Parameterized constructor.
+     * Creates a condition for the given device, trigger temperature, and operator.
      *
-     * @param device             The live reference to the color-adjustable device to monitor.
-     * @param triggerTemperature The threshold temperature in Kelvin for comparison.
-     * @param operator           The comparison operator (EQUALS, GREATER_THAN, LESS_THAN).
+     * @param deviceId the target device identifier
+     * @param triggerTemperature the trigger temperature in Kelvin
+     * @param operator the comparison operator
      */
     public ColorTemperatureCondition(int deviceId, int triggerTemperature, Operator operator) {
         this.deviceId = deviceId;
@@ -41,75 +40,91 @@ public class ColorTemperatureCondition implements Condition {
     }
 
     /**
-     * Copy constructor. The device pointer remains shared.
+     * Creates a copy of another color-temperature condition.
      *
-     * @param other The existing ColorTemperatureCondition instance to copy.
+     * @param other the condition to copy
      */
     public ColorTemperatureCondition(ColorTemperatureCondition other) {
-        this.deviceId = other.deviceId;
-        this.triggerTemperature = other.triggerTemperature;
-        this.operator = other.operator;
+        this.deviceId = other.getDeviceId();
+        this.triggerTemperature = other.getTriggerTemperature();
+        this.operator = other.getOperator();
     }
 
     /**
-     * Returns the target device.
+     * Gets the target device identifier.
      *
-     * @return The color-adjustable device reference.
+     * @return the target device identifier
      */
-    public int getDeviceId() { return deviceId; }
+    public int getDeviceId() {
+        return this.deviceId;
+    }
 
     /**
-     * Sets a new target device.
+     * Sets the target device identifier.
      *
-     * @param device The new color-adjustable device reference.
+     * @param deviceId the target device identifier
      */
-    public void setDeviceId(int deviceId) { this.deviceId = deviceId; }
+    public void setDeviceId(int deviceId) {
+        this.deviceId = deviceId;
+    }
 
     /**
-     * Returns the trigger temperature.
+     * Gets the trigger temperature.
      *
-     * @return The threshold temperature in Kelvin.
+     * @return the trigger temperature in Kelvin
      */
-    public int getTriggerTemperature() { return triggerTemperature; }
+    public int getTriggerTemperature() {
+        return this.triggerTemperature;
+    }
 
     /**
-     * Sets a new trigger temperature.
+     * Sets the trigger temperature.
      *
-     * @param triggerTemperature The new threshold temperature in Kelvin.
+     * @param triggerTemperature the trigger temperature in Kelvin
      */
-    public void setTriggerTemperature(int triggerTemperature) { this.triggerTemperature = triggerTemperature; }
+    public void setTriggerTemperature(int triggerTemperature) {
+        this.triggerTemperature = triggerTemperature;
+    }
 
     /**
-     * Returns the comparison operator.
+     * Gets the comparison operator.
      *
-     * @return The Operator enum value.
+     * @return the comparison operator
      */
-    public Operator getOperator() { return operator; }
+    public Operator getOperator() {
+        return this.operator;
+    }
 
     /**
-     * Sets a new comparison operator.
+     * Sets the comparison operator.
      *
-     * @param operator The new Operator to be used.
+     * @param operator the comparison operator
      */
-    public void setOperator(Operator operator) { this.operator = operator != null ? operator : Operator.EQUALS; }
+    public void setOperator(Operator operator) {
+        this.operator = operator != null ? operator : Operator.EQUALS;
+    }
 
     /**
-     * Evaluates the condition by reading the current color temperature of the live device reference.
+     * Evaluates this condition against the current color temperature of the target device.
      *
+     * @param house the house where the target device is stored
+     * @param simulation the current simulation state
      * @return true if the current temperature satisfies the operator comparison; false otherwise.
      */
     @Override
     public boolean evaluate(House house, Simulation simulation) {
         try {
             return house.readDevice(this.deviceId, d -> {
-                if (!(d instanceof ColorAdjustableDevice cad)) return false;
+                if (!(d instanceof ColorAdjustableDevice cad)) {
+                    return false;
+                }
                 int current = cad.getColorTemperature();
-        switch (this.operator) {
-            case EQUALS:       return current == this.triggerTemperature;
-            case GREATER_THAN: return current > this.triggerTemperature;
-            case LESS_THAN:    return current < this.triggerTemperature;
-            default:           return false;
-        }
+                switch (this.operator) {
+                    case EQUALS:       return current == this.triggerTemperature;
+                    case GREATER_THAN: return current > this.triggerTemperature;
+                    case LESS_THAN:    return current < this.triggerTemperature;
+                    default:           return false;
+                }
             });
         } catch (DeviceNotFoundException e) {
             return false;
@@ -119,7 +134,7 @@ public class ColorTemperatureCondition implements Condition {
     /**
      * Creates a copy of this condition.
      *
-     * @return A new instance of ColorTemperatureCondition.
+     * @return a copied ColorTemperatureCondition instance
      */
     @Override
     public Condition copy() {
@@ -127,9 +142,9 @@ public class ColorTemperatureCondition implements Condition {
     }
 
     /**
-     * Checks if this condition is associated with a specific device ID.
+     * Checks whether this condition depends on the given device.
      *
-     * @param deviceId The ID to check.
+     * @param deviceId the device identifier to check
      * @return true if the stored device's ID matches; false otherwise.
      */
     @Override
@@ -140,23 +155,23 @@ public class ColorTemperatureCondition implements Condition {
     /**
      * Compares this condition with another object for equality.
      *
-     * @param o The object to compare with.
+     * @param o the object to compare with
      * @return true if device, trigger temperature, and operator match; false otherwise.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
-        ColorTemperatureCondition that = (ColorTemperatureCondition) o;
-        return this.triggerTemperature == that.triggerTemperature &&
-               this.operator == that.operator &&
-               this.deviceId == that.deviceId;
+        ColorTemperatureCondition condition = (ColorTemperatureCondition) o;
+        return this.triggerTemperature == condition.getTriggerTemperature() &&
+               this.operator == condition.getOperator() &&
+               this.deviceId == condition.getDeviceId();
     }
 
     /**
      * Generates a hash code for this condition.
      *
-     * @return The hash code based on the device, trigger temperature, and operator.
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -164,9 +179,9 @@ public class ColorTemperatureCondition implements Condition {
     }
 
     /**
-     * Clones this condition instance.
+     * Creates a copy of this condition.
      *
-     * @return A cloned ColorTemperatureCondition.
+     * @return a copied ColorTemperatureCondition instance
      */
     @Override
     public ColorTemperatureCondition clone() {
@@ -176,12 +191,15 @@ public class ColorTemperatureCondition implements Condition {
     /**
      * Returns a string representation of this condition.
      *
-     * @return Formatted string containing device info and comparison logic.
+     * @return a formatted string with the condition information
      */
     @Override
     public String toString() {
-        return "ColorTemperatureCondition { Device: " +
-               this.deviceId +
-               ", Temperature " + this.operator + " " + this.triggerTemperature + "K }";
+        StringBuilder sb = new StringBuilder();
+        sb.append("ColorTemperatureCondition { ")
+          .append("Device ID: ").append(this.deviceId)
+          .append(", Temperature ").append(this.operator).append(" ").append(this.triggerTemperature).append("K")
+          .append(" }");
+        return sb.toString();
     }
 }

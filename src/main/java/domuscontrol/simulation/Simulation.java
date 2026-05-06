@@ -3,46 +3,21 @@ package domuscontrol.simulation;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.Duration;
+import java.util.Objects;
 
-
+/**
+ * Represents the state of the simulation environment, including the current date/time,
+ * temperature, and weather condition. Also handles time advancement and environmental updates.
+ */
 public class Simulation implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-    public enum WeatherCondition {
-        SUNNY(1.0, "SUNNY"),
-        PARTLY_CLOUDY(0.8, "PARTLY_CLOUDY"),
-        CLOUDY(0.5, "CLOUDY"),
-        FOGGY(0.4, "FOGGY"),
-        RAINING(0.3, "RAINING"),
-        STORMY(0.15, "STORMY"),
-        SNOWING(0.6, "SNOWING"),
-        WINTER_IS_COMING(0.2, "WINTER"),
-        APOCALYPSE(0.05, "APOCALYPSE");
-
-        private final double luminosityMultiplier;
-        private final String displayName;
-
-        WeatherCondition(double luminosityMultiplier, String displayName) {
-            this.luminosityMultiplier = luminosityMultiplier;
-            this.displayName = displayName;
-        }
-
-        public double getLuminosityMultiplier() {
-            return luminosityMultiplier;
-        }
-
-        @Override
-        public String toString() {
-            return this.displayName;
-        }
-    }
 
     private LocalDateTime currentDateTime;
     private LocalDateTime previousDateTime;
 
-    private double temperature; // Graus Celsius
+    private double temperature;
     private WeatherCondition weather;
 
+    /** Creates a new simulation starting at the current date/time, 20°C, and sunny weather. */
     public Simulation() {
         this.currentDateTime = LocalDateTime.now();
         this.previousDateTime = this.currentDateTime;
@@ -50,13 +25,23 @@ public class Simulation implements Serializable {
         this.weather = WeatherCondition.SUNNY;
     }
 
-    public Simulation(LocalDateTime currentDateTime, double temperature, double luminosity, WeatherCondition weather) {
+    /**
+     * Creates a simulation with the specified date/time, temperature, and weather.
+     * @param currentDateTime The starting date and time.
+     * @param temperature The starting temperature in Celsius.
+     * @param weather The starting weather condition.
+     */
+    public Simulation(LocalDateTime currentDateTime, double temperature, WeatherCondition weather) {
         this.currentDateTime = currentDateTime;
         this.previousDateTime = currentDateTime;
         this.temperature = temperature;
         this.weather = weather;
     }
 
+    /**
+     * Copy constructor.
+     * @param simulation The simulation to copy.
+     */
     public Simulation(Simulation simulation) {
         this.currentDateTime = simulation.getCurrentDateTime();
         this.previousDateTime = simulation.getPreviousDateTime();
@@ -64,79 +49,109 @@ public class Simulation implements Serializable {
         this.weather = simulation.getWeather();
     }
 
+    /**
+     * Returns the current simulation date and time.
+     * @return The current date/time.
+     */
     public LocalDateTime getCurrentDateTime() {
         return this.currentDateTime;
     }
+
+    /**
+     * Sets the current simulation date and time.
+     * @param currentDateTime The new current date/time.
+     */
     public void setCurrentDateTime(LocalDateTime currentDateTime) {
         this.currentDateTime = currentDateTime;
     }
 
+    /**
+     * Returns the simulation date and time at the start of the last tick.
+     * @return The previous date/time.
+     */
     public LocalDateTime getPreviousDateTime() {
         return this.previousDateTime;
     }
+
+    /**
+     * Sets the previous simulation date and time.
+     * @param previousDateTime The previous date/time to set.
+     */
     public void setPreviousDateTime(LocalDateTime previousDateTime) {
         this.previousDateTime = previousDateTime;
     }
 
-    public Long getTimeElapsed() {
+    /**
+     * Returns the number of minutes elapsed since the last tick.
+     * @return Minutes elapsed between the previous and current date/time.
+     */
+    public long getTimeElapsed() {
         return Duration.between(this.previousDateTime, this.currentDateTime).toMinutes();
     }
 
+    /**
+     * Returns the current temperature in Celsius.
+     * @return The temperature.
+     */
     public double getTemperature() {
         return this.temperature;
     }
+
+    /**
+     * Sets the temperature.
+     * @param temperature The temperature in Celsius.
+     */
     public void setTemperature(double temperature) {
         this.temperature = temperature;
     }
 
+    /**
+     * Returns the ambient luminosity in lux, calculated from the time of day and weather.
+     * @return The luminosity value.
+     */
     public double getLuminosity() {
-        int hour = currentDateTime.getHour();
-
+        int hour = this.currentDateTime.getHour();
         double baseLuminosity = (hour >= 6 && hour < 18) ? 1000.0 : 100.0;
-
         return baseLuminosity * this.weather.getLuminosityMultiplier();
     }
 
+    /**
+     * Returns the current weather condition.
+     * @return The weather condition.
+     */
     public WeatherCondition getWeather() {
         return this.weather;
     }
 
+    /**
+     * Changes the current weather condition.
+     * @param weather The new weather condition.
+     */
     public void changeWeather(WeatherCondition weather) {
         this.weather = weather;
     }
 
+    /**
+     * Returns whether it is currently raining or stormy.
+     * @return true if the weather is RAINING or STORMY.
+     */
     public boolean isRaining() {
-        return this.weather == WeatherCondition.RAINING;
+        return this.weather == WeatherCondition.RAINING || this.weather == WeatherCondition.STORMY;
     }
 
-    public void advanceTime(int days, int hours, int minutes) {
-        this.previousDateTime = this.currentDateTime;
-        this.currentDateTime = this.currentDateTime.plusDays(days).plusHours(hours).plusMinutes(minutes);
-    }
-
-    public void advanceDays(int days) {
-        this.previousDateTime = this.currentDateTime;
-        this.currentDateTime = this.currentDateTime.plusDays(days);
-    }
-
-    public void advanceHours(int hours) {
-        this.previousDateTime = this.currentDateTime;
-        this.currentDateTime = this.currentDateTime.plusHours(hours);
-    }
-
-    public void advanceMinutes(int minutes) {
-        this.previousDateTime = this.currentDateTime;
-        this.currentDateTime = this.currentDateTime.plusMinutes(minutes);
-    }
-
+    /**
+     * Returns whether the weather is WINTER_IS_COMING.
+     * @return true if winter is coming.
+     */
     public boolean isWinterComing() {
         return this.weather == WeatherCondition.WINTER_IS_COMING;
     }
 
-    public boolean isApocalypse() {
-        return this.weather == WeatherCondition.APOCALYPSE;
-    }
-
+    /**
+     * Advances the simulation by the given number of minutes (ticks), updating temperature
+     * and weather stochastically each tick.
+     * @param ticks The number of minutes to simulate.
+     */
     public void advanceSimulation(int ticks) {
         this.previousDateTime = this.currentDateTime;
         this.currentDateTime = this.currentDateTime.plusMinutes(ticks);
@@ -166,9 +181,7 @@ public class Simulation implements Serializable {
             if (this.temperature > 45.0) this.temperature = 45.0;
             if (this.temperature < -15.0) this.temperature = -15.0;
 
-            if (Math.random() < 0.001) {
-                this.weather = WeatherCondition.APOCALYPSE;
-            } else if (Math.random() < 0.01) { 
+            if (Math.random() < 0.01) {
                 double rand = Math.random();
                 
                 switch (this.weather) {
@@ -216,9 +229,6 @@ public class Simulation implements Serializable {
                         this.weather = (rand < 0.5) ? WeatherCondition.SNOWING : WeatherCondition.WINTER_IS_COMING;
                         break;
                         
-                    case APOCALYPSE:
-                        this.weather = (rand < 0.1) ? WeatherCondition.CLOUDY : WeatherCondition.APOCALYPSE;
-                        break;
                 }
             }
         }
@@ -226,15 +236,20 @@ public class Simulation implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null) return false;
+        if (o == this) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
 
-        Simulation Simulation = (Simulation) o;
+        Simulation s = (Simulation) o;
 
-        return this.currentDateTime.equals(Simulation.getCurrentDateTime()) &&
-               this.previousDateTime.equals(Simulation.getPreviousDateTime()) &&
-               Double.compare(this.temperature, Simulation.getTemperature()) == 0 &&
-               this.weather == Simulation.getWeather();
+        return this.currentDateTime.equals(s.getCurrentDateTime()) &&
+               this.previousDateTime.equals(s.getPreviousDateTime()) &&
+               Double.compare(this.temperature, s.getTemperature()) == 0 &&
+               this.weather == s.getWeather();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.currentDateTime, this.previousDateTime, this.temperature, this.weather);
     }
 
     @Override

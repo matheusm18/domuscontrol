@@ -5,25 +5,31 @@ import java.io.Serializable;
 import domuscontrol.houses.House;
 
 /**
- * Interface representing a generic action that can be performed within the home automation system.
- * Actions are the fundamental units of execution for scenarios and automations.
+ * Represents an operation that can be executed as part of a routine.
+ * Actions are the executable units used by scenarios, automations, and schedules.
  */
 public interface Action extends Serializable {
 
     /**
-     * Executes the logic associated with this action on the provided house.
+     * Executes this action in the provided house context.
+     * Implementations should resolve their target devices through the house,
+     * usually by device ID, instead of storing live device references.
+     *
+     * @param house the house where the action should be applied
      */
     void execute(House house);
 
     /**
-     * Creates a deep copy of this action instance.
-     * * @return A new Action object that is a copy of the current one.
+     * Creates a copy of this action.
+     *
+     * @return a new Action with the same configuration
      */
     Action copy();
 
     /**
-     * Determines if this action is linked to a specific device.
-     * * @param deviceId The unique identifier of the device to check.
+     * Checks whether this action targets the given device.
+     *
+     * @param deviceId the device identifier to check
      * @return true if the action targets the specified device, false otherwise.
      */
     boolean hasDeviceId(int deviceId);

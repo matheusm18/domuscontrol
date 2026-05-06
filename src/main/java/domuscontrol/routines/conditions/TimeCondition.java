@@ -9,55 +9,59 @@ import domuscontrol.houses.House;
 import domuscontrol.routines.Condition;
 
 /**
- * Condition that evaluates whether the current simulation time has reached or passed 
- * a specific trigger time. It is designed to handle time skips and day-cycle transitions.
+ * Time-based condition that checks whether a specific time was reached since the last tick.
  */
 public class TimeCondition implements TimeBasedCondition {
     private LocalTime triggerTime;
 
     /**
-     * Default constructor initializing the trigger time to midnight.
+     * Creates a condition that triggers at midnight.
      */
-    public TimeCondition() { 
-        this.triggerTime = LocalTime.MIDNIGHT; 
+    public TimeCondition() {
+        this.triggerTime = LocalTime.MIDNIGHT;
     }
 
     /**
-     * Parameterized constructor.
-     * * @param triggerTime The specific LocalTime that should trigger the condition.
+     * Creates a condition with the given trigger time.
+     *
+     * @param triggerTime the time that should trigger this condition
      */
-    public TimeCondition(LocalTime triggerTime) { 
-        this.triggerTime = triggerTime; 
+    public TimeCondition(LocalTime triggerTime) {
+        this.triggerTime = triggerTime;
     }
 
     /**
-     * Copy constructor for deep copying.
-     * * @param other The existing TimeCondition instance to copy.
+     * Creates a copy of another time condition.
+     *
+     * @param other the condition to copy
      */
-    public TimeCondition(TimeCondition other) { 
-        this.triggerTime = other.getTriggerTime(); 
+    public TimeCondition(TimeCondition other) {
+        this.triggerTime = other.getTriggerTime();
     }
 
     /**
-     * Retrieves the configured trigger time.
-     * * @return The LocalTime set as the trigger.
+     * Gets the trigger time.
+     *
+     * @return the trigger time
      */
-    public LocalTime getTriggerTime() { 
-        return triggerTime; 
+    public LocalTime getTriggerTime() {
+        return this.triggerTime;
     }
     
     /**
-     * Sets a new trigger time.
-     * * @param triggerTime The new LocalTime to be used as a trigger.
+     * Sets the trigger time.
+     *
+     * @param triggerTime the trigger time
      */
-    public void setTriggerTime(LocalTime triggerTime) { 
-        this.triggerTime = triggerTime; 
+    public void setTriggerTime(LocalTime triggerTime) {
+        this.triggerTime = triggerTime;
     }
 
     /**
-     * Evaluates the condition by comparing the current house time and previous house time 
-     * against the trigger time. This ensures triggers are not missed if the simulation 
-     * ticks skip over the exact second.
+     * Evaluates whether the trigger time was reached between the previous and current simulation times.
+     *
+     * @param house the house context
+     * @param simulation the current simulation state
      * @return true if the trigger time was reached or crossed since the last tick; false otherwise.
      */
     @Override
@@ -83,8 +87,9 @@ public class TimeCondition implements TimeBasedCondition {
     }
 
     /**
-     * Creates a deep copy of this condition.
-     * * @return A new instance of TimeCondition with the same trigger time.
+     * Creates a copy of this condition.
+     *
+     * @return a copied TimeCondition instance
      */
     @Override
     public Condition copy() {
@@ -93,7 +98,8 @@ public class TimeCondition implements TimeBasedCondition {
 
     /**
      * Compares this condition with another object for equality.
-     * * @param o The object to compare with.
+     *
+     * @param o the object to compare with
      * @return true if the trigger times are equal; false otherwise.
      */
     @Override
@@ -101,14 +107,15 @@ public class TimeCondition implements TimeBasedCondition {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
         
-        TimeCondition that = (TimeCondition) o;
+        TimeCondition condition = (TimeCondition) o;
         
-        return Objects.equals(this.triggerTime, that.triggerTime);
+        return Objects.equals(this.triggerTime, condition.getTriggerTime());
     }
 
     /**
      * Generates a hash code for this condition.
-     * * @return The hash code based on the trigger time.
+     *
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -116,8 +123,9 @@ public class TimeCondition implements TimeBasedCondition {
     }
 
     /**
-     * Clones the current condition instance.
-     * * @return A cloned TimeCondition.
+     * Creates a copy of this condition.
+     *
+     * @return a copied TimeCondition instance
      */
     @Override
     public TimeCondition clone() {
@@ -125,8 +133,9 @@ public class TimeCondition implements TimeBasedCondition {
     }
 
     /**
-     * Returns a string representation of the condition.
-     * * @return Formatted string containing the trigger time.
+     * Returns a string representation of this condition.
+     *
+     * @return a formatted string with the condition information
      */
     @Override
     public String toString() {

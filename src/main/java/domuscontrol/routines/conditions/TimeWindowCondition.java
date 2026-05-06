@@ -8,16 +8,15 @@ import domuscontrol.houses.House;
 import domuscontrol.routines.Condition;
 
 /**
- * Condition that evaluates whether the current simulation time falls within a specific
- * time window. It supports both standard windows (e.g., 09:00 to 17:00) and windows
- * that cross over midnight (e.g., 22:00 to 06:00).
+ * Time-based condition that checks whether the current simulation time is inside a time window.
+ * Windows may also cross midnight.
  */
 public class TimeWindowCondition implements TimeBasedCondition {
     private LocalTime startTime;
     private LocalTime endTime;
 
     /**
-     * Default constructor initializing a one-minute window starting at midnight.
+     * Creates a one-minute window starting at midnight.
      */
     public TimeWindowCondition() {
         this.startTime = LocalTime.MIDNIGHT;
@@ -25,9 +24,10 @@ public class TimeWindowCondition implements TimeBasedCondition {
     }
 
     /**
-     * Parameterized constructor.
-     * * @param startTime The beginning of the time window.
-     * @param endTime   The end of the time window.
+     * Creates a condition with the given time window.
+     *
+     * @param startTime the beginning of the time window
+     * @param endTime the end of the time window
      */
     public TimeWindowCondition(LocalTime startTime, LocalTime endTime) {
         this.startTime = startTime;
@@ -35,8 +35,9 @@ public class TimeWindowCondition implements TimeBasedCondition {
     }
 
     /**
-     * Copy constructor for deep copying.
-     * * @param other The existing TimeWindowCondition instance to copy.
+     * Creates a copy of another time-window condition.
+     *
+     * @param other the condition to copy
      */
     public TimeWindowCondition(TimeWindowCondition other) {
         this.startTime = other.getStartTime();
@@ -44,41 +45,46 @@ public class TimeWindowCondition implements TimeBasedCondition {
     }
 
     /**
-     * Retrieves the configured start time.
-     * * @return The start LocalTime.
+     * Gets the start time.
+     *
+     * @return the start time
      */
     public LocalTime getStartTime() {
         return startTime;
     }
 
     /**
-     * Sets a new start time for the window.
-     * * @param startTime The new beginning LocalTime.
+     * Sets the start time.
+     *
+     * @param startTime the start time
      */
     public void setStartTime(LocalTime startTime) {
         this.startTime = startTime;
     }
 
     /**
-     * Retrieves the configured end time.
-     * * @return The end LocalTime.
+     * Gets the end time.
+     *
+     * @return the end time
      */
     public LocalTime getEndTime() {
         return endTime;
     }
 
     /**
-     * Sets a new end time for the window.
-     * * @param endTime The new ending LocalTime.
+     * Sets the end time.
+     *
+     * @param endTime the end time
      */
     public void setEndTime(LocalTime endTime) {
         this.endTime = endTime;
     }
 
     /**
-     * Evaluates if the current house time is within the defined window.
-     * If the start time is after the end time, the window is assumed to span across midnight.
-     * * @param house The house context providing the current simulation time.
+     * Evaluates whether the current simulation time is inside the configured window.
+     *
+     * @param house the house context
+     * @param simulation the current simulation state
      * @return true if current time is within the window (inclusive); false otherwise.
      */
     @Override
@@ -99,8 +105,9 @@ public class TimeWindowCondition implements TimeBasedCondition {
     }
 
     /**
-     * Creates a deep copy of this condition.
-     * * @return A new instance of TimeWindowCondition.
+     * Creates a copy of this condition.
+     *
+     * @return a copied TimeWindowCondition instance
      */
     @Override
     public Condition copy() {
@@ -109,7 +116,8 @@ public class TimeWindowCondition implements TimeBasedCondition {
 
     /**
      * Compares this condition with another object for equality.
-     * * @param o The object to compare with.
+     *
+     * @param o the object to compare with
      * @return true if both start and end times match; false otherwise.
      */
     @Override
@@ -117,15 +125,16 @@ public class TimeWindowCondition implements TimeBasedCondition {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
         
-        TimeWindowCondition that = (TimeWindowCondition) o;
+        TimeWindowCondition condition = (TimeWindowCondition) o;
         
-        return Objects.equals(this.startTime, that.startTime) &&
-               Objects.equals(this.endTime, that.endTime);
+        return Objects.equals(this.startTime, condition.getStartTime()) &&
+               Objects.equals(this.endTime, condition.getEndTime());
     }
 
     /**
      * Generates a hash code for this condition.
-     * * @return The hash code based on start and end times.
+     *
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -133,8 +142,9 @@ public class TimeWindowCondition implements TimeBasedCondition {
     }
 
     /**
-     * Clones the current condition instance.
-     * * @return A cloned TimeWindowCondition.
+     * Creates a copy of this condition.
+     *
+     * @return a copied TimeWindowCondition instance
      */
     @Override
     public TimeWindowCondition clone() {
@@ -142,8 +152,9 @@ public class TimeWindowCondition implements TimeBasedCondition {
     }
 
     /**
-     * Returns a string representation of the condition.
-     * * @return Formatted string containing the start and end times.
+     * Returns a string representation of this condition.
+     *
+     * @return a formatted string with the condition information
      */
     @Override
     public String toString() {

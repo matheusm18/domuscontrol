@@ -8,7 +8,7 @@ import java.util.Objects;
 
 /**
  * Stores the history of all manual device interactions performed in a house.
- * Lives inside House and is serialized alongside it.
+ * The logger is stored inside a house and is serialized with it.
  */
 public class InteractionLogger implements Serializable {
 
@@ -16,34 +16,35 @@ public class InteractionLogger implements Serializable {
     private List<DeviceInteraction> interactions;
 
     /**
-     * Default constructor initializing an empty log.
+     * Creates an empty interaction logger.
      */
     public InteractionLogger() {
         this.interactions = new ArrayList<>();
     }
 
     /**
-     * Parameterized constructor.
+     * Creates an interaction logger with the given interactions.
+     * The provided interactions are copied before being stored.
      *
-     * @param interactions The initial list of interactions to store (deep copied).
+     * @param interactions the interactions to store
      */
     public InteractionLogger(List<DeviceInteraction> interactions) {
         this.setInteractions(interactions);
     }
 
     /**
-     * Copy constructor using getters to access the other instance's state.
+     * Creates a copy of another interaction logger.
      *
-     * @param other The existing InteractionLogger instance to copy.
+     * @param other the logger to copy
      */
     public InteractionLogger(InteractionLogger other) {
         this.setInteractions(other.getInteractions());
     }
 
     /**
-     * Returns an unmodifiable view of all recorded interactions.
+     * Gets a copied, unmodifiable list of all recorded interactions.
      *
-     * @return The full interaction list.
+     * @return the copied interaction list
      */
     public List<DeviceInteraction> getInteractions() {
         List<DeviceInteraction> copy = new ArrayList<>();
@@ -54,9 +55,10 @@ public class InteractionLogger implements Serializable {
     }
 
     /**
-     * Replaces the entire interaction list with a deep copy of the provided one.
+     * Replaces the interaction list.
+     * The provided interactions are copied before being stored.
      *
-     * @param interactions The new list of interactions.
+     * @param interactions the interactions to store
      */
     public void setInteractions(List<DeviceInteraction> interactions) {
         this.interactions = new ArrayList<>();
@@ -68,20 +70,20 @@ public class InteractionLogger implements Serializable {
     }
 
     /**
-     * Records a new interaction in the log.
+     * Records a new interaction.
      *
-     * @param interaction The interaction to record.
      */
     public void log(DeviceInteraction interaction) {
-        if (interaction != null)
+        if (interaction != null) {
             this.interactions.add(interaction.clone());
+        }
     }
 
 
     /**
      * Returns the total number of recorded interactions.
      *
-     * @return The interaction count.
+     * @return the interaction count
      */
     public int size() {
         return this.interactions.size();
@@ -95,9 +97,9 @@ public class InteractionLogger implements Serializable {
     }
 
     /**
-     * Creates a deep copy of this logger.
+     * Creates a copy of this logger.
      *
-     * @return A new InteractionLogger instance.
+     * @return a copied InteractionLogger instance
      */
     @Override
     public InteractionLogger clone() {
@@ -105,23 +107,22 @@ public class InteractionLogger implements Serializable {
     }
 
     /**
-     * Compares this logger with another object for equality using getters.
+     * Compares this logger with another object for equality.
      *
-     * @param o The object to compare with.
      * @return true if the interaction lists are equal; false otherwise.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
-        InteractionLogger that = (InteractionLogger) o;
-        return Objects.equals(this.getInteractions(), that.getInteractions());
+        InteractionLogger logger = (InteractionLogger) o;
+        return Objects.equals(this.getInteractions(), logger.getInteractions());
     }
 
     /**
      * Generates a hash code for this logger.
      *
-     * @return The hash code based on the interaction list.
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -131,10 +132,14 @@ public class InteractionLogger implements Serializable {
     /**
      * Returns a string representation of this logger.
      *
-     * @return Formatted string with the total number of recorded interactions.
+     * @return a formatted string with the logger information
      */
     @Override
     public String toString() {
-        return "InteractionLogger { totalInteractions=" + this.size() + " }";
+        StringBuilder sb = new StringBuilder();
+        sb.append("InteractionLogger { ")
+          .append("Total Interactions: ").append(this.size())
+          .append(" }");
+        return sb.toString();
     }
 }

@@ -28,7 +28,7 @@ import domuscontrol.exceptions.UserDoesntHaveScenarios;
 import domuscontrol.routines.Automation;
 import domuscontrol.routines.Scenario;
 import domuscontrol.simulation.Simulation;
-import domuscontrol.simulation.Simulation.WeatherCondition;
+import domuscontrol.simulation.WeatherCondition;
 import domuscontrol.simulation.SimulationState;
 import domuscontrol.suggestions.AutomationSuggestion;
 import domuscontrol.suggestions.DeviceInteraction;
@@ -61,22 +61,17 @@ public class DomusControl implements Serializable {
 
     private final UserManager userManager;
     private final HouseManager houseManager;
-    private Simulation simulation;
+    private final Simulation simulation;
 
     public DomusControl() {
         this.userManager  = new UserManager();
         this.houseManager = new HouseManager();
-        this.simulation = new Simulation(
-            LocalDateTime.of(2026, 1, 1, 12, 0),
-            20.0,
-            100.0,
-            WeatherCondition.SUNNY
-        );
+        this.simulation = new Simulation(LocalDateTime.of(2026, 1, 1, 12, 0), 20.0, WeatherCondition.SUNNY);
     }
 
     public List<String> tick(int minutes) {
         if (minutes < 0) {
-            throw new IllegalArgumentException("Minutes cannot be negative.");
+            throw new IllegalArgumentException("" + minutes);
         }
 
         List<String> activatedAll = new ArrayList<>();
@@ -113,15 +108,9 @@ public class DomusControl implements Serializable {
      * @throws UserNotFoundException If no user is registered with that email.
      * @throws LoginInvalidPasswordException If the email exists but the password is wrong.
      */
-    public User validateLogin(String emailName, String password) throws UserNotFoundException, LoginInvalidPasswordException {
-        User user;
-        try {
-            user = this.userManager.getUserByEmail(emailName);
-         } // throws UserNotFoundException if email is not registered, which is the expected behavior for invalid login, so we don't
-        catch (UserNotFoundException e) {
-            user = this.userManager.getUserByName(emailName); // try again with lowercase email, to allow case-insensitive login
-        }
-        if (!user.getPassword().equals(password)) throw new LoginInvalidPasswordException(emailName);
+    public User validateLogin(String email, String password) throws UserNotFoundException, LoginInvalidPasswordException {
+        User user = this.userManager.getUserByEmail(email);
+        if (!user.getPassword().equals(password)) throw new LoginInvalidPasswordException(email);
         return user;
     }
 
@@ -163,6 +152,7 @@ public class DomusControl implements Serializable {
      * @param email The email of the user to update.
      * @param newName The new name.
      * @throws UserNotFoundException If no user is registered with that email.
+     * @throws UserAlreadyExistsException If the new email is already registered (propagated from updateUser).
      */
     public void updateUserName(String email, String newName) throws UserNotFoundException, UserAlreadyExistsException {
         User user = this.userManager.getUserByEmail(email);
@@ -176,6 +166,7 @@ public class DomusControl implements Serializable {
      * @param email The email of the user to update.
      * @param newPassword The new password.
      * @throws UserNotFoundException If no user is registered with that email.
+     * @throws UserAlreadyExistsException If the new email is already registered (propagated from updateUser).
      */
     public void updateUserPassword(String email, String newPassword) throws UserNotFoundException, UserAlreadyExistsException {
         User user = this.userManager.getUserByEmail(email);
@@ -254,9 +245,9 @@ public class DomusControl implements Serializable {
     }
 
     public Map<Integer, UserRole> getUsersInHouse(int houseId) throws HouseNotFoundException {
-        this.houseManager.getHouseById(houseId); // validate house exists
+        if (!this.houseManager.existsHouseWithId(houseId)) throw new HouseNotFoundException("" + houseId);
         return this.userManager.getAllUsers().stream()
-            .filter(u -> u.getHouseIds().contains(houseId))
+            .filter(u -> u.hasRoleInHouse(houseId))
             .collect(Collectors.toMap(User::getId, u -> u.getRolesByHouseId().get(houseId)));
     }
 
@@ -284,45 +275,31 @@ public class DomusControl implements Serializable {
     }
 
     /**
-     * Retrieves all houses associated with a user by their email.
-     * @param email The email of the user whose houses we want to retrieve.
-     * @return A list of all houses associated with the user. 
-     * @throws UserNotFoundException If the email does not correspond to a registered user.
-     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
-     */
-    public List<House> getAllHousesByUser(String email) throws UserNotFoundException, HouseNotFoundException {
-        User user = this.userManager.getUserByEmail(email);
-        List<House> houses = new ArrayList<>();
-        for (Integer houseId : user.getHouseIds()) {
-            houses.add(this.houseManager.getHouseById(houseId));
-        }
-        return houses;
-    }
-
-    /**
-     * Assigns a user to a house with a specific role, updating both the user's and the house's records.
+     * Assigns a user to a house with a specific role.
      * @param houseId The ID of the house to which the user will be assigned.
      * @param userId The ID of the user to assign.
      * @param role The role to assign to the user in the house.
      * @throws UserNotFoundException If the user with the given ID does not exist.
      * @throws HouseNotFoundException If the house with the given ID does not exist.
+     * @throws UserAlreadyExistsException If the user is already assigned to the house.
      */
-    public void assignUserToHouse(int houseId, Integer userId, UserRole role) throws UserNotFoundException, HouseNotFoundException, UserAlreadyExistsException {
-        this.houseManager.getHouseById(houseId); // validate house exists
+    public void assignUserToHouse(int houseId, int userId, UserRole role) throws UserNotFoundException, HouseNotFoundException, UserAlreadyExistsException {
+        if (!this.houseManager.existsHouseWithId(houseId)) throw new HouseNotFoundException("" + houseId);
         User user = this.userManager.getUserById(userId);
-        if (user.getHouseIds().contains(houseId)) {
-            throw new UserAlreadyExistsException("");
+        if (user.hasRoleInHouse(houseId)) {
+            throw new UserAlreadyExistsException("" + userId);
         }
         user.assignRole(houseId, role);
         this.userManager.updateUser(user);
     }
 
     /**
-     * Removes a user from a house, updating both the user's and the house's records.
-     * @param houseId
-     * @param userId
-     * @throws UserNotFoundException
-     * @throws HouseNotFoundException
+     * Removes a user from a house. Prevents removal if the user is the last administrator.
+     * @param houseId The ID of the house.
+     * @param userId The ID of the user to remove.
+     * @throws UserNotFoundException If the user does not exist.
+     * @throws HouseNotFoundException If the house does not exist.
+     * @throws LastAdminException If the user is the last administrator of the house.
      */
     public void deleteUserFromHouse(int houseId, int userId) throws UserNotFoundException, HouseNotFoundException, LastAdminException, UserAlreadyExistsException {
         User user = this.userManager.getUserById(userId);
@@ -331,7 +308,7 @@ public class DomusControl implements Serializable {
             long adminCount = getUsersInHouse(houseId).values().stream()
                 .filter(r -> r == UserRole.ADMINISTRATOR).count();
             if (adminCount <= 1) {
-                throw new LastAdminException("");
+                throw new LastAdminException("" + userId);
             }
         }
         user.removeRole(houseId);
@@ -380,29 +357,18 @@ public class DomusControl implements Serializable {
      * @param houseId The ID of the house.
      * @param deviceId The ID of the device.
      * @return The device.
-     * @throws HouseNotFoundException If no house with the given ID exists, or the device is not found.
-     */
-    public Device getDevice(int houseId, int deviceId) throws HouseNotFoundException, DeviceNotFoundException {
-        return this.houseManager.getDevice(houseId, deviceId);
-    }
-
-    /**
-     * Updates a device in the specified house.
-     *
-     * @param houseId The ID of the house.
-     * @param device The device with updated information.
      * @throws HouseNotFoundException If no house with the given ID exists.
      * @throws DeviceNotFoundException If the device is not found in the specified house.
      */
-    public void updateDevice(int houseId, Device device) throws HouseNotFoundException, DeviceNotFoundException {
-        this.houseManager.updateDevice(houseId, device);
+    public Device getDevice(int houseId, int deviceId) throws HouseNotFoundException, DeviceNotFoundException {
+        return this.houseManager.getDevice(houseId, deviceId);
     }
 
     /** Toggles a switchable device ON or OFF and logs the interaction for the given user. */
     public void toggleDevice(int houseId, int deviceId, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfSwitchableDeviceException {
         Device clone = this.houseManager.getDevice(houseId, deviceId);
         if (!(clone instanceof SwitchableDevice))
-            throw new DeviceIsNotInstanceOfSwitchableDeviceException("Device " + deviceId + " is not switchable.");
+            throw new DeviceIsNotInstanceOfSwitchableDeviceException("" + deviceId);
         boolean[] turnedOn = {false};
         this.houseManager.interactWithDevice(houseId, deviceId, d -> {
             SwitchableDevice sd = (SwitchableDevice) d;
@@ -417,7 +383,7 @@ public class DomusControl implements Serializable {
     public void setDeviceLevel(int houseId, int deviceId, int level, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfAdjustableDeviceException {
         Device clone = this.houseManager.getDevice(houseId, deviceId);
         if (!(clone instanceof AdjustableDevice))
-            throw new DeviceIsNotInstanceOfAdjustableDeviceException("Device " + deviceId + " is not adjustable.");
+            throw new DeviceIsNotInstanceOfAdjustableDeviceException("" + deviceId);
         this.houseManager.interactWithDevice(houseId, deviceId, d -> ((AdjustableDevice) d).setLevel(level));
         this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_LEVEL, (double) level, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
@@ -426,7 +392,7 @@ public class DomusControl implements Serializable {
     public void setDeviceOpening(int houseId, int deviceId, int percentage, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfOpenableDeviceException {
         Device clone = this.houseManager.getDevice(houseId, deviceId);
         if (!(clone instanceof OpenableDevice))
-            throw new DeviceIsNotInstanceOfOpenableDeviceException("Device " + deviceId + " is not openable.");
+            throw new DeviceIsNotInstanceOfOpenableDeviceException("" + deviceId);
         this.houseManager.interactWithDevice(houseId, deviceId, d -> ((OpenableDevice) d).setOpening(percentage));
         this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_OPENING, (double) percentage, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
@@ -435,7 +401,7 @@ public class DomusControl implements Serializable {
     public void setDeviceColorTemperature(int houseId, int deviceId, int temperature, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfColorAdjustableDeviceException {
         Device clone = this.houseManager.getDevice(houseId, deviceId);
         if (!(clone instanceof ColorAdjustableDevice))
-            throw new DeviceIsNotInstanceOfColorAdjustableDeviceException("Device " + deviceId + " is not color adjustable.");
+            throw new DeviceIsNotInstanceOfColorAdjustableDeviceException("" + deviceId);
         this.houseManager.interactWithDevice(houseId, deviceId, d -> ((ColorAdjustableDevice) d).setColorTemperature(temperature));
         this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_COLOR_TEMPERATURE, (double) temperature, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
@@ -578,6 +544,9 @@ public class DomusControl implements Serializable {
                 .orElse(0);
             Device.setNextId(maxDeviceId);
 
+            int maxUserId = model.getAllUsers().stream().mapToInt(User::getId).max().orElse(0);
+            User.setNextId(maxUserId);
+
             return model;
         }
     }
@@ -589,7 +558,7 @@ public class DomusControl implements Serializable {
      * @param email The email of the user whose devices we want to retrieve.
      * @return A list of all devices associated with the user's houses.
      */
-    protected List<Device> getAllDevicesForUser(String email) throws UserNotFoundException, HouseNotFoundException {
+    private List<Device> getAllDevicesForUser(String email) throws UserNotFoundException, HouseNotFoundException {
         List<Device> devices = new ArrayList<>();
         for (House house : this.getHousesByUser(email)) {
             devices.addAll(house.getDevices().values());
@@ -601,12 +570,11 @@ public class DomusControl implements Serializable {
         return getAllDevicesForUser(email).stream()
             .sorted(Comparator.comparingInt(criterion).reversed())
             .limit(n)
-            .map(Device::clone)
             .collect(Collectors.toList());
     }
 
 
-    protected List<DivisionInfo> getAllDivisionsForUser(String email) throws UserNotFoundException, HouseNotFoundException {
+    private List<DivisionInfo> getAllDivisionsForUser(String email) throws UserNotFoundException, HouseNotFoundException {
         List<DivisionInfo> divisions = new ArrayList<>();
         for (House house : this.getHousesByUser(email)) {
             house.getDivisions().forEach((name, devices) -> 

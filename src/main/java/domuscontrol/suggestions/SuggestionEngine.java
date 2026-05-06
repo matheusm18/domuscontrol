@@ -68,9 +68,10 @@ public class SuggestionEngine {
     private static final int BRIGHT_LUMINOSITY_THRESHOLD = 700;
 
     /**
-     * Private constructor — this class is not meant to be instantiated.
+     * Private constructor because this utility class is not meant to be instantiated.
      */
-    private SuggestionEngine() {}
+    private SuggestionEngine() {
+    }
 
     /**
      * Analyses the interaction log and produces a list of suggestions based on
@@ -78,9 +79,10 @@ public class SuggestionEngine {
      *
      * The device map is used only to validate compatibility and build descriptions.
      *
-     * @param logger  The interaction logger containing the house's history.
-     * @param devices The live internal device map of the house.
-     * @return A list of automation suggestions ready to be presented to the user.
+     * @param logger the interaction logger containing the house's history
+     * @param devices the device map used to validate compatibility
+     * @param userId the user identifier to generate suggestions for
+     * @return a list of automation suggestions ready to be presented to the user
      */
     public static List<AutomationSuggestion> suggest(InteractionLogger logger, Map<Integer, Device> devices, int userId) throws ScheduleWithConditionDifferentFromTimeException {
         List<AutomationSuggestion> suggestions = new ArrayList<>();
@@ -101,9 +103,9 @@ public class SuggestionEngine {
     /**
      * Detects repeated manual actions that happened during clearly dark or bright outside luminosity.
      *
-     * @param interactions The user interaction list.
-     * @param devices      The live device map.
-     * @return A list of luminosity-based automation suggestions.
+     * @param interactions the user interaction list
+     * @param devices the device map used to validate compatibility
+     * @return a list of luminosity-based automation suggestions
      */
     private static List<AutomationSuggestion> detectLuminosityPatterns(
             List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
@@ -171,9 +173,9 @@ public class SuggestionEngine {
      * contains MIN_OCCURRENCES or more entries whose time-of-day falls within
      * SCHEDULE_WINDOW_MINUTES of a common center. If so, builds a Schedule suggestion.
      *
-     * @param interactions The full interaction list.
-     * @param devices      The live device map.
-     * @return A list of schedule-based suggestions.
+     * @param interactions the full interaction list
+     * @param devices the device map used to validate compatibility
+     * @return a list of schedule-based suggestions
      */
     private static List<AutomationSuggestion> detectSchedulePatterns(
             List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
@@ -233,9 +235,9 @@ public class SuggestionEngine {
      * If found, builds an Automation suggestion: when device A is in the state it was
      * set to, perform the action on device B.
      *
-     * @param interactions The full interaction list.
-     * @param devices      The live device map.
-     * @return A list of sequence-based suggestions.
+     * @param interactions the full interaction list
+     * @param devices the device map used to validate compatibility
+     * @return a list of sequence-based suggestions
      */
     private static List<AutomationSuggestion> detectSequencePatterns(
             List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
@@ -282,7 +284,7 @@ public class SuggestionEngine {
             if (action == null) continue;
 
             List<Condition> conditions = new ArrayList<>();
-                conditions.add(condition);
+            conditions.add(condition);
 
             List<Action> actions = new ArrayList<>();
             actions.add(action);
@@ -321,9 +323,9 @@ public class SuggestionEngine {
     /**
      * Detects repeated manual actions that happened under the same outside weather.
      *
-     * @param interactions The user interaction list.
-     * @param devices      The live device map.
-     * @return A list of weather-based automation suggestions.
+     * @param interactions the user interaction list
+     * @param devices the device map used to validate compatibility
+     * @return a list of weather-based automation suggestions
      */
     private static List<AutomationSuggestion> detectWeatherPatterns(
             List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
@@ -375,9 +377,9 @@ public class SuggestionEngine {
     /**
      * Detects repeated manual actions that happened during clearly cold or hot outside temperatures.
      *
-     * @param interactions The user interaction list.
-     * @param devices      The live device map.
-     * @return A list of temperature-based automation suggestions.
+     * @param interactions the user interaction list
+     * @param devices the device map used to validate compatibility
+     * @return a list of temperature-based automation suggestions
      */
     private static List<AutomationSuggestion> detectTemperaturePatterns(
             List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
@@ -441,12 +443,12 @@ public class SuggestionEngine {
     }
 
     /**
-     * Builds the appropriate Condition from a DeviceInteraction and its live device reference.
+     * Builds the appropriate Condition from a recorded interaction and its device type.
      * Returns null if the device does not implement the required interface for the interaction type.
      *
-     * @param interaction The recorded interaction that acts as the trigger.
-     * @param device      The live device reference.
-     * @return The constructed Condition, or null if incompatible.
+     * @param interaction the recorded interaction that acts as the trigger
+     * @param device the device used to validate compatibility
+     * @return the constructed Condition, or null if incompatible
      */
     private static Condition buildCondition(DeviceInteraction interaction, Device device) {
         switch (interaction.getType()) {
@@ -478,14 +480,13 @@ public class SuggestionEngine {
         }
     }
 
-    // Helpers
     /**
-     * Builds the appropriate Action from a DeviceInteraction and its live device reference.
+     * Builds the appropriate Action from a recorded interaction and its device type.
      * Returns null if the device does not implement the required interface for the action type.
      *
-     * @param interaction The recorded interaction.
-     * @param device      The live device reference.
-     * @return The constructed Action, or null if incompatible.
+     * @param interaction the recorded interaction
+     * @param device the device used to validate compatibility
+     * @return the constructed Action, or null if incompatible
      */
     private static Action buildAction(DeviceInteraction interaction, Device device) {
         switch (interaction.getType()) {

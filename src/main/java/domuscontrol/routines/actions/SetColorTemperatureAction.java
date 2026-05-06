@@ -8,8 +8,7 @@ import domuscontrol.routines.Action;
 import java.util.Objects;
 
 /**
- * Action responsible for setting the color temperature of a color-adjustable device.
- * Typically used for smart lamps that support light warmth configuration.
+ * Action that sets the color temperature of a color-adjustable device.
  */
 public class SetColorTemperatureAction implements Action {
 
@@ -17,7 +16,7 @@ public class SetColorTemperatureAction implements Action {
     private int targetTemperature;
 
     /**
-     * Default constructor initializing device to null and temperature to 2700K.
+     * Creates an action with no target device and color temperature 2700K.
      */
     public SetColorTemperatureAction() {
         this.deviceId = -1;
@@ -25,10 +24,10 @@ public class SetColorTemperatureAction implements Action {
     }
 
     /**
-     * Parameterized constructor.
+     * Creates an action for the given device and target color temperature.
      *
-     * @param device            The live reference to the color-adjustable device.
-     * @param targetTemperature The color temperature in Kelvin to be set.
+     * @param deviceId the target device identifier
+     * @param targetTemperature the color temperature in Kelvin to set on the device
      */
     public SetColorTemperatureAction(int deviceId, int targetTemperature) {
         this.deviceId = deviceId;
@@ -36,45 +35,55 @@ public class SetColorTemperatureAction implements Action {
     }
 
     /**
-     * Copy constructor. The device pointer remains shared.
+     * Creates a copy of another set-color-temperature action.
      *
-     * @param other The existing SetColorTemperatureAction instance to copy.
+     * @param other the action to copy
      */
     public SetColorTemperatureAction(SetColorTemperatureAction other) {
-        this.deviceId = other.deviceId;
-        this.targetTemperature = other.targetTemperature;
+        this.deviceId = other.getDeviceId();
+        this.targetTemperature = other.getTargetTemperature();
     }
 
     /**
-     * Returns the target device.
+     * Gets the target device identifier.
      *
-     * @return The color-adjustable device reference.
+     * @return the target device identifier
      */
-    public int getDeviceId() { return deviceId; }
+    public int getDeviceId() {
+        return this.deviceId;
+    }
 
     /**
-     * Sets a new target device.
+     * Sets the target device identifier.
      *
-     * @param device The new color-adjustable device reference.
+     * @param deviceId the target device identifier
      */
-    public void setDeviceId(int deviceId) { this.deviceId = deviceId; }
+    public void setDeviceId(int deviceId) {
+        this.deviceId = deviceId;
+    }
 
     /**
-     * Returns the target color temperature.
+     * Gets the target color temperature.
      *
-     * @return The target temperature in Kelvin.
+     * @return the target temperature in Kelvin
      */
-    public int getTargetTemperature() { return targetTemperature; }
+    public int getTargetTemperature() {
+        return this.targetTemperature;
+    }
 
     /**
-     * Sets a new target color temperature.
+     * Sets the target color temperature.
      *
-     * @param targetTemperature The new temperature value in Kelvin.
+     * @param targetTemperature the target temperature in Kelvin
      */
-    public void setTargetTemperature(int targetTemperature) { this.targetTemperature = targetTemperature; }
+    public void setTargetTemperature(int targetTemperature) {
+        this.targetTemperature = targetTemperature;
+    }
 
     /**
-     * Executes the action by setting the color temperature on the stored device reference.
+     * Executes this action in the given house.
+     *
+     * @param house the house where the target device color temperature should be changed
      */
     @Override
     public void execute(House house) {
@@ -92,7 +101,7 @@ public class SetColorTemperatureAction implements Action {
     /**
      * Creates a copy of this action.
      *
-     * @return A new instance of SetColorTemperatureAction.
+     * @return a copied SetColorTemperatureAction instance
      */
     @Override
     public Action copy() {
@@ -100,9 +109,9 @@ public class SetColorTemperatureAction implements Action {
     }
 
     /**
-     * Checks if this action is associated with a specific device ID.
+     * Checks whether this action targets the given device.
      *
-     * @param deviceId The ID to check.
+     * @param deviceId the device identifier to check
      * @return true if the stored device's ID matches; false otherwise.
      */
     @Override
@@ -113,22 +122,22 @@ public class SetColorTemperatureAction implements Action {
     /**
      * Compares this action with another object for equality.
      *
-     * @param o The object to compare with.
+     * @param o the object to compare with
      * @return true if the devices and target temperatures match; false otherwise.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
-        SetColorTemperatureAction that = (SetColorTemperatureAction) o;
-        return this.targetTemperature == that.targetTemperature &&
-               this.deviceId == that.deviceId;
+        SetColorTemperatureAction action = (SetColorTemperatureAction) o;
+        return this.targetTemperature == action.getTargetTemperature() &&
+               this.deviceId == action.getDeviceId();
     }
 
     /**
      * Generates a hash code for this action.
      *
-     * @return The hash code based on the device and target temperature.
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -136,9 +145,9 @@ public class SetColorTemperatureAction implements Action {
     }
 
     /**
-     * Clones this action instance.
+     * Creates a copy of this action.
      *
-     * @return A cloned SetColorTemperatureAction.
+     * @return a copied SetColorTemperatureAction instance
      */
     @Override
     public SetColorTemperatureAction clone() {
@@ -148,12 +157,15 @@ public class SetColorTemperatureAction implements Action {
     /**
      * Returns a string representation of this action.
      *
-     * @return Formatted string containing the device ID and target temperature.
+     * @return a formatted string with the action information
      */
     @Override
     public String toString() {
-        return "SetColorTemperatureAction { Device: " +
-               this.deviceId +
-               ", Target Temperature: " + this.targetTemperature + "K }";
+        StringBuilder sb = new StringBuilder();
+        sb.append("SetColorTemperatureAction { ")
+          .append("Device ID: ").append(this.deviceId)
+          .append(", Target Temperature: ").append(this.targetTemperature).append("K")
+          .append(" }");
+        return sb.toString();
     }
 }

@@ -5,48 +5,51 @@ import java.util.List;
 import domuscontrol.houses.House;
 
 /**
- * Represents a predefined set of actions that can be triggered manually by a user.
- * Unlike Automations, Scenarios do not have conditions and must be activated
- * explicitly to execute their sequence of actions.
+ * Represents a routine that is triggered manually by a user.
+ * A scenario has actions but no conditions.
  */
 public class Scenario extends Routine {
 
     /**
-     * Default constructor.
-     * Creates an unnamed scenario with an empty action list.
+     * Creates an unnamed scenario with no actions.
      */
     public Scenario() {
         super();
     }
 
     /**
-     * Parameterized constructor.
-     * * @param name    The name assigned to the scenario.
-     * @param actions The list of actions to be executed when the scenario is triggered.
+     * Creates a scenario with the given name and actions.
+     * The provided actions are copied by the superclass.
+     *
+     * @param name the scenario name
+     * @param actions the actions to execute when the scenario is triggered
      */
     public Scenario(String name, List<Action> actions) {
         super(name, actions);
     }
 
     /**
-     * Copy constructor for deep copying.
-     * * @param other The existing Scenario instance to copy.
+     * Creates a copy of another scenario.
+     *
+     * @param other the scenario to copy
      */
     public Scenario(Scenario other) {
         super(other);
     }
 
     /**
-     * Executes all actions contained within this scenario in the order they were added.
-     * * @param house The house context where the actions should be performed.
+     * Executes all actions contained in this scenario.
+     *
+     * @param house the house where the scenario actions should be applied
      */
     public void executeScenario(House house) {
         this.executeActions(house);
     }
 
     /**
-     * Creates a deep copy of this scenario instance.
-     * * @return A cloned Scenario object.
+     * Creates a copy of this scenario.
+     *
+     * @return a copied Scenario instance
      */
     @Override
     public Scenario clone() {
@@ -54,14 +57,34 @@ public class Scenario extends Routine {
     }
 
     /**
-     * Returns a string representation of the scenario, including its name and action count.
-     * * @return A formatted string describing the scenario.
+     * Compares this scenario with another object for equality.
+     *
+     * @param o the object to compare with
+     * @return true if the superclass fields match; false otherwise
+     */
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    /**
+     * Generates a hash code for this scenario.
+     *
+     * @return the hash code
+     */
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    /**
+     * Returns a string representation of this scenario.
+     *
+     * @return a formatted string with the scenario information
      */
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(); 
-        sb.append("Scenario: ").append(this.getName()).append("\n");
-        sb.append(super.toString()); 
-        return sb.toString(); 
+        return super.toString();
     }
+
 }

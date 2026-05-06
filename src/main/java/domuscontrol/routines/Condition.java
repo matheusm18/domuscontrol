@@ -6,28 +6,32 @@ import domuscontrol.simulation.Simulation;
 import java.io.Serializable;
 
 /**
- * Interface representing a logical requirement that must be satisfied for a routine to trigger.
- * Conditions can be based on device states (e.g., "if the light is on") or environmental 
- * factors (e.g., "if it is 8:00 AM").
+ * Represents a logical requirement that must be satisfied for a routine to trigger.
+ * Conditions can depend on device state, simulation time, or environmental values.
  */
 public interface Condition extends Serializable {
     
     /**
+     * Evaluates whether this condition is currently satisfied.
+     *
+     * @param house the house context used to inspect devices, when needed
+     * @param simulation the current simulation state used for time and environment conditions
      * @return true if the condition is currently met, false otherwise.
      */
     boolean evaluate(House house, Simulation simulation);
 
     /**
-     * Creates a deep copy of this condition instance.
-     * * @return A new Condition instance that is a copy of this one.
+     * Creates a copy of this condition.
+     *
+     * @return a new Condition with the same configuration
      */
     Condition copy();
 
     /**
-     * Checks if this condition is linked to a specific device identifier.
-     * By default, this returns false as some conditions (like time-based ones) 
-     * do not belong to a specific device.
-     * * @param deviceId The unique identifier of the device to check.
+     * Checks whether this condition depends on the given device.
+     * Conditions that do not reference devices should keep the default false result.
+     *
+     * @param deviceId the device identifier to check
      * @return true if the condition depends on the specified device, false otherwise.
      */
     default boolean hasDeviceId(int deviceId) {

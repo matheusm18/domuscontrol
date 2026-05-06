@@ -9,27 +9,28 @@ import java.util.stream.Collectors;
 import domuscontrol.houses.House;
 
 /**
- * Abstract base class for all routine types in the system, such as Scenarios and Automations.
- * It provides the fundamental structure for naming a routine and managing a list of actions
- * that should be executed.
+ * Base class for all routine types in the system.
+ * A routine has a name and an ordered list of actions that can be executed
+ * in a house context.
  */
 public abstract class Routine implements Serializable {
     private String name;
     private List<Action> actions;
 
     /**
-     * Default constructor.
-     * Initializes the routine with a placeholder name and an empty list of actions.
+     * Creates an unnamed routine with no actions.
      */
     public Routine() {
-        this.name = "Unnamed";
+        this.name = "Unnamed Routine";
         this.actions = new ArrayList<>();
     }
 
     /**
-     * Parameterized constructor.
-     * * @param name    The descriptive name of the routine.
-     * @param actions The initial list of actions to be associated with this routine.
+     * Creates a routine with the given name and actions.
+     * The provided actions are copied before being stored.
+     *
+     * @param name the routine name
+     * @param actions the actions associated with this routine
      */
     public Routine(String name, List<Action> actions) {
         this.name = name;
@@ -37,8 +38,9 @@ public abstract class Routine implements Serializable {
     }
 
     /**
-     * Copy constructor for deep copying.
-     * * @param other The existing Routine instance to copy.
+     * Creates a copy of another routine.
+     *
+     * @param other the routine to copy
      */
     public Routine(Routine other) {
         this.name = other.getName();
@@ -46,28 +48,37 @@ public abstract class Routine implements Serializable {
     }
 
     /**
-     * Retrieves the name of the routine.
-     * * @return The routine name.
+     * Gets the routine name.
+     *
+     * @return the routine name
      */
-    public String getName() { return name; }
+    public String getName() {
+        return this.name;
+    }
 
     /**
-     * Updates the name of the routine.
-     * * @param name The new name to set.
+     * Sets the routine name.
+     *
+     * @param name the new routine name
      */
-    public void setName(String name) { this.name = name; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
     /**
-     * Retrieves a deep copy of the actions list.
-     * * @return A new list containing copies of the current actions.
+     * Gets a copy of the actions associated with this routine.
+     *
+     * @return a new list containing copies of the current actions
      */
     public List<Action> getActions() {
         return this.actions.stream().map(Action::copy).collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**
-     * Sets the actions for this routine, ensuring a deep copy is stored.
-     * * @param actions The list of actions to assign.
+     * Replaces this routine's actions.
+     * The provided actions are copied before being stored.
+     *
+     * @param actions the actions to assign, or null for an empty list
      */
     public void setActions(List<Action> actions) {
         if (actions != null) {
@@ -78,8 +89,10 @@ public abstract class Routine implements Serializable {
     }
 
     /**
-     * Adds a single action to the routine.
-     * * @param action The action to add.
+     * Adds an action to this routine.
+     * The provided action is copied before being stored.
+     *
+     * @param action the action to add
      */
     public void addAction(Action action) {
         if (action != null) {
@@ -87,27 +100,44 @@ public abstract class Routine implements Serializable {
         }
     }
 
-    protected void executeActions(House house) {
+    /**
+     * Executes all actions associated with this routine in order.
+     *
+     * @param house the house where the actions should be applied
+     */
+    public void executeActions(House house) {
         for (Action action : this.actions) {
             action.execute(house);
         }
     }
 
     /**
-     * Removes a specific action from the routine.
-     * * @param action The action instance to remove.
+     * Removes an action from this routine.
+     *
+     * @param action the action to remove
      * @return true if the action was successfully removed; false otherwise.
      */
     public boolean removeAction(Action action) {
-        if (action != null && this.actions != null) {
+        if (action != null) {
             return this.actions.remove(action);
         }
         return false;
     }
 
     /**
+     * Removes all actions that target the given device.
+     * Used when a device is removed from the house.
+     *
+     * @param deviceId the device identifier to remove references to
+     */
+    public void removeDeviceById(int deviceId) {
+        this.actions.removeIf(action -> action.hasDeviceId(deviceId));
+    }
+
+    /**
      * Compares this routine with another object for equality.
-     * * @param o The object to compare with.
+     *
+     * @param o the object to compare with
      * @return true if names and action lists match; false otherwise.
      */
     @Override
@@ -115,12 +145,13 @@ public abstract class Routine implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Routine routine = (Routine) o;
-        return Objects.equals(name, routine.name) && Objects.equals(actions, routine.actions);
+        return Objects.equals(name, routine.getName()) && Objects.equals(actions, routine.getActions());
     }
 
     /**
      * Generates a hash code for this routine.
-     * * @return The hash code.
+     *
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -128,31 +159,24 @@ public abstract class Routine implements Serializable {
     }
 
     /**
-     * Returns a string representation of the routine.
-     * * @return Formatted string with name and action count.
+     * Returns a string representation of this routine.
+     *
+     * @return a formatted string with the name and action count
      */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Name: '").append(this.name).append('\'')
-          .append(", Actions: ").append(this.actions != null ? this.actions.size() : 0);
+        sb.append(this.getClass().getSimpleName()).append(" { ")
+          .append("Name: '").append(this.name).append('\'')
+          .append(", Actions: ").append(this.actions.size())
+          .append(" }");
         return sb.toString();
     }
-    
-    /**
-     * Abstract method to create a deep copy of the specific routine implementation.
-     * * @return A cloned instance of the routine.
-     */
-    public abstract Routine clone();
 
     /**
-     * Safely removes all actions associated with a specific device ID.
-     * This is used during a cascade delete when a device is removed from the house.
-     * * @param deviceId The unique identifier of the device to remove references for.
+     * Creates a copy of this routine.
+     *
+     * @return a copied routine instance
      */
-    public void removeDeviceById(int deviceId) {
-        if (this.actions != null) {
-            this.actions.removeIf(action -> action.hasDeviceId(deviceId));
-        }
-    }
+    public abstract Routine clone();
 }

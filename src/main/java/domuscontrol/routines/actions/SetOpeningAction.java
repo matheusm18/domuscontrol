@@ -8,15 +8,14 @@ import domuscontrol.routines.Action;
 import java.util.Objects;
 
 /**
- * Action responsible for setting the opening percentage of an openable device.
- * Typically used for devices like motorized blinds, curtains, or gates.
+ * Action that sets the opening percentage of an openable device.
  */
 public class SetOpeningAction implements Action {
     private int deviceId;
-    private int targetPercentage; 
+    private int targetPercentage;
 
     /**
-     * Default constructor initializing device to null and percentage to zero.
+     * Creates an action with no target device and opening percentage 0.
      */
     public SetOpeningAction() {
         this.deviceId = -1;
@@ -24,9 +23,10 @@ public class SetOpeningAction implements Action {
     }
     
     /**
-     * Parameterized constructor.
-     * @param device           The live reference to the openable device.
-     * @param targetPercentage The percentage of opening to be set (typically 0-100).
+     * Creates an action for the given device and target opening percentage.
+     *
+     * @param deviceId the target device identifier
+     * @param targetPercentage the opening percentage to set on the device
      */
     public SetOpeningAction(int deviceId, int targetPercentage) {
         this.deviceId = deviceId;
@@ -34,9 +34,9 @@ public class SetOpeningAction implements Action {
     }
     
     /**
-     * Copy constructor for deep copying the action itself.
-     * Note: The device pointer remains shared.
-     * @param other The existing SetOpeningAction instance to copy.
+     * Creates a copy of another set-opening action.
+     *
+     * @param other the action to copy
      */
     public SetOpeningAction(SetOpeningAction other) {
         this.deviceId = other.getDeviceId();
@@ -44,31 +44,45 @@ public class SetOpeningAction implements Action {
     }
 
     /**
-     * Retrieves the target device.
-     * @return The openable device reference.
+     * Gets the target device identifier.
+     *
+     * @return the target device identifier
      */
-    public int getDeviceId() { return deviceId; }
+    public int getDeviceId() {
+        return this.deviceId;
+    }
     
     /**
-     * Sets a new target device.
-     * @param device The new openable device reference.
+     * Sets the target device identifier.
+     *
+     * @param deviceId the target device identifier
      */
-    public void setDeviceId(int deviceId) { this.deviceId = deviceId; }
+    public void setDeviceId(int deviceId) {
+        this.deviceId = deviceId;
+    }
 
     /**
-     * Retrieves the target opening percentage.
-     * @return The opening percentage.
+     * Gets the target opening percentage.
+     *
+     * @return the target opening percentage
      */
-    public int getTargetPercentage() { return targetPercentage; }
+    public int getTargetPercentage() {
+        return this.targetPercentage;
+    }
     
     /**
-     * Sets a new target opening percentage.
-     * @param targetPercentage The new percentage value.
+     * Sets the target opening percentage.
+     *
+     * @param targetPercentage the target opening percentage
      */
-    public void setTargetPercentage(int targetPercentage) { this.targetPercentage = targetPercentage; }
+    public void setTargetPercentage(int targetPercentage) {
+        this.targetPercentage = targetPercentage;
+    }
 
     /**
-     * Executes the action by interacting directly with the stored device reference.
+     * Executes this action in the given house.
+     *
+     * @param house the house where the target device opening should be changed
      */
     @Override
     public void execute(House house) {
@@ -85,7 +99,8 @@ public class SetOpeningAction implements Action {
 
     /**
      * Creates a copy of this action.
-     * @return A new instance of SetOpeningAction.
+     *
+     * @return a copied SetOpeningAction instance
      */
     @Override
     public Action copy() {
@@ -94,7 +109,8 @@ public class SetOpeningAction implements Action {
 
     /**
      * Compares this action with another object for equality.
-     * @param o The object to compare with.
+     *
+     * @param o the object to compare with
      * @return true if the devices and percentages match; false otherwise.
      */
     @Override
@@ -102,15 +118,16 @@ public class SetOpeningAction implements Action {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
         
-        SetOpeningAction that = (SetOpeningAction) o;
+        SetOpeningAction action = (SetOpeningAction) o;
         
-        return this.deviceId == that.getDeviceId() && 
-               this.targetPercentage == that.getTargetPercentage();
+        return this.deviceId == action.getDeviceId() &&
+               this.targetPercentage == action.getTargetPercentage();
     }
 
     /**
      * Generates a hash code for this action.
-     * @return The hash code.
+     *
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -118,8 +135,9 @@ public class SetOpeningAction implements Action {
     }
 
     /**
-     * Clones the current action instance.
-     * @return A cloned SetOpeningAction.
+     * Creates a copy of this action.
+     *
+     * @return a copied SetOpeningAction instance
      */
     @Override
     public SetOpeningAction clone() {
@@ -128,7 +146,8 @@ public class SetOpeningAction implements Action {
 
     /**
      * Returns a string representation of the action.
-     * @return Formatted string containing device info and percentage.
+     *
+     * @return a formatted string with the action information
      */
     @Override
     public String toString() {
@@ -141,12 +160,12 @@ public class SetOpeningAction implements Action {
     }
 
     /**
-     * Checks if this action is associated with a specific device ID.
-     * Used by the House/RoutineManager to clean up routines when a device is deleted.
-     * @param deviceId The ID to check.
+     * Checks whether this action targets the given device.
+     *
+     * @param deviceId the device identifier to check
      * @return true if the stored device's ID matches; false otherwise.
      */
-    @Override 
+    @Override
     public boolean hasDeviceId(int deviceId) {
         return this.deviceId == deviceId;
     }

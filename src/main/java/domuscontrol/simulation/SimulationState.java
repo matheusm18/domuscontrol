@@ -1,12 +1,8 @@
 package domuscontrol.simulation;
 
-import domuscontrol.simulation.Simulation.WeatherCondition;
-
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public final class SimulationState implements Serializable {
-    private static final long serialVersionUID = 1L;
+public final class SimulationState {
 
     private final LocalDateTime currentDateTime;
     private final int temperature;

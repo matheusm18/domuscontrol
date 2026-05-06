@@ -8,9 +8,7 @@ import domuscontrol.houses.House;
 import domuscontrol.routines.Condition;
 
 /**
- * Condition that evaluates whether the opening level of an openable device
- * (e.g., curtains, garage gate) satisfies a specific comparison against a trigger value.
- * The opening level ranges from 0 (fully closed) to 100 (fully open).
+ * Condition that compares the opening level of an openable device with a trigger value.
  */
 public class DeviceOpenCondition implements Condition {
 
@@ -19,98 +17,113 @@ public class DeviceOpenCondition implements Condition {
     private Operator operator;
 
     /**
-     * Default constructor initializing device to null and operator to EQUALS.
+     * Creates a condition with no target device, trigger level 0, and EQUALS operator.
      */
     public DeviceOpenCondition() {
-        this.deviceId     = -1;
+        this.deviceId = -1;
         this.triggerLevel = 0;
-        this.operator     = Operator.EQUALS;
+        this.operator = Operator.EQUALS;
     }
 
     /**
-     * Parameterized constructor.
+     * Creates a condition for the given device, trigger level, and operator.
      *
-     * @param device       The live reference to the openable device to monitor.
-     * @param triggerLevel The opening level threshold (0-100) for comparison.
-     * @param operator     The comparison operator (EQUALS, GREATER_THAN, LESS_THAN).
+     * @param deviceId the target device identifier
+     * @param triggerLevel the trigger opening level for comparison
+     * @param operator the comparison operator
      */
     public DeviceOpenCondition(int deviceId, int triggerLevel, Operator operator) {
-        this.deviceId     = deviceId;
+        this.deviceId = deviceId;
         this.triggerLevel = triggerLevel;
-        this.operator     = operator != null ? operator : Operator.EQUALS;
+        this.operator = operator != null ? operator : Operator.EQUALS;
     }
 
     /**
-     * Copy constructor using getters to access the other instance's state.
-     * The device pointer remains shared.
+     * Creates a copy of another device-open condition.
      *
-     * @param other The existing DeviceOpenCondition instance to copy.
+     * @param other the condition to copy
      */
     public DeviceOpenCondition(DeviceOpenCondition other) {
-        this.deviceId     = other.getDeviceId();
+        this.deviceId = other.getDeviceId();
         this.triggerLevel = other.getTriggerLevel();
-        this.operator     = other.getOperator();
+        this.operator = other.getOperator();
     }
 
     /**
-     * Returns the target device.
+     * Gets the target device identifier.
      *
-     * @return The openable device reference.
+     * @return the target device identifier
      */
-    public int getDeviceId() { return deviceId; }
+    public int getDeviceId() {
+        return this.deviceId;
+    }
 
     /**
-     * Sets a new target device.
+     * Sets the target device identifier.
      *
-     * @param device The new openable device reference.
+     * @param deviceId the target device identifier
      */
-    public void setDeviceId(int deviceId) { this.deviceId = deviceId; }
+    public void setDeviceId(int deviceId) {
+        this.deviceId = deviceId;
+    }
 
     /**
-     * Returns the trigger level threshold.
+     * Gets the trigger opening level.
      *
-     * @return The opening level threshold (0-100).
+     * @return the trigger opening level
      */
-    public int getTriggerLevel() { return triggerLevel; }
+    public int getTriggerLevel() {
+        return this.triggerLevel;
+    }
 
     /**
-     * Sets a new trigger level threshold.
+     * Sets the trigger opening level.
      *
-     * @param triggerLevel The new opening level threshold (0-100).
+     * @param triggerLevel the trigger opening level
      */
-    public void setTriggerLevel(int triggerLevel) { this.triggerLevel = triggerLevel; }
+    public void setTriggerLevel(int triggerLevel) {
+        this.triggerLevel = triggerLevel;
+    }
 
     /**
-     * Returns the comparison operator.
+     * Gets the comparison operator.
      *
-     * @return The Operator enum value.
+     * @return the comparison operator
      */
-    public Operator getOperator() { return operator; }
+    public Operator getOperator() {
+        return this.operator;
+    }
 
     /**
-     * Sets a new comparison operator.
+     * Sets the comparison operator.
      *
-     * @param operator The new Operator to be used.
+     * @param operator the comparison operator
      */
-    public void setOperator(Operator operator) { this.operator = operator != null ? operator : Operator.EQUALS; }
+    public void setOperator(Operator operator) {
+        this.operator = operator != null ? operator : Operator.EQUALS;
+    }
 
     /**
-     * Evaluates the condition by reading the current opening level of the live device reference.
+     * Evaluates this condition against the current opening level of the target device.
      *
+     * @param house the house where the target device is stored
+     * @param simulation the current simulation state
      * @return true if the current opening level satisfies the operator comparison; false otherwise.
      */
     @Override
     public boolean evaluate(House house, Simulation simulation) {
         try {
             return house.readDevice(this.deviceId, d -> {
-                if (!(d instanceof OpenableDevice od)) return false;
+                if (!(d instanceof OpenableDevice od)) {
+                    return false;
+                }
                 int currentLevel = od.getOpeningLevel();
-            switch (this.getOperator()) {
-                case EQUALS:       return currentLevel == this.getTriggerLevel();
-                case GREATER_THAN: return currentLevel > this.getTriggerLevel();
-                case LESS_THAN:    return currentLevel < this.getTriggerLevel();
-                default:           return false;
-            }
+                switch (this.getOperator()) {
+                    case EQUALS:       return currentLevel == this.getTriggerLevel();
+                    case GREATER_THAN: return currentLevel > this.getTriggerLevel();
+                    case LESS_THAN:    return currentLevel < this.getTriggerLevel();
+                    default:           return false;
+                }
             });
         } catch (DeviceNotFoundException e) {
             return false;
@@ -118,9 +131,9 @@ public class DeviceOpenCondition implements Condition {
     }
 
     /**
-     * Creates a deep copy of this condition.
+     * Creates a copy of this condition.
      *
-     * @return A new instance of DeviceOpenCondition.
+     * @return a copied DeviceOpenCondition instance
      */
     @Override
     public Condition copy() {
@@ -128,10 +141,9 @@ public class DeviceOpenCondition implements Condition {
     }
 
     /**
-     * Checks if this condition is associated with a specific device ID.
-     * Used by the RoutineManager to clean up routines when a device is deleted.
+     * Checks whether this condition depends on the given device.
      *
-     * @param deviceId The ID to check.
+     * @param deviceId the device identifier to check
      * @return true if the stored device's ID matches; false otherwise.
      */
     @Override
@@ -140,25 +152,25 @@ public class DeviceOpenCondition implements Condition {
     }
 
     /**
-     * Compares this condition with another object for equality using getters.
+     * Compares this condition with another object for equality.
      *
-     * @param o The object to compare with.
+     * @param o the object to compare with
      * @return true if device, trigger level, and operator match; false otherwise.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
-        DeviceOpenCondition that = (DeviceOpenCondition) o;
-        return this.getTriggerLevel() == that.getTriggerLevel() &&
-               this.getOperator() == that.getOperator() &&
-               this.getDeviceId() == that.getDeviceId();
+        DeviceOpenCondition condition = (DeviceOpenCondition) o;
+        return this.getTriggerLevel() == condition.getTriggerLevel() &&
+               this.getOperator() == condition.getOperator() &&
+               this.getDeviceId() == condition.getDeviceId();
     }
 
     /**
      * Generates a hash code for this condition.
      *
-     * @return The hash code based on device, trigger level, and operator.
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -166,9 +178,9 @@ public class DeviceOpenCondition implements Condition {
     }
 
     /**
-     * Clones this condition instance.
+     * Creates a copy of this condition.
      *
-     * @return A cloned DeviceOpenCondition.
+     * @return a copied DeviceOpenCondition instance
      */
     @Override
     public DeviceOpenCondition clone() {
@@ -178,12 +190,15 @@ public class DeviceOpenCondition implements Condition {
     /**
      * Returns a string representation of this condition.
      *
-     * @return Formatted string containing device info and comparison logic.
+     * @return a formatted string with the condition information
      */
     @Override
     public String toString() {
-        return "DeviceOpenCondition { Device: " +
-               this.getDeviceId() +
-               ", Opening " + this.getOperator() + " " + this.getTriggerLevel() + "% }";
+        StringBuilder sb = new StringBuilder();
+        sb.append("DeviceOpenCondition { ")
+          .append("Device ID: ").append(this.getDeviceId())
+          .append(", Opening ").append(this.getOperator()).append(" ").append(this.getTriggerLevel()).append("%")
+          .append(" }");
+        return sb.toString();
     }
 }

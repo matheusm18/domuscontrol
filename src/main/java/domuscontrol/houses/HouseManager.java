@@ -36,37 +36,32 @@ public class HouseManager implements Serializable {
     }
 
     /** Creates a new house with the given name and registers it in the system. */
-    public House createHouse(String name) throws HouseAlreadyExistsException{
+    public House createHouse(String name) throws HouseAlreadyExistsException {
         House newHouse = new House();
         newHouse.setName(name);
-
-        this.addHouse(newHouse);
+        if (this.housesById.containsKey(newHouse.getId())) {
+            throw new HouseAlreadyExistsException("" + newHouse.getId());
+        }
+        this.housesById.put(newHouse.getId(), newHouse);
         return newHouse;
     }
 
-    /** Adds a house to the system. Clones the house to ensure encapsulation. */
-    private void addHouse(House house) throws HouseAlreadyExistsException{
-        if (this.housesById.containsKey(house.getId())) {
-            throw new HouseAlreadyExistsException("House ID already exists: " + house.getId());
-        }
-        this.housesById.put(house.getId(), house);
+    /**
+     * Checks whether a house with the given ID is registered in the system.
+     * @param id The house ID to look up.
+     * @return true if a house with that ID exists, false otherwise.
+     */
+    public boolean existsHouseWithId(int id) {
+        return this.housesById.containsKey(id);
     }
 
     /** Retrieves a clone of a house by its unique ID. */
-    public House getHouseById(int id) throws HouseNotFoundException{
+    public House getHouseById(int id) throws HouseNotFoundException {
         House house = this.housesById.get(id);
         if (house == null) {
-            throw new HouseNotFoundException("House not found with ID: " + id);
+            throw new HouseNotFoundException("" + id);
         }
         return house.clone();
-    }
-
-    /** Updates an existing house in the system. */
-    public void updateHouse(House updatedHouse) throws HouseNotFoundException{
-        if (!this.housesById.containsKey(updatedHouse.getId())) {
-            throw new HouseNotFoundException("Cannot update: House does not exist.");
-        }
-        this.housesById.put(updatedHouse.getId(), updatedHouse.clone());
     }
 
     /**
@@ -77,7 +72,7 @@ public class HouseManager implements Serializable {
      */
     public void addDivision(int houseId, String divisionName) throws HouseNotFoundException {
         House h = getHouseInternal(houseId);
-        h.addDivision(divisionName, null);
+        h.addDivision(divisionName);
     }
 
     /**
@@ -106,35 +101,24 @@ public class HouseManager implements Serializable {
     }
 
     /**
-     * Retrieves a device by its ID from a specific house. The search is performed across all divisions of the house.
+     * Retrieves a device by its ID from a specific house.
      * @param houseId The ID of the house from which to retrieve the device.
      * @param deviceId The ID of the device to retrieve.
-     * @return The device if found.
+     * @return A cloned Device if found.
      * @throws HouseNotFoundException if no house with the given ID exists.
      * @throws DeviceNotFoundException if no device with the given ID exists in the specified house.
      */
     public Device getDevice(int houseId, int deviceId) throws HouseNotFoundException, DeviceNotFoundException {
-        House h = getHouseInternal(houseId);
-        Device d = h.getDevices().get(deviceId);
-        if (d == null) throw new DeviceNotFoundException("Device not found: " + deviceId);
-        return d;
-    }
-
-    /** 
-     * Updates the information of a device in a specific house. The device is updated in the global devices map and also in any division that contains it.
-      * @param houseId The ID of the house in which the device is located.
-      * @param device The device with updated information to be stored in the house.
-      * @throws HouseNotFoundException if no house with the given ID exists.
-      * @throws DeviceNotFoundException if the device is not found in the specified house.
-     */
-    public void updateDevice(int houseId, Device device) throws HouseNotFoundException, DeviceNotFoundException {
-        House h = getHouseInternal(houseId);
-        h.updateDevice(device);
+        return getHouseInternal(houseId).getDevice(deviceId);
     }
 
     /**
-     * Applies an interaction to a live device inside the house without exposing the reference.
-     * The device's observer is notified automatically during the interaction.
+     * Applies a consumer to a live device inside the specified house without exposing the reference.
+     * @param houseId The ID of the house containing the device.
+     * @param deviceId The ID of the device to interact with.
+     * @param interaction The logic to apply to the device.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws DeviceNotFoundException if no device with the given ID exists in the specified house.
      */
     public void interactWithDevice(int houseId, int deviceId, Consumer<Device> interaction) throws HouseNotFoundException, DeviceNotFoundException {
         House h = getHouseInternal(houseId);
@@ -153,6 +137,135 @@ public class HouseManager implements Serializable {
         h.removeDevice(deviceId);
     }
 
+    /** Returns the house with the highest energy consumption. */
+    public House getMostConsumingHouse() {
+        return this.housesById.values().stream()
+                .max(Comparator.comparingDouble(House::calculateTotalConsumption))
+                .map(House::clone)
+                .orElse(null);
+    }
+
+    /** Returns a list of all houses in the system. */
+    public List<House> getAllHouses() {
+        return this.housesById.values().stream()
+                .map(House::clone)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Records a device interaction in the specified house's interaction history.
+     * @param houseId The ID of the house.
+     * @param interaction The interaction to record.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     */
+    public void logInteraction(int houseId, DeviceInteraction interaction) throws HouseNotFoundException {
+        getHouseInternal(houseId).logInteraction(interaction);
+    }
+
+    /**
+     * Returns automation suggestions based on the interaction history of the specified house and user.
+     * @param houseId The ID of the house.
+     * @param userId The ID of the user to generate suggestions for.
+     * @return A list of automation suggestions.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws ScheduleWithConditionDifferentFromTimeException if a suggested schedule has a non-time condition.
+     */
+    public List<AutomationSuggestion> getSuggestions(int houseId, int userId) throws HouseNotFoundException, ScheduleWithConditionDifferentFromTimeException {
+        return getHouseInternal(houseId).getSuggestions(userId);
+    }
+
+    /**
+     * Adds an automation to the specified house.
+     * @param houseId The ID of the house.
+     * @param automation The automation to add.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws NameAlreadyExistsException if an automation with the same name already exists.
+     */
+    public void addAutomation(int houseId, Automation automation) throws HouseNotFoundException, NameAlreadyExistsException {
+        getHouseInternal(houseId).addAutomation(automation);
+    }
+
+    /**
+     * Removes an automation from the specified house by name.
+     * @param houseId The ID of the house.
+     * @param name The name of the automation to remove.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws AutomationDoesntExistException if no automation with the given name exists.
+     */
+    public void removeAutomation(int houseId, String name) throws HouseNotFoundException, AutomationDoesntExistException {
+        getHouseInternal(houseId).removeAutomation(name);
+    }
+
+    /**
+     * Returns all automations registered in the specified house.
+     * @param houseId The ID of the house.
+     * @return A list of automations.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     */
+    public List<Automation> getAutomations(int houseId) throws HouseNotFoundException {
+        return getHouseInternal(houseId).getRoutineManager().getOnlyAutomations();
+    }
+
+    /**
+     * Returns all schedules registered in the specified house.
+     * @param houseId The ID of the house.
+     * @return A list of schedules.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     */
+    public List<Automation> getSchedules(int houseId) throws HouseNotFoundException {
+        return getHouseInternal(houseId).getRoutineManager().getOnlySchedules();
+    }
+
+    /**
+     * Adds a scenario for a specific user in the specified house.
+     * @param houseId The ID of the house.
+     * @param userId The ID of the user owning the scenario.
+     * @param scenario The scenario to add.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws NameAlreadyExistsException if a scenario with the same name already exists for this user.
+     */
+    public void addScenario(int houseId, int userId, Scenario scenario) throws HouseNotFoundException, NameAlreadyExistsException {
+        getHouseInternal(houseId).addScenario(userId, scenario);
+    }
+
+    /**
+     * Returns all scenarios for a specific user in the specified house.
+     * @param houseId The ID of the house.
+     * @param userId The ID of the user.
+     * @return A list of scenarios.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws UserDoesntHaveScenarios if the user has no registered scenarios.
+     */
+    public List<Scenario> getScenarios(int houseId, int userId) throws HouseNotFoundException, UserDoesntHaveScenarios {
+        return getHouseInternal(houseId).getRoutineManager().getScenariosForUser(userId);
+    }
+
+    /**
+     * Removes a scenario for a specific user in the specified house.
+     * @param houseId The ID of the house.
+     * @param userId The ID of the user owning the scenario.
+     * @param name The name of the scenario to remove.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws UserDoesntHaveScenarios if the user has no registered scenarios.
+     * @throws ScenarioDoesntExistException if no scenario with the given name exists.
+     */
+    public void removeScenario(int houseId, int userId, String name) throws HouseNotFoundException, UserDoesntHaveScenarios, ScenarioDoesntExistException {
+        getHouseInternal(houseId).removeScenario(userId, name);
+    }
+
+    /**
+     * Executes a scenario for a specific user in the specified house.
+     * @param houseId The ID of the house.
+     * @param userId The ID of the user triggering the scenario.
+     * @param name The name of the scenario to execute.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws UserDoesntHaveScenarios if the user has no registered scenarios.
+     * @throws ScenarioDoesntExistException if no scenario with the given name exists.
+     */
+    public void executeScenario(int houseId, int userId, String name) throws HouseNotFoundException, UserDoesntHaveScenarios, ScenarioDoesntExistException {
+        getHouseInternal(houseId).executeScenario(userId, name);
+    }
+    
     /**
      * Advances time for all houses in the system.
      * This cascades down to every device in every division.
@@ -171,66 +284,11 @@ public class HouseManager implements Serializable {
         return activated;
     }
 
-    /** Returns the house with the highest energy consumption. */
-    public House getMostConsumingHouse() {
-        return this.housesById.values().stream()
-                .max((h1, h2) -> Double.compare(h1.calculateTotalConsumption(), h2.calculateTotalConsumption()))
-                .map(House::clone)
-                .orElse(null);
-    }
-
-    /** Returns a list of all houses in the system. */
-    public List<House> getAllHouses() {
-        return this.housesById.values().stream()
-                .map(House::clone)
-                .collect(Collectors.toList());
-    }
-
-    public void logInteraction(int houseId, DeviceInteraction interaction) throws HouseNotFoundException {
-        getHouseInternal(houseId).logInteraction(interaction);
-    }
-
-    public List<AutomationSuggestion> getSuggestions(int houseId, int userId) throws HouseNotFoundException, ScheduleWithConditionDifferentFromTimeException {
-        return getHouseInternal(houseId).getSuggestions(userId);
-    }
-
-    public void addAutomation(int houseId, Automation automation) throws HouseNotFoundException, NameAlreadyExistsException {
-        getHouseInternal(houseId).addAutomation(automation);
-    }
-
-    public void removeAutomation(int houseId, String name) throws HouseNotFoundException, AutomationDoesntExistException {
-        getHouseInternal(houseId).removeAutomation(name);
-    }
-
-    public List<Automation> getAutomations(int houseId) throws HouseNotFoundException {
-        return getHouseInternal(houseId).getRoutineFacade().getOnlyAutomations();
-    }
-
-    public List<Automation> getSchedules(int houseId) throws HouseNotFoundException {
-        return getHouseInternal(houseId).getRoutineFacade().getOnlySchedules();
-    }
-
-    public void addScenario(int houseId, int userId, Scenario scenario) throws HouseNotFoundException, NameAlreadyExistsException {
-        getHouseInternal(houseId).addScenario(userId, scenario);
-    }
-
-    public List<Scenario> getScenarios(int houseId, int userId) throws HouseNotFoundException, UserDoesntHaveScenarios {
-        return getHouseInternal(houseId).getRoutineFacade().getScenariosForUser(userId);
-    }
-
-    public void removeScenario(int houseId, int userId, String name) throws HouseNotFoundException, UserDoesntHaveScenarios, ScenarioDoesntExistException {
-        getHouseInternal(houseId).removeScenario(userId, name);
-    }
-
-    public void executeScenario(int houseId, int userId, String name) throws HouseNotFoundException, UserDoesntHaveScenarios, ScenarioDoesntExistException {
-        getHouseInternal(houseId).executeScenario(userId, name);
-    }
-
     /** Returns the live (non-cloned) House reference for internal mutation. */
     private House getHouseInternal(int houseId) throws HouseNotFoundException {
         House h = this.housesById.get(houseId);
 
-        if (h == null) throw new HouseNotFoundException("House not found with ID: " + houseId);
+        if (h == null) throw new HouseNotFoundException("" + houseId);
         return h;
     }
 }

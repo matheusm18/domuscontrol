@@ -12,9 +12,9 @@ import domuscontrol.houses.House;
 import domuscontrol.routines.conditions.TimeBasedCondition;
 
 /**
- * Represents an automation or schedule routine within the system.
- * This class extends {@link Routine} by adding a list of conditions that must be met
- * for the associated actions to be triggered automatically.
+ * Represents a routine that can be triggered automatically.
+ * An automation has conditions in addition to the actions inherited from Routine.
+ * Schedules are represented as automations whose conditions are time-based.
  */
 public class Automation extends Routine {
     
@@ -23,8 +23,7 @@ public class Automation extends Routine {
     private boolean wasConditionMetPreviously;
 
     /**
-     * Default constructor.
-     * Initializes an empty automation of type AUTOMATION with no conditions.
+     * Creates an unnamed automation with no actions and no conditions.
      */
     public Automation() {
         super();
@@ -34,12 +33,14 @@ public class Automation extends Routine {
     }
 
     /**
-     * Parameterized constructor.
-     * @param name       The name of the automation.
-     * @param type       The type of routine (AUTOMATION or SCHEDULE).
-     * @param conditions The list of conditions required to trigger the actions.
-     * @param actions    The list of actions to execute when conditions are met.
-     * @throws ScheduleWithConditionDifferentFromTimeException if a SCHEDULE type is assigned non-time conditions.
+     * Creates an automation with the given type, conditions, and actions.
+     * The provided actions and conditions are copied before being stored.
+     *
+     * @param name the automation name
+     * @param type the automation type
+     * @param conditions the conditions required to trigger the actions
+     * @param actions the actions to execute when the conditions are met
+     * @throws ScheduleWithConditionDifferentFromTimeException if a schedule receives non-time conditions
      */
     public Automation(String name, AutomationType type, List<Condition> conditions, List<Action> actions) throws ScheduleWithConditionDifferentFromTimeException {
         super(name, actions);
@@ -49,11 +50,11 @@ public class Automation extends Routine {
     }
 
     /**
-     * Copy constructor for deep copying.
-     * Notice we are strictly using getters to access the 'other' object's data!
-     * @param other The existing Automation instance to copy.
+     * Creates a copy of another automation.
+     *
+     * @param other the automation to copy
      */
-    public Automation(Automation other){
+    public Automation(Automation other) {
         super(other);
         this.type = other.getType();
         this.conditions = other.getConditions();
@@ -61,21 +62,25 @@ public class Automation extends Routine {
     }
 
     /**
-     * Retrieves the routine type.
-     * @return The current AutomationType.
+     * Gets the automation type.
+     *
+     * @return the current automation type
      */
-    public AutomationType getType() { return type; }
+    public AutomationType getType() {
+        return this.type;
+    }
     
     /**
-     * Sets the routine type and validates existing conditions.
-     * @param type The new AutomationType to set.
-     * @throws ScheduleWithConditionDifferentFromTimeException if the type is set to SCHEDULE while containing non-time conditions.
+     * Sets the automation type and validates the current conditions.
+     *
+     * @param type the new automation type
+     * @throws ScheduleWithConditionDifferentFromTimeException if a schedule would contain non-time conditions
      */
     public void setType(AutomationType type) throws ScheduleWithConditionDifferentFromTimeException { 
         if (type == AutomationType.SCHEDULE) {
             for (Condition c : this.conditions) {
                 if (!(c instanceof TimeBasedCondition)) {
-                    throw new ScheduleWithConditionDifferentFromTimeException("Cannot change type to SCHEDULE because non-time conditions already exist.");
+                    throw new ScheduleWithConditionDifferentFromTimeException("");
                 }
             }
         }
@@ -83,24 +88,27 @@ public class Automation extends Routine {
     }
 
     /**
-     * Retrieves a deep copy of the conditions list.
-     * @return A new list containing copies of the current conditions.
+     * Gets a copy of the conditions associated with this automation.
+     *
+     * @return a new list containing copies of the current conditions
      */
     public List<Condition> getConditions() {
         return this.conditions.stream().map(Condition::copy).collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**
-     * Sets the conditions for this automation.
-     * @param conditions The list of conditions to be applied.
-     * @throws ScheduleWithConditionDifferentFromTimeException if the type is SCHEDULE and a non-time condition is provided.
+     * Replaces this automation's conditions.
+     * The provided conditions are copied before being stored.
+     *
+     * @param conditions the conditions to assign, or null for an empty list
+     * @throws ScheduleWithConditionDifferentFromTimeException if a schedule receives non-time conditions
      */
     public void setConditions(List<Condition> conditions) throws ScheduleWithConditionDifferentFromTimeException {
         if (conditions != null) {
             if (this.type == AutomationType.SCHEDULE) {
                 for (Condition c : conditions) {
                     if (!(c instanceof TimeBasedCondition)) {
-                        throw new ScheduleWithConditionDifferentFromTimeException("Cannot change type to SCHEDULE because non-time conditions already exist.");
+                        throw new ScheduleWithConditionDifferentFromTimeException("");
                     }
                 }
             }
@@ -111,7 +119,8 @@ public class Automation extends Routine {
     }
 
     /**
-     * Retrieves the state of the previous condition evaluation.
+     * Checks whether this automation's conditions were met in the previous evaluation.
+     *
      * @return true if the conditions were met during the last check, false otherwise.
      */
     public boolean isWasConditionMetPreviously() {
@@ -119,30 +128,34 @@ public class Automation extends Routine {
     }
 
     /**
-     * Sets the state of the previous condition evaluation.
-     * @param wasConditionMetPreviously The state to set.
+     * Sets whether this automation's conditions were met in the previous evaluation.
+     *
+     * @param wasConditionMetPreviously the previous condition state
      */
     public void setWasConditionMetPreviously(boolean wasConditionMetPreviously) {
         this.wasConditionMetPreviously = wasConditionMetPreviously;
     }
 
     /**
-     * Adds a single condition to the routine.
-     * @param condition The condition to add.
-     * @throws ScheduleWithConditionDifferentFromTimeException if adding a non-time condition to a SCHEDULE.
+     * Adds a condition to this automation.
+     * The provided condition is copied before being stored.
+     *
+     * @param condition the condition to add
+     * @throws ScheduleWithConditionDifferentFromTimeException if a schedule receives a non-time condition
      */
     public void addCondition(Condition condition) throws ScheduleWithConditionDifferentFromTimeException {
         if (condition != null) {
             if (this.type == AutomationType.SCHEDULE && !(condition instanceof TimeBasedCondition)) {
-                throw new ScheduleWithConditionDifferentFromTimeException("Cannot change type to SCHEDULE because non-time conditions already exist.");
+                throw new ScheduleWithConditionDifferentFromTimeException("");
             }
             this.conditions.add(condition.copy());
         }
     }
 
     /**
-     * Removes a specific condition from the routine.
-     * @param condition The condition to remove.
+     * Removes a condition from this automation.
+     *
+     * @param condition the condition to remove
      * @return true if the condition was found and removed; false otherwise.
      */
     public boolean removeCondition(Condition condition) {
@@ -153,9 +166,12 @@ public class Automation extends Routine {
     }
 
     /**
-     * Evaluates all conditions and executes actions if the state transitions from false to true.
-     * This prevents actions from firing repeatedly while conditions remain met (edge-triggering).
-     * * Notice: No parameters needed! It just tells the actions and conditions to do their job.
+     * Evaluates all conditions and executes the actions if the conditions have just become true.
+     * This prevents actions from firing repeatedly while the conditions remain true.
+     *
+     * @param house the house where device conditions are evaluated and actions are executed
+     * @param simulation the current simulation state
+     * @return true if the automation was triggered, false otherwise
      */
     public boolean checkAndTrigger(House house, Simulation simulation) {
         if (this.conditions.isEmpty()) {
@@ -185,22 +201,26 @@ public class Automation extends Routine {
 
     /**
      * Compares this automation with another object for equality.
-     * Notice we are strictly using getters to access the 'that' object's data!
-     * @param o The object to compare with.
+     *
+     * @param o the object to compare with
      * @return true if the type, conditions, and superclass fields match; false otherwise.
      */
     @Override
     public boolean equals(Object o) {
-        if (!super.equals(o)) return false;
-        Automation that = (Automation) o;
+        if (this == o) return true;
+        if (o == null || this.getClass() != o.getClass()) return false;
+
+        Automation automation = (Automation) o;
         
-        return this.type == that.getType() && 
-               Objects.equals(this.conditions, that.getConditions());
+        return super.equals(automation) &&
+               this.type == automation.getType() &&
+               Objects.equals(this.conditions, automation.getConditions());
     }
 
     /**
      * Generates a hash code for this automation.
-     * @return The hash code.
+     *
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -208,8 +228,9 @@ public class Automation extends Routine {
     }
 
     /**
-     * Creates a deep copy of this automation instance.
-     * @return A cloned Automation object.
+     * Creates a copy of this automation.
+     *
+     * @return a copied Automation instance
      */
     @Override
     public Automation clone() {
@@ -218,7 +239,8 @@ public class Automation extends Routine {
 
     /**
      * Returns a string representation of the automation.
-     * @return A formatted string with routine details.
+     *
+     * @return a formatted string with the automation information
      */
     @Override
     public String toString() {
@@ -233,9 +255,10 @@ public class Automation extends Routine {
     }
 
     /**
-     * Safely removes all actions and conditions associated with a specific device ID.
-     * This is used during a cascade delete when a device is removed from the house.
-     * @param deviceId The unique identifier of the device to remove references for.
+     * Removes all actions and conditions that target the given device.
+     * Used when a device is removed from the house.
+     *
+     * @param deviceId the device identifier to remove references to
      */
     @Override
     public void removeDeviceById(int deviceId) {

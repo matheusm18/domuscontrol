@@ -67,7 +67,7 @@ public class DomusControlUI {
     }
 
     private void doLogin() {
-        System.out.print(Ansi.prompt("Email or Name"));
+        System.out.print(Ansi.prompt("Email"));
         String user = sc.nextLine();
         System.out.print(Ansi.prompt("Password"));
         String password = sc.nextLine();

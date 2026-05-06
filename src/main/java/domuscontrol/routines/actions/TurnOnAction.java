@@ -8,54 +8,58 @@ import domuscontrol.routines.Action;
 import java.util.Objects;
 
 /**
- * Action responsible for switching on a specific switchable device.
- * This is used for devices that support a simple power-on state, such as lights or smart plugs.
+ * Action that turns on a switchable device.
  */
 public class TurnOnAction implements Action {
     private int deviceId;
 
     /**
-     * Default constructor initializing the device to null.
+     * Creates an action with no target device.
      */
-    public TurnOnAction() { 
-        this.deviceId = -1; 
+    public TurnOnAction() {
+        this.deviceId = -1;
     }
 
     /**
-     * Parameterized constructor.
-     * @param device The live reference to the device to be turned on.
+     * Creates an action for the given device.
+     *
+     * @param deviceId the target device identifier
      */
     public TurnOnAction(int deviceId) {
         this.deviceId = deviceId;
     }
     
     /**
-     * Copy constructor for deep copying the action itself.
-     * Note: The device pointer remains shared.
-     * @param other The existing TurnOnAction instance to copy.
+     * Creates a copy of another turn-on action.
+     *
+     * @param other the action to copy
      */
-    public TurnOnAction(TurnOnAction other) { 
-        this.deviceId = other.getDeviceId(); 
+    public TurnOnAction(TurnOnAction other) {
+        this.deviceId = other.getDeviceId();
     }
     
     /**
-     * Retrieves the target device.
-     * @return The switchable device reference.
+     * Gets the target device identifier.
+     *
+     * @return the target device identifier
      */
     public int getDeviceId() {
         return this.deviceId;
     }
 
     /**
-     * Sets a new target device.
-     * @param device The new switchable device reference.
+     * Sets the target device identifier.
+     *
+     * @param deviceId the target device identifier
      */
     public void setDeviceId(int deviceId) {
         this.deviceId = deviceId;
     }
 
     /**
-     * Executes the action by interacting directly with the stored device reference.
+     * Executes this action in the given house.
+     *
+     * @param house the house where the target device should be turned on
      */
     @Override
     public void execute(House house) {
@@ -72,7 +76,8 @@ public class TurnOnAction implements Action {
 
     /**
      * Creates a copy of this action.
-     * @return A new instance of TurnOnAction.
+     *
+     * @return a copied TurnOnAction instance
      */
     @Override
     public Action copy() {
@@ -81,7 +86,8 @@ public class TurnOnAction implements Action {
 
     /**
      * Compares this action with another object for equality.
-     * @param o The object to compare with.
+     *
+     * @param o the object to compare with
      * @return true if the devices match; false otherwise.
      */
     @Override
@@ -89,14 +95,15 @@ public class TurnOnAction implements Action {
         if (this == o) return true;
         if (o == null || this.getClass() != o.getClass()) return false;
         
-        TurnOnAction that = (TurnOnAction) o;
+        TurnOnAction action = (TurnOnAction) o;
         
-        return this.deviceId == that.getDeviceId();
+        return this.deviceId == action.getDeviceId();
     }
 
     /**
      * Generates a hash code for this action.
-     * @return The hash code based on the device reference.
+     *
+     * @return the hash code
      */
     @Override
     public int hashCode() {
@@ -104,8 +111,9 @@ public class TurnOnAction implements Action {
     }
 
     /**
-     * Clones the current action instance.
-     * @return A cloned TurnOnAction.
+     * Creates a copy of this action.
+     *
+     * @return a copied TurnOnAction instance
      */
     @Override
     public TurnOnAction clone() {
@@ -114,7 +122,8 @@ public class TurnOnAction implements Action {
 
     /**
      * Returns a string representation of the action.
-     * @return Formatted string containing the target device ID.
+     *
+     * @return a formatted string with the action information
      */
     @Override
     public String toString() {
@@ -126,12 +135,12 @@ public class TurnOnAction implements Action {
     }
 
     /**
-     * Checks if this action is associated with a specific device ID.
-     * Used by the House/RoutineManager to clean up routines when a device is deleted.
-     * @param deviceId The ID to check.
+     * Checks whether this action targets the given device.
+     *
+     * @param deviceId the device identifier to check
      * @return true if the stored device's ID matches; false otherwise.
      */
-    @Override 
+    @Override
     public boolean hasDeviceId(int deviceId) {
         return this.deviceId == deviceId;
     }
