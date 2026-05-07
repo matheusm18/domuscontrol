@@ -186,7 +186,9 @@ public class DomusControlUI {
                 }
                 Ansi.listSeparator();
             }
-        }); 
+        });
+
+        menu.run();
     }
 
     private void doHouseStatistics() {
@@ -225,6 +227,8 @@ public class DomusControlUI {
                 Ansi.listSeparator();
             }
         });
+
+        menu.run();
     }
 
     private void doDeviceStatistics() {
@@ -292,8 +296,8 @@ public class DomusControlUI {
                 } catch (HouseNotFoundException e) {
                     System.out.println("  Error: house not found.");
                 }});
-        
 
+        menu.run();
     }
 
     private void doLoadState() {
