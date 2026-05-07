@@ -249,7 +249,7 @@ public class DomusControlUI {
                     Ansi.listTitle("Top 3 Devices by Active Time");
                     for (int i = 0; i < topDevices.size(); i++) {
                         Device d = topDevices.get(i);
-                        Ansi.listRow(String.format("%d  %-22s %.2f", i + 1, d.getModel(), d.getTotalMinutesOn()));
+                        Ansi.listRow(String.format("%d  %-22s %d", i + 1, d.getModel(), d.getTotalMinutesOn()));
                     }
                     Ansi.listSeparator();
                 }
@@ -267,7 +267,7 @@ public class DomusControlUI {
                     Ansi.listTitle("Top 3 Devices by Activations");
                     for (int i = 0; i < topDevices.size(); i++) {
                         Device d = topDevices.get(i);
-                        Ansi.listRow(String.format("%d  %-22s %.2f", i + 1, d.getModel(), d.getTotalActivations()));
+                        Ansi.listRow(String.format("%d  %-22s %d", i + 1, d.getModel(), d.getTotalActivations()));
                     }
                     Ansi.listSeparator();
                 }
