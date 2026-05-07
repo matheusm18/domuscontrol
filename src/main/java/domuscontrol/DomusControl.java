@@ -364,6 +364,10 @@ public class DomusControl implements Serializable {
         return this.houseManager.getDevice(houseId, deviceId);
     }
 
+    public List<Device> getAllDevices() {
+        return this.houseManager.getAllDevices();
+    }
+
     /** Toggles a switchable device ON or OFF and logs the interaction for the given user. */
     public void toggleDevice(int houseId, int deviceId, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfSwitchableDeviceException {
         Device clone = this.houseManager.getDevice(houseId, deviceId);
@@ -549,6 +553,20 @@ public class DomusControl implements Serializable {
     // ---- Queries ----
 
     /**
+     * Returns the top N users sorted by a given criterion, which can be the number of houses, devices, total energy consumption, etc.
+     * @param n The number of top users to return.
+     * @param criterion A function that takes a User and returns an integer representing the value of the criterion for that user (e.g., number of houses, devices, total consumption).
+     * @return A list of the top N users sorted by the specified criterion, in descending order.
+     */
+    public List<User> getTopUsersByCriterion(int n, Function<User, Integer> criterion) {
+        return this.userManager.getAllUsers().stream()
+            .sorted(Comparator.comparingInt(criterion::apply).reversed())
+            .limit(n)
+            .map(User::clone)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Helper method to get all devices for a given user by aggregating devices from all their houses.
      * @param email The email of the user whose devices we want to retrieve.
      * @return A list of all devices associated with the user's houses.
@@ -561,7 +579,7 @@ public class DomusControl implements Serializable {
         return devices;
     }
 
-    public List<Device> getTopDevicesByCriterion(String email, int n, ToIntFunction<Device> criterion) throws UserNotFoundException, HouseNotFoundException {
+    public List<Device> getTopDevicesByCriterionForUser(String email, int n, ToIntFunction<Device> criterion) throws UserNotFoundException, HouseNotFoundException {
         return getAllDevicesForUser(email).stream()
             .sorted(Comparator.comparingInt(criterion).reversed())
             .limit(n)
@@ -582,7 +600,7 @@ public class DomusControl implements Serializable {
         return divisions;
     }
 
-    public List<DivisionInfo> getTopDivisionsByCriterion(String email, int n, Function<DivisionInfo, Integer> criterion) throws UserNotFoundException, HouseNotFoundException {
+    public List<DivisionInfo> getTopDivisionsByCriterionForUser(String email, int n, Function<DivisionInfo, Integer> criterion) throws UserNotFoundException, HouseNotFoundException {
         return getAllDivisionsForUser(email).stream()
             .sorted(Comparator.comparingInt(criterion::apply).reversed())
             .limit(n)
@@ -593,12 +611,25 @@ public class DomusControl implements Serializable {
      * Returns the top 3 most consuming houses based on total energy consumption.
      * @return A list of the top 3 most consuming houses.
      */
-    public List<House> getTop3MostConsumingHouses(String email) throws UserNotFoundException, HouseNotFoundException {
+    public List<House> getTop3MostConsumingHousesForUSer(String email) throws UserNotFoundException, HouseNotFoundException {
         return this.getHousesByUser(email).stream()
                 .sorted(Comparator.comparingDouble(House::calculateTotalConsumption).reversed())
                 .limit(3)
                 .collect(Collectors.toList());
     }
 
+    public List<House> getTopHousesByCriterion(int n, Function<House, Double> criterion) {
+        return this.houseManager.getAllHouses().stream()
+            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
+            .limit(n)
+            .map(House::clone)
+            .collect(Collectors.toList());
+    }
 
+    public List<Device> getTopDevicesByCriterion (int n, Function<Device, Double> criterion) throws UserNotFoundException, HouseNotFoundException {
+        return this.houseManager.getAllDevices().stream()
+            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
+            .limit(n)
+            .collect(Collectors.toList());
+    }
 }

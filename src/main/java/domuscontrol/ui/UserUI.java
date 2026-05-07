@@ -173,7 +173,7 @@ public class UserUI {
 
         menu.setHandler(1, () -> {
             try {
-                List<House> topHouses = model.getTop3MostConsumingHouses(email);
+                List<House> topHouses = model.getTop3MostConsumingHousesForUSer(email);
                 if (topHouses.isEmpty()) {
                     System.out.println("  No houses in the system.");
                 } else {
@@ -192,7 +192,7 @@ public class UserUI {
         });
         menu.setHandler(2, () -> {
             try {
-                List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalMinutesOn);
+                List<Device> topDevices = model.getTopDevicesByCriterionForUser(email, 3, Device::getTotalMinutesOn);
                 if (topDevices.isEmpty()) {
                     System.out.println("  No devices found for your houses.");
                 } else {
@@ -212,7 +212,7 @@ public class UserUI {
         });
         menu.setHandler(3, () -> {
             try {
-                List<Device> topDevices = model.getTopDevicesByCriterion(email, 3, Device::getTotalActivations);
+                List<Device> topDevices = model.getTopDevicesByCriterionForUser(email, 3, Device::getTotalActivations);
                 if (topDevices.isEmpty()) {
                     System.out.println("  No devices found for your houses.");
                 } else {
@@ -232,7 +232,7 @@ public class UserUI {
         });
         menu.setHandler(4, () -> {
             try {
-                List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterion(email, 3, div -> div.getHouse().getDivisions().get(div.getDivisionName()).size());
+                List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterionForUser(email, 3, div -> div.getHouse().getDivisions().get(div.getDivisionName()).size());
                 if (topDivisions.isEmpty()) {
                     System.out.println("  No divisions found for your houses.");
                 } else {

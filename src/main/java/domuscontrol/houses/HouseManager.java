@@ -112,6 +112,12 @@ public class HouseManager implements Serializable {
         return getHouseInternal(houseId).getDevice(deviceId);
     }
 
+    public List<Device> getAllDevices() {
+        return this.housesById.values().stream()
+                .flatMap(house -> house.getDevices().values().stream())
+                .collect(Collectors.toList());
+    }
+
     /**
      * Applies a consumer to a live device inside the specified house without exposing the reference.
      * @param houseId The ID of the house containing the device.
