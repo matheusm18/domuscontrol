@@ -12,9 +12,12 @@ import domuscontrol.utils.Ansi;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UserUI {
 
@@ -50,7 +53,7 @@ public class UserUI {
         menu.setHandler(2, () -> createHouse(email));
         menu.setHandler(3, () -> myProfile(email));
         menu.setHandler(4, () -> statistics(email));
-        menu.setHandler(5, this::advanceSimulation);
+        menu.setHandler(5, () -> advanceSimulation(email));
         menu.setHandler(6, this::saveState);
 
         menu.run();
@@ -191,44 +194,44 @@ public class UserUI {
             }
         });
         menu.setHandler(2, () -> {
-            try {
-                List<Device> topDevices = model.getTopDevicesByCriterionForUser(email, 3, Device::getTotalMinutesOn);
-                if (topDevices.isEmpty()) {
-                    System.out.println("  No devices found for your houses.");
-                } else {
-                    Ansi.listTitle("Top Devices By Active Time");
-                    for (int i = 0; i < topDevices.size(); i++) {
-                        Device d = topDevices.get(i);
-                        Ansi.listRow(String.format("%d  %-15s %-12s %-15s %d min active",
-                            i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalMinutesOn()));
-                    }
-                    Ansi.listSeparator();
-                }
-            } catch (UserNotFoundException e) {
-                System.out.println("  Error: user not found.");
-            } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+            House house = selectHouse(email);
+            if (house == null) return;
+            List<Device> topDevices = house.getDevices().values().stream()
+                .sorted(Comparator.comparingInt(Device::getTotalMinutesOn).reversed())
+                .limit(3)
+                .toList();
+            if (topDevices.isEmpty()) {
+                System.out.println("  No devices in this house.");
+                return;
             }
+            Ansi.listTitle("Top Devices By Active Time — " + house.getName());
+            int[] w2 = deviceColWidths(topDevices);
+            for (int i = 0; i < topDevices.size(); i++) {
+                Device d = topDevices.get(i);
+                Ansi.listRow(String.format("%d  %-" + w2[0] + "s %-" + w2[1] + "s %-" + w2[2] + "s %d min active",
+                    i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalMinutesOn()));
+            }
+            Ansi.listSeparator();
         });
         menu.setHandler(3, () -> {
-            try {
-                List<Device> topDevices = model.getTopDevicesByCriterionForUser(email, 3, Device::getTotalActivations);
-                if (topDevices.isEmpty()) {
-                    System.out.println("  No devices found for your houses.");
-                } else {
-                    Ansi.listTitle("Top Devices By Activations");
-                    for (int i = 0; i < topDevices.size(); i++) {
-                        Device d = topDevices.get(i);
-                        Ansi.listRow(String.format("%d  %-15s %-12s %-15s %d activation(s)",
-                            i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalActivations()));
-                    }
-                    Ansi.listSeparator();
-                }
-            } catch (UserNotFoundException e) {
-                System.out.println("  Error: user not found.");
-            } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+            House house = selectHouse(email);
+            if (house == null) return;
+            List<Device> topDevices = house.getDevices().values().stream()
+                .sorted(Comparator.comparingInt(Device::getTotalActivations).reversed())
+                .limit(3)
+                .toList();
+            if (topDevices.isEmpty()) {
+                System.out.println("  No devices in this house.");
+                return;
             }
+            Ansi.listTitle("Top Devices By Activations — " + house.getName());
+            int[] w3 = deviceColWidths(topDevices);
+            for (int i = 0; i < topDevices.size(); i++) {
+                Device d = topDevices.get(i);
+                Ansi.listRow(String.format("%d  %-" + w3[0] + "s %-" + w3[1] + "s %-" + w3[2] + "s %d activation(s)",
+                    i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalActivations()));
+            }
+            Ansi.listSeparator();
         });
         menu.setHandler(4, () -> {
             try {
@@ -254,7 +257,35 @@ public class UserUI {
         menu.run();
     }
 
-    private void advanceSimulation() {
+    private int[] deviceColWidths(List<Device> devices) {
+        int type  = devices.stream().mapToInt(d -> d.getClass().getSimpleName().length()).max().orElse(10);
+        int brand = devices.stream().mapToInt(d -> d.getBrand().length()).max().orElse(8);
+        int model = devices.stream().mapToInt(d -> d.getModel().length()).max().orElse(10);
+        return new int[]{type + 2, brand + 2, model + 2};
+    }
+
+    private House selectHouse(String email) {
+        try {
+            List<House> houses = model.getHousesByUser(email);
+            if (houses.isEmpty()) {
+                System.out.println("  You have no houses.");
+                return null;
+            }
+            Ansi.listTitle("Your Houses");
+            for (int i = 0; i < houses.size(); i++)
+                Ansi.listRow(String.format("%d  %s", i + 1, houses.get(i).getName()));
+            Ansi.listSeparator();
+            System.out.print(Ansi.prompt("Select house (0 to cancel)"));
+            int choice = readInt();
+            if (choice < 1 || choice > houses.size()) return null;
+            return houses.get(choice - 1);
+        } catch (UserNotFoundException | HouseNotFoundException e) {
+            System.out.println("  Error: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private void advanceSimulation(String email) {
         System.out.print(Ansi.prompt("Minutes to advance"));
         int minutes = readInt();
 
@@ -268,16 +299,20 @@ public class UserUI {
         }
 
         List<String> activated = model.tick(minutes);
-
         System.out.println("  Simulation advanced by " + minutes + " minute(s).");
 
-        if (!activated.isEmpty()) {
-            Ansi.listTitle("Routines Activated");
-            for (String name : activated) {
-                Ansi.listRow(" - " + name);
+        try {
+            Set<String> myHouseNames = model.getHousesByUser(email).stream()
+                .map(House::getName).collect(Collectors.toSet());
+            List<String> mine = activated.stream()
+                .filter(s -> myHouseNames.stream().anyMatch(h -> s.startsWith(h + ":")))
+                .toList();
+            if (!mine.isEmpty()) {
+                Ansi.listTitle("Routines Activated");
+                for (String name : mine) Ansi.listRow(" - " + name);
+                Ansi.listSeparator();
             }
-            Ansi.listSeparator();
-        }
+        } catch (UserNotFoundException | HouseNotFoundException ignored) {}
     }
 
     private void saveState() {

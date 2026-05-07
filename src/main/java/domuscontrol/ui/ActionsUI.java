@@ -23,6 +23,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -834,7 +835,7 @@ public class ActionsUI {
     private void handleAddDeviceOnOffCondition(List<Condition> conditions, House house) {
         List<Device> compatible = house.getDevices().values().stream()
             .filter(d -> d instanceof SwitchableDevice && !(d instanceof domuscontrol.devices.sensors.Sensor))
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No switchable devices available."); return; }
         Device picked = pickFromList(compatible, "switchable device");
         if (picked == null) return;
@@ -847,7 +848,7 @@ public class ActionsUI {
     private void handleAddDeviceOpeningCondition(List<Condition> conditions, House house) {
         List<Device> compatible = house.getDevices().values().stream()
             .filter(d -> d instanceof OpenableDevice)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No openable devices available."); return; }
         Device picked = pickFromList(compatible, "openable device");
         if (picked == null) return;
@@ -862,7 +863,7 @@ public class ActionsUI {
     private void handleAddDeviceLevelCondition(List<Condition> conditions, House house) {
         List<Device> compatible = house.getDevices().values().stream()
             .filter(d -> d instanceof AdjustableDevice)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No adjustable devices available."); return; }
         Device picked = pickFromList(compatible, "adjustable device");
         if (picked == null) return;
@@ -877,7 +878,7 @@ public class ActionsUI {
     private void handleAddSensorCondition(List<Condition> conditions, House house) {
         List<Device> sensors = house.getDevices().values().stream()
             .filter(d -> d instanceof domuscontrol.devices.sensors.Sensor)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
         if (sensors.isEmpty()) { System.out.println("  No sensors available. Add a sensor device first."); return; }
         Device picked = pickFromList(sensors, "sensor");
         if (picked == null) return;
