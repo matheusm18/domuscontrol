@@ -262,6 +262,10 @@ public class UserUI {
             System.out.println("  Must be a positive number.");
             return;
         }
+        if (minutes > 525600) {
+            System.out.println("  Maximum is 525600 minutes (1 year).");
+            return;
+        }
 
         List<String> activated = model.tick(minutes);
 

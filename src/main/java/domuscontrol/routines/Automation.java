@@ -1,6 +1,6 @@
 package domuscontrol.routines;
 
-import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.SimulationState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -173,7 +173,7 @@ public class Automation extends Routine {
      * @param simulation the current simulation state
      * @return true if the automation was triggered, false otherwise
      */
-    public boolean checkAndTrigger(House house, Simulation simulation) {
+    public boolean checkAndTrigger(House house, SimulationState state) {
         if (this.conditions.isEmpty()) {
             return false;
         }
@@ -181,7 +181,7 @@ public class Automation extends Routine {
         boolean allConditionsMet = true;
 
         for (Condition condition : this.conditions) {
-            if (!condition.evaluate(house, simulation)) {
+            if (!condition.evaluate(house, state)) {
                 allConditionsMet = false;
                 break;
             }

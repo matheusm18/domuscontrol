@@ -1,7 +1,7 @@
 package domuscontrol.routines.conditions;
 
 import java.util.Objects;
-import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.devices.types.SwitchableDevice;
 import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.houses.House;
@@ -87,7 +87,7 @@ public class DeviceStateCondition implements Condition {
      * @return true if the current state matches the triggerWhenOn requirement; false otherwise.
      */
     @Override
-    public boolean evaluate(House house, Simulation simulation) {
+    public boolean evaluate(House house, SimulationState state) {
         try {
             return house.readDevice(this.deviceId, d ->
                 d instanceof SwitchableDevice sd && sd.isOn() == this.triggerWhenOn

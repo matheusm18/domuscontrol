@@ -1,34 +1,42 @@
 package domuscontrol.simulation;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public final class SimulationState {
+public final class SimulationState implements Serializable {
 
     private final LocalDateTime currentDateTime;
-    private final int temperature;
-    private final int luminosity;
+    private final LocalDateTime previousDateTime;
+    private final double temperature;
+    private final double luminosity;
     private final WeatherCondition weather;
 
-    public SimulationState(LocalDateTime currentDateTime, int temperature, int luminosity, WeatherCondition weather) {
+    public SimulationState(LocalDateTime currentDateTime, LocalDateTime previousDateTime,
+                           double temperature, double luminosity, WeatherCondition weather) {
         this.currentDateTime = currentDateTime;
+        this.previousDateTime = previousDateTime;
         this.temperature = temperature;
         this.luminosity = luminosity;
         this.weather = weather;
     }
 
-    public LocalDateTime getCurrentDateTime() {
-        return this.currentDateTime;
+    public static SimulationState from(Simulation simulation) {
+        return new SimulationState(
+            simulation.getCurrentDateTime(),
+            simulation.getPreviousDateTime(),
+            simulation.getTemperature(),
+            simulation.getLuminosity(),
+            simulation.getWeather()
+        );
     }
 
-    public int getTemperature() {
-        return this.temperature;
-    }
+    public LocalDateTime getCurrentDateTime() { return this.currentDateTime; }
+    public LocalDateTime getPreviousDateTime() { return this.previousDateTime; }
+    public double getTemperature() { return this.temperature; }
+    public double getLuminosity() { return this.luminosity; }
+    public WeatherCondition getWeather() { return this.weather; }
 
-    public int getLuminosity() {
-        return this.luminosity;
-    }
-
-    public WeatherCondition getWeather() {
-        return this.weather;
+    public boolean isRaining() {
+        return this.weather == WeatherCondition.RAINING || this.weather == WeatherCondition.STORMY;
     }
 }

@@ -12,6 +12,9 @@ import domuscontrol.devices.Plug;
 import domuscontrol.devices.Relay;
 import domuscontrol.devices.Speaker;
 import domuscontrol.devices.Television;
+import domuscontrol.devices.sensors.LuminositySensor;
+import domuscontrol.devices.sensors.RainfallSensor;
+import domuscontrol.devices.sensors.TemperatureSensor;
 import domuscontrol.devices.types.AdjustableDevice;
 import domuscontrol.devices.types.ColorAdjustableDevice;
 import domuscontrol.devices.types.OpenableDevice;
@@ -154,9 +157,12 @@ public class HouseUI {
             Map<String, List<Device>> divisions = house.getDivisions();
             if (divisions.isEmpty()) { System.out.println("  No divisions."); return; }
             Ansi.listTitle("Divisions");
-            divisions.forEach((name, devices) ->
-                Ansi.listRow(String.format("%-22s %d device(s)", name, devices.size()))
-            );
+            for (Map.Entry<String, List<Device>> entry : divisions.entrySet()) {
+                Ansi.listRow(entry.getKey());
+                for (Device d : entry.getValue())
+                    Ansi.listRow(String.format("    [#%-3d] %-18s %s %s",
+                        d.getId(), d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
+            }
             Ansi.listSeparator();
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
@@ -278,6 +284,15 @@ public class HouseUI {
         if (device instanceof OpenableDevice openableDevice) {
             Ansi.listRow(String.format("%-13s %d%%", "Opening", openableDevice.getOpeningLevel()));
         }
+        if (device instanceof TemperatureSensor ts) {
+            Ansi.listRow(String.format("%-13s %.1f ºC", "Temperature", ts.getTemperature()));
+        }
+        if (device instanceof LuminositySensor ls) {
+            Ansi.listRow(String.format("%-13s %.1f lx", "Luminosity", ls.getLuminosity()));
+        }
+        if (device instanceof RainfallSensor rs) {
+            Ansi.listRow(String.format("%-13s %.1f mm/h", "Rainfall", rs.getRainfall()));
+        }
         Ansi.listSeparator();
     }
 
@@ -299,7 +314,8 @@ public class HouseUI {
 
             Menu typeMenu = new Menu("Device Type", new String[]{
                     "Lamp", "Speaker", "Curtain", "Gate", "Plug", "Relay",
-                    "Heater", "Fan", "Air Conditioner", "Television"
+                    "Heater", "Fan", "Air Conditioner", "Television",
+                    "Temperature Sensor", "Luminosity Sensor", "Rainfall Sensor"
             }, model::getCurrentState);
             typeMenu.setHandler(1, () -> addLamp(houseId, division));
             typeMenu.setHandler(2, () -> addSpeaker(houseId, division));
@@ -311,6 +327,9 @@ public class HouseUI {
             typeMenu.setHandler(8, () -> addFan(houseId, division));
             typeMenu.setHandler(9, () -> addAirConditioner(houseId, division));
             typeMenu.setHandler(10, () -> addTelevision(houseId, division));
+            typeMenu.setHandler(11, () -> addTemperatureSensor(houseId, division));
+            typeMenu.setHandler(12, () -> addLuminositySensor(houseId, division));
+            typeMenu.setHandler(13, () -> addRainfallSensor(houseId, division));
             typeMenu.run();
 
         } catch (HouseNotFoundException e) {
@@ -591,6 +610,39 @@ public class HouseUI {
         }
     }
 
+    private void addTemperatureSensor(int houseId, String division) {
+        DeviceBase base;
+        try { base = readBaseFields(); }
+        catch (IllegalArgumentException e) { System.out.println("  Error: consumption cannot be negative."); return; }
+        try {
+            model.addDeviceToDivision(houseId, new TemperatureSensor(base.brand(), base.modelName(), base.consumption()), division);
+            System.out.println("  Temperature sensor added.");
+        } catch (HouseNotFoundException e) { System.out.println("  Error: house not found."); }
+          catch (DivisionNotFoundException e) { System.out.println("  Error: division not found."); }
+    }
+
+    private void addLuminositySensor(int houseId, String division) {
+        DeviceBase base;
+        try { base = readBaseFields(); }
+        catch (IllegalArgumentException e) { System.out.println("  Error: consumption cannot be negative."); return; }
+        try {
+            model.addDeviceToDivision(houseId, new LuminositySensor(base.brand(), base.modelName(), base.consumption()), division);
+            System.out.println("  Luminosity sensor added.");
+        } catch (HouseNotFoundException e) { System.out.println("  Error: house not found."); }
+          catch (DivisionNotFoundException e) { System.out.println("  Error: division not found."); }
+    }
+
+    private void addRainfallSensor(int houseId, String division) {
+        DeviceBase base;
+        try { base = readBaseFields(); }
+        catch (IllegalArgumentException e) { System.out.println("  Error: consumption cannot be negative."); return; }
+        try {
+            model.addDeviceToDivision(houseId, new RainfallSensor(base.brand(), base.modelName(), base.consumption()), division);
+            System.out.println("  Rainfall sensor added.");
+        } catch (HouseNotFoundException e) { System.out.println("  Error: house not found."); }
+          catch (DivisionNotFoundException e) { System.out.println("  Error: division not found."); }
+    }
+
     private void removeDevice(int houseId) {
         try {
             Device device = pickDevice(houseId);
@@ -651,7 +703,6 @@ public class HouseUI {
     }
 
     private void addUser(int houseId) {
-        //assignUser to house with role
         System.out.print(Ansi.prompt("User email"));
         String email = sc.nextLine().trim();
         System.out.print(Ansi.prompt("Role (1-Admin, 2-User)"));
@@ -663,12 +714,7 @@ public class HouseUI {
         };
         if (role == null) { System.out.println("  Invalid role choice."); return; }
         try {
-            // Primeiro, verificamos se o utilizador existe.
-            // Se não existir, getUserByEmail lança UserNotFoundException.
             Integer userId = model.getUserByEmail(email).getId();
-
-            // Se o utilizador existe, tentamos adicioná-lo à casa.
-            // Este método pode lançar HouseNotFoundException.
             model.assignUserToHouse(houseId, userId, role);
 
             System.out.println("  User added to house with role " + role + ".");

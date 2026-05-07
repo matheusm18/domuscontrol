@@ -12,7 +12,10 @@ import domuscontrol.menu.Menu;
 import domuscontrol.routines.*;
 import domuscontrol.routines.actions.*;
 import domuscontrol.routines.conditions.*;
-import domuscontrol.simulation.WeatherCondition;
+import domuscontrol.routines.conditions.DeviceOpenCondition;
+import domuscontrol.routines.conditions.LuminositySensorCondition;
+import domuscontrol.routines.conditions.RainfallSensorCondition;
+import domuscontrol.routines.conditions.TemperatureSensorCondition;
 import domuscontrol.user.User;
 import domuscontrol.utils.Ansi;
 
@@ -20,6 +23,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class ActionsUI {
@@ -81,6 +85,7 @@ public class ActionsUI {
     private void listAutomations(int houseId) {
         try {
             List<Automation> automations = model.getAutomations(houseId);
+            Map<Integer, Device> devices = model.getHouseById(houseId).getDevices();
             if (automations.isEmpty()) {
                 System.out.println("  No automations.");
                 return;
@@ -102,7 +107,7 @@ public class ActionsUI {
                     .orElse(null);
 
             if (selected != null) {
-                showAutomationInfo(selected);
+                showAutomationInfo(selected, devices);
             } else {
                 System.out.println("  Invalid Automation Number.");
             }
@@ -111,20 +116,77 @@ public class ActionsUI {
         }
     }
 
-    private void showAutomationInfo(Automation automation) {
+    private void showAutomationInfo(Automation automation, Map<Integer, Device> devices) {
         Ansi.listTitle(automation.getType().toString());
         Ansi.listRow(String.format("%-12s %s", "Name", automation.getName()));
-        Ansi.listRow(String.format("%-12s %s", "Type", automation.getType()));
-        Ansi.listRow(String.format("%-12s %d", "Conditions", automation.getConditions().size()));
-        Ansi.listRow(String.format("%-12s %d", "Actions", automation.getActions().size()));
+        Ansi.listSeparator();
+        Ansi.listRow("Conditions:");
+        for (Condition c : automation.getConditions())
+            Ansi.listRow("    " + describeCondition(c, devices));
+        Ansi.listSeparator();
+        Ansi.listRow("Actions:");
+        for (Action a : automation.getActions())
+            Ansi.listRow("    " + describeAction(a, devices));
         Ansi.listSeparator();
     }
 
-    private void showScenarioInfo(Scenario scenario) {
+    private void showScenarioInfo(Scenario scenario, Map<Integer, Device> devices) {
         Ansi.listTitle("Scenario");
         Ansi.listRow(String.format("%-12s %s", "Name", scenario.getName()));
-        Ansi.listRow(String.format("%-12s %d", "Actions", scenario.getActions().size()));
         Ansi.listSeparator();
+        Ansi.listRow("Actions:");
+        for (Action a : scenario.getActions())
+            Ansi.listRow("    " + describeAction(a, devices));
+        Ansi.listSeparator();
+    }
+
+    private String describeAction(Action a, Map<Integer, Device> devices) {
+        if (a instanceof TurnOnAction ta)
+            return "Turn ON   " + devLabel(ta.getDeviceId(), devices) + " [#" + ta.getDeviceId() + "]";
+        if (a instanceof TurnOffAction ta)
+            return "Turn OFF  " + devLabel(ta.getDeviceId(), devices) + " [#" + ta.getDeviceId() + "]";
+        if (a instanceof SetLevelAction sa)
+            return "Set level " + sa.getTargetLevel() + "%  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
+        if (a instanceof SetOpeningAction sa)
+            return "Set opening " + sa.getTargetPercentage() + "%  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
+        if (a instanceof SetColorTemperatureAction sa)
+            return "Set color " + sa.getTargetTemperature() + "K  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
+        return a.toString();
+    }
+
+    private String describeCondition(Condition c, Map<Integer, Device> devices) {
+        if (c instanceof TimeCondition tc)
+            return "At " + tc.getTriggerTime();
+        if (c instanceof TimeWindowCondition tw)
+            return "Between " + tw.getStartTime() + " and " + tw.getEndTime();
+        if (c instanceof DeviceStateCondition dc2)
+            return devLabel(dc2.getDeviceId(), devices) + " is " + (dc2.getTriggerWhenOn() ? "ON" : "OFF");
+        if (c instanceof DeviceLevelCondition dlc)
+            return devLabel(dlc.getDeviceId(), devices) + " level " + opSymbol(dlc.getOperator()) + " " + dlc.getTriggerLevel() + "%";
+        if (c instanceof DeviceOpenCondition doc)
+            return devLabel(doc.getDeviceId(), devices) + " opening " + opSymbol(doc.getOperator()) + " " + doc.getTriggerLevel() + "%";
+        if (c instanceof ColorTemperatureCondition ctc)
+            return devLabel(ctc.getDeviceId(), devices) + " color " + opSymbol(ctc.getOperator()) + " " + ctc.getTriggerTemperature() + "K";
+        if (c instanceof TemperatureSensorCondition tsc)
+            return "Temp (" + devLabel(tsc.getSensorId(), devices) + ") " + opSymbol(tsc.getOperator()) + " " + tsc.getTriggerTemperature() + "ºC";
+        if (c instanceof LuminositySensorCondition lsc)
+            return "Luminosity (" + devLabel(lsc.getSensorId(), devices) + ") " + opSymbol(lsc.getOperator()) + " " + lsc.getTriggerLuminosity() + " lx";
+        if (c instanceof RainfallSensorCondition rsc)
+            return "Rainfall (" + devLabel(rsc.getSensorId(), devices) + ") " + opSymbol(rsc.getOperator()) + " " + String.format("%.1f", rsc.getTriggerRainfall()) + " mm/h";
+        return c.toString();
+    }
+
+    private String devLabel(int id, Map<Integer, Device> devices) {
+        Device d = devices.get(id);
+        return d != null ? d.getBrand() + " " + d.getModel() : "#" + id;
+    }
+
+    private String opSymbol(Operator op) {
+        return switch (op) {
+            case GREATER_THAN -> ">";
+            case LESS_THAN    -> "<";
+            case EQUALS       -> "=";
+        };
     }
 
     private void addAutomation(int houseId) {
@@ -241,6 +303,7 @@ public class ActionsUI {
     private void listSchedules(int houseId) {
         try {
             List<Automation> schedules = model.getSchedules(houseId);
+            Map<Integer, Device> devices = model.getHouseById(houseId).getDevices();
             if (schedules.isEmpty()) {
                 System.out.println("  No schedules.");
                 return;
@@ -262,7 +325,7 @@ public class ActionsUI {
                     .orElse(null);
 
             if (selected != null) {
-                showAutomationInfo(selected);
+                showAutomationInfo(selected, devices);
             } else {
                 System.out.println("  Invalid Schedule Number.");
             }
@@ -462,6 +525,7 @@ public class ActionsUI {
         try {
             User user = model.getUserByEmail(email);
             List<Scenario> scenarios = model.getScenarios(houseId, user.getId());
+            Map<Integer, Device> devices = model.getHouseById(houseId).getDevices();
 
             if (scenarios.isEmpty()) {
                 System.out.println("  No scenarios.");
@@ -484,7 +548,7 @@ public class ActionsUI {
                     .orElse(null);
 
             if (selected != null) {
-                showScenarioInfo(selected);
+                showScenarioInfo(selected, devices);
             } else {
                 System.out.println("  Invalid Scenario Number.");
             }
@@ -692,7 +756,6 @@ public class ActionsUI {
     private List<Condition> readConditionsDialog(House house, boolean timeOnly) {
         List<Condition> conditions = new ArrayList<>();
         boolean[] hasTime = { false };
-        boolean[] adding = { true };
 
         if (timeOnly) {
             Ansi.listTitle("Schedule Info");
@@ -700,33 +763,30 @@ public class ActionsUI {
             Ansi.listSeparator();
         }
 
-        while (adding[0]) {
-            String[] options = {
-                "Time Condition",
-                "Device Condition",
-                "Temperature Condition",
-                "Weather Condition",
-                "Luminosity Condition"
-            };
+        String[] options = {
+            "Device ON/OFF State",
+            "Device Opening State",
+            "Device Level",
+            "Sensor Value",
+            "Time Condition"
+        };
 
-            Menu menu = new Menu("Add Condition", options, model::getCurrentState);
-            menu.setExitLabel("Done");
+        Menu menu = new Menu("Add Condition", options, model::getCurrentState);
+        menu.setExitLabel("Done");
 
-            menu.setPreCondition(1, () -> !hasTime[0]);
-            menu.setPreCondition(2, () -> !timeOnly);
-            menu.setPreCondition(3, () -> !timeOnly);
-            menu.setPreCondition(4, () -> !timeOnly);
-            menu.setPreCondition(5, () -> !timeOnly);
+        menu.setPreCondition(1, () -> !timeOnly);
+        menu.setPreCondition(2, () -> !timeOnly);
+        menu.setPreCondition(3, () -> !timeOnly);
+        menu.setPreCondition(4, () -> !timeOnly);
+        menu.setPreCondition(5, () -> !hasTime[0]);
 
-            menu.setHandler(1, () -> handleAddTimeCondition(conditions, hasTime));
-            menu.setHandler(2, () -> handleAddDeviceCondition(conditions, house));
-            menu.setHandler(3, () -> handleAddTemperatureCondition(conditions));
-            menu.setHandler(4, () -> handleAddWeatherCondition(conditions));
-            menu.setHandler(5, () -> handleAddLuminosityCondition(conditions));
+        menu.setHandler(1, () -> handleAddDeviceOnOffCondition(conditions, house));
+        menu.setHandler(2, () -> handleAddDeviceOpeningCondition(conditions, house));
+        menu.setHandler(3, () -> handleAddDeviceLevelCondition(conditions, house));
+        menu.setHandler(4, () -> handleAddSensorCondition(conditions, house));
+        menu.setHandler(5, () -> handleAddTimeCondition(conditions, hasTime));
 
-            menu.run();
-            adding[0] = false;
-        }
+        menu.run();
         return conditions;
     }
 
@@ -771,103 +831,109 @@ public class ActionsUI {
         timeMenu.run();
     }
 
-    private void handleAddDeviceCondition(List<Condition> conditions, House house) {
-        Menu climateMenu = new Menu("Device Condition Type", new String[] {
-                "Device ON/OFF State", "Device Level"
+    private void handleAddDeviceOnOffCondition(List<Condition> conditions, House house) {
+        List<Device> compatible = house.getDevices().values().stream()
+            .filter(d -> d instanceof SwitchableDevice && !(d instanceof domuscontrol.devices.sensors.Sensor))
+            .collect(java.util.stream.Collectors.toList());
+        if (compatible.isEmpty()) { System.out.println("  No switchable devices available."); return; }
+        Device picked = pickFromList(compatible, "switchable device");
+        if (picked == null) return;
+        System.out.print(Ansi.prompt("Trigger when ON? (true/false)"));
+        boolean on = Boolean.parseBoolean(sc.nextLine().trim());
+        conditions.add(new DeviceStateCondition(picked.getId(), on));
+        System.out.println("  Condition added.");
+    }
+
+    private void handleAddDeviceOpeningCondition(List<Condition> conditions, House house) {
+        List<Device> compatible = house.getDevices().values().stream()
+            .filter(d -> d instanceof OpenableDevice)
+            .collect(java.util.stream.Collectors.toList());
+        if (compatible.isEmpty()) { System.out.println("  No openable devices available."); return; }
+        Device picked = pickFromList(compatible, "openable device");
+        if (picked == null) return;
+        System.out.print(Ansi.prompt("Trigger opening (0-100)"));
+        int opening = readInt();
+        Operator op = pickOperator();
+        if (op == null) return;
+        conditions.add(new DeviceOpenCondition(picked.getId(), opening, op));
+        System.out.println("  Condition added.");
+    }
+
+    private void handleAddDeviceLevelCondition(List<Condition> conditions, House house) {
+        List<Device> compatible = house.getDevices().values().stream()
+            .filter(d -> d instanceof AdjustableDevice)
+            .collect(java.util.stream.Collectors.toList());
+        if (compatible.isEmpty()) { System.out.println("  No adjustable devices available."); return; }
+        Device picked = pickFromList(compatible, "adjustable device");
+        if (picked == null) return;
+        System.out.print(Ansi.prompt("Trigger level (0-100)"));
+        int level = readInt();
+        Operator op = pickOperator();
+        if (op == null) return;
+        conditions.add(new DeviceLevelCondition(picked.getId(), level, op));
+        System.out.println("  Condition added.");
+    }
+
+    private void handleAddSensorCondition(List<Condition> conditions, House house) {
+        List<Device> sensors = house.getDevices().values().stream()
+            .filter(d -> d instanceof domuscontrol.devices.sensors.Sensor)
+            .collect(java.util.stream.Collectors.toList());
+        if (sensors.isEmpty()) { System.out.println("  No sensors available. Add a sensor device first."); return; }
+        Device picked = pickFromList(sensors, "sensor");
+        if (picked == null) return;
+
+        if (picked instanceof domuscontrol.devices.sensors.TemperatureSensor) {
+            System.out.print(Ansi.prompt("Trigger temperature (ºC)"));
+            int temp = readInt();
+            Operator op = pickOperator();
+            if (op == null) return;
+            conditions.add(new TemperatureSensorCondition(picked.getId(), temp, op));
+            System.out.println("  Sensor condition added.");
+        } else if (picked instanceof domuscontrol.devices.sensors.LuminositySensor) {
+            System.out.print(Ansi.prompt("Trigger luminosity (lx)"));
+            int lux = readInt();
+            Operator op = pickOperator();
+            if (op == null) return;
+            conditions.add(new LuminositySensorCondition(picked.getId(), lux, op));
+            System.out.println("  Sensor condition added.");
+        } else if (picked instanceof domuscontrol.devices.sensors.RainfallSensor) {
+            System.out.print(Ansi.prompt("Trigger rainfall (mm/h)"));
+            double rainfall = readDouble();
+            Operator op = pickOperator();
+            if (op == null) return;
+            conditions.add(new RainfallSensorCondition(picked.getId(), rainfall, op));
+            System.out.println("  Sensor condition added.");
+        }
+    }
+
+    private Device pickFromList(List<Device> devices, String label) {
+        Ansi.listTitle("Select " + label);
+        for (int i = 0; i < devices.size(); i++) {
+            Device d = devices.get(i);
+            Ansi.listRow(String.format("%d  %-20s %-12s %s",
+                i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
+        }
+        Ansi.listSeparator();
+        System.out.print(Ansi.prompt("Select (0 to cancel)"));
+        int choice = readInt();
+        if (choice < 1 || choice > devices.size()) return null;
+        return devices.get(choice - 1);
+    }
+
+    private Operator pickOperator() {
+        Operator[] op = { null };
+        Menu opMenu = new Menu("Select Operator", new String[] {
+            "EQUALS (==)", "GREATER THAN (>)", "LESS THAN (<)"
         }, model::getCurrentState);
-
-        climateMenu.setHandler(1, () -> {
-            System.out.print(Ansi.prompt("Device ID"));
-            int devId = readInt();
-            try {
-                Device dev = house.getDevice(devId);
-                if (dev instanceof SwitchableDevice) {
-                    System.out.print(Ansi.prompt("Trigger when ON? (true/false)"));
-                    boolean on = Boolean.parseBoolean(sc.nextLine().trim());
-                    conditions.add(new DeviceStateCondition(devId, on));
-                    System.out.println("  Device condition added.");
-                } else {
-                    System.out.println("  Incompatible device.");
-                }
-            } catch (DeviceNotFoundException e) {
-                System.out.println("  Device not found.");
-            }
-            climateMenu.stop();
-        });
-
-        climateMenu.setHandler(2, () -> {
-            System.out.print(Ansi.prompt("Device ID"));
-            int devId = readInt();
-            try {
-                Device dev = house.getDevice(devId);
-                if (dev instanceof AdjustableDevice) {
-                    System.out.print(Ansi.prompt("Trigger level"));
-                    int lvl = readInt();
-                    conditions.add(new DeviceLevelCondition(devId, lvl, Operator.EQUALS));
-                    System.out.println("  Device condition added.");
-                } else {
-                    System.out.println("  Incompatible device.");
-                }
-            } catch (DeviceNotFoundException e) {
-                System.out.println("  Device not found.");
-            }
-            climateMenu.stop();
-        });
-
-        climateMenu.run();
-    }
-
-    private void handleAddWeatherCondition(List<Condition> conditions) {
-        WeatherCondition[] weathers = WeatherCondition.values();
-        String[] weatherNames = new String[weathers.length];
-        for (int i = 0; i < weathers.length; i++) weatherNames[i] = weathers[i].toString();
-
-        Menu weatherMenu = new Menu("Select Weather", weatherNames, model::getCurrentState);
-
-        for (int i = 0; i < weathers.length; i++) {
-            final int index = i;
-            weatherMenu.setHandler(i + 1, () -> {
-                conditions.add(new OutsideWeatherCondition(weathers[index]));
-                System.out.println("  Weather condition added.");
-                weatherMenu.stop();
-            });
-        }
-        weatherMenu.run();
-    }
-
-    private void handleAddTemperatureCondition(List<Condition> conditions) {
-        System.out.print(Ansi.prompt("Target Temperature (ºC)"));
-        int temp = readInt();
-
-        Operator[] op = new Operator[1];
-        Menu opMenu = new Menu("Select Operator", new String[] { "EQUALS (==)", "GREATER THAN (>)", "LESS THAN (<)" }, model::getCurrentState);
-
-        opMenu.setHandler(1, () -> { op[0] = Operator.EQUALS; opMenu.stop(); });
+        opMenu.setHandler(1, () -> { op[0] = Operator.EQUALS;       opMenu.stop(); });
         opMenu.setHandler(2, () -> { op[0] = Operator.GREATER_THAN; opMenu.stop(); });
-        opMenu.setHandler(3, () -> { op[0] = Operator.LESS_THAN; opMenu.stop(); });
+        opMenu.setHandler(3, () -> { op[0] = Operator.LESS_THAN;    opMenu.stop(); });
         opMenu.run();
-
-        if (op[0] != null) {
-            conditions.add(new TemperatureCondition(temp, op[0]));
-            System.out.println("  Temperature condition added.");
-        }
+        return op[0];
     }
 
-    private void handleAddLuminosityCondition(List<Condition> conditions) {
-        System.out.print(Ansi.prompt("Target Luminosity (lx)"));
-        int luminosity = readInt();
-
-        Operator[] op = new Operator[1];
-        Menu opMenu = new Menu("Select Operator", new String[] { "EQUALS (==)", "GREATER THAN (>)", "LESS THAN (<)" }, model::getCurrentState);
-
-        opMenu.setHandler(1, () -> { op[0] = Operator.EQUALS; opMenu.stop(); });
-        opMenu.setHandler(2, () -> { op[0] = Operator.GREATER_THAN; opMenu.stop(); });
-        opMenu.setHandler(3, () -> { op[0] = Operator.LESS_THAN; opMenu.stop(); });
-        opMenu.run();
-
-        if (op[0] != null) {
-            conditions.add(new LuminosityCondition(luminosity, op[0]));
-            System.out.println("  Luminosity condition added.");
-        }
+    private double readDouble() {
+        try { return Double.parseDouble(sc.nextLine().trim()); }
+        catch (NumberFormatException e) { return 0.0; }
     }
 }

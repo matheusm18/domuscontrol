@@ -498,12 +498,7 @@ public class DomusControl implements Serializable {
     }
 
     public SimulationState getCurrentState() {
-        return new SimulationState(
-            this.simulation.getCurrentDateTime(),
-            (int) Math.round(this.simulation.getTemperature()),
-            (int) Math.round(this.simulation.getLuminosity()),
-            this.simulation.getWeather()
-        );
+        return SimulationState.from(this.simulation);
     }
 
     /**

@@ -1,6 +1,6 @@
 package domuscontrol.routines;
 
-import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.SimulationState;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -320,11 +320,11 @@ public class RoutineManager implements Serializable {
      * @param simulation the current simulation state
      * @return a list of automation names that were triggered this tick
      */
-    public List<String> tick(House house, Simulation simulation) {
+    public List<String> tick(House house, SimulationState state) {
         List<String> activated = new ArrayList<>();
 
         for (Automation auto : this.automations.values()) {
-            if (auto.checkAndTrigger(house, simulation)) {
+            if (auto.checkAndTrigger(house, state)) {
                 activated.add(auto.getName());
             }
         }

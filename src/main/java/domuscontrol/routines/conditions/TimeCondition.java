@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Objects;
 
-import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.houses.House;
 import domuscontrol.routines.Condition;
 
@@ -65,9 +65,9 @@ public class TimeCondition implements TimeBasedCondition {
      * @return true if the trigger time was reached or crossed since the last tick; false otherwise.
      */
     @Override
-    public boolean evaluate(House house, Simulation simulation) {
-        LocalDateTime now = simulation.getCurrentDateTime();
-        LocalDateTime before = simulation.getPreviousDateTime();
+    public boolean evaluate(House house, SimulationState state) {
+        LocalDateTime now = state.getCurrentDateTime();
+        LocalDateTime before = state.getPreviousDateTime();
 
         if (now == null || before == null || this.triggerTime == null) {
             return false;

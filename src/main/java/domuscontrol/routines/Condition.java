@@ -1,8 +1,7 @@
 package domuscontrol.routines;
 
 import domuscontrol.houses.House;
-import domuscontrol.simulation.Simulation;
-
+import domuscontrol.simulation.SimulationState;
 import java.io.Serializable;
 
 /**
@@ -10,15 +9,15 @@ import java.io.Serializable;
  * Conditions can depend on device state, simulation time, or environmental values.
  */
 public interface Condition extends Serializable {
-    
+
     /**
      * Evaluates whether this condition is currently satisfied.
      *
      * @param house the house context used to inspect devices, when needed
-     * @param simulation the current simulation state used for time and environment conditions
+     * @param state the current simulation state used for time and environment conditions
      * @return true if the condition is currently met, false otherwise.
      */
-    boolean evaluate(House house, Simulation simulation);
+    boolean evaluate(House house, SimulationState state);
 
     /**
      * Creates a copy of this condition.

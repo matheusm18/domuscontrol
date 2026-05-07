@@ -3,7 +3,7 @@ package domuscontrol.routines.conditions;
 import java.time.LocalTime;
 import java.util.Objects;
 
-import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.houses.House;
 import domuscontrol.routines.Condition;
 
@@ -88,12 +88,12 @@ public class TimeWindowCondition implements TimeBasedCondition {
      * @return true if current time is within the window (inclusive); false otherwise.
      */
     @Override
-    public boolean evaluate(House house, Simulation simulation) {
-        if (simulation.getCurrentDateTime() == null || this.startTime == null || this.endTime == null) {
+    public boolean evaluate(House house, SimulationState state) {
+        if (state.getCurrentDateTime() == null || this.startTime == null || this.endTime == null) {
             return false;
         }
 
-        LocalTime current = simulation.getCurrentDateTime().toLocalTime();
+        LocalTime current = state.getCurrentDateTime().toLocalTime();
 
         if (this.startTime.isBefore(this.endTime)) {
             // Standard window:  10:00 to 18:00

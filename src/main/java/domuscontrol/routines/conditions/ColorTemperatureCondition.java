@@ -1,6 +1,6 @@
 package domuscontrol.routines.conditions;
 
-import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.devices.types.ColorAdjustableDevice;
 import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.houses.House;
@@ -112,7 +112,7 @@ public class ColorTemperatureCondition implements Condition {
      * @return true if the current temperature satisfies the operator comparison; false otherwise.
      */
     @Override
-    public boolean evaluate(House house, Simulation simulation) {
+    public boolean evaluate(House house, SimulationState state) {
         try {
             return house.readDevice(this.deviceId, d -> {
                 if (!(d instanceof ColorAdjustableDevice cad)) {

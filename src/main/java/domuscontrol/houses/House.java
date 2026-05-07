@@ -1,6 +1,8 @@
 package domuscontrol.houses;
 
+import domuscontrol.devices.sensors.Sensor;
 import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.suggestions.AutomationSuggestion;
 import domuscontrol.suggestions.DeviceInteraction;
 import domuscontrol.suggestions.InteractionLogger;
@@ -23,6 +25,7 @@ import domuscontrol.exceptions.AutomationDoesntExistException;
 import domuscontrol.exceptions.ScenarioDoesntExistException;
 
 import java.util.Map;
+import java.util.Set;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -255,7 +258,11 @@ public class House implements Serializable {
      *         is built with a non-time condition, which should never happen in practice.
      */
     public List<AutomationSuggestion> getSuggestions(int userId) throws ScheduleWithConditionDifferentFromTimeException {
-        return SuggestionEngine.suggest(this.interactionLogger.clone(), this.getDevices(), userId);
+        List<AutomationSuggestion> all = SuggestionEngine.suggest(this.interactionLogger.clone(), this.getDevices(), userId);
+        Set<String> existing = this.routineManager.getAutomationsByName().keySet();
+        return all.stream()
+            .filter(s -> !existing.contains(s.getAutomation().getName().toLowerCase()))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -497,9 +504,19 @@ public class House implements Serializable {
      *         which automations were triggered and which devices were affected.
      */
     public List<String> tick(Simulation simulation) {
+        SimulationState state = SimulationState.from(simulation);
         int minutes = (int) simulation.getTimeElapsed();
         this.devices.values().forEach(device -> device.tick(minutes));
-        return this.routineManager.tick(this, simulation);
+        this.updateSensors(state);
+        return this.routineManager.tick(this, state);
+    }
+
+    private void updateSensors(SimulationState state) {
+        this.devices.values().forEach(device -> {
+            if (device instanceof Sensor sensor) {
+                sensor.updateFromState(state);
+            }
+        });
     }
 
     /**
