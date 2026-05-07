@@ -27,16 +27,35 @@ import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.Scanner;
 
+/**
+ * User interface class for handling actions and routines.
+ * Manages device actions, automation routines, and user interactions for actions.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
+ */
 public class ActionsUI {
 
     private DomusControl model;
     private final Scanner sc;
 
+    /**
+     * Constructor for ActionsUI.
+     * @param model The DomusControl model to interact with for managing actions and routines.
+     * @param sc The Scanner for reading user input from the console.
+     */
     public ActionsUI(DomusControl model, Scanner sc) {
         this.model = model;
         this.sc = sc;
     }
 
+    /**
+     * Sets the model for this UI controller.
+     *
+     * @param model The DomusControl model instance.
+     */
     public void setModel(DomusControl model) {
         this.model = model;
     }
@@ -66,6 +85,15 @@ public class ActionsUI {
     // AUTOMATIONS (may have any conditions: time, climate, temperature, luminosity)
     // ------------------------------------------------------------------------
 
+    /**
+     * Manages automations for a given house and user email. Displays a menu for listing, adding, and removing automations.
+     */
+    /**
+     * Manages automations for a specific house.
+     *
+     * @param houseId The ID of the house.
+     * @param email The email of the user managing automations.
+     */
     public void manageAutomations(int houseId, String email) {
         Menu menu = new Menu("Automations", new String[] {
                 "List Automations",
@@ -284,6 +312,12 @@ public class ActionsUI {
     // SCHEDULES (only time‑based conditions allowed)
     // ------------------------------------------------------------------------
 
+    /**
+     * Manages schedules for a specific house.
+     *
+     * @param houseId The ID of the house.
+     * @param email The email of the user managing schedules.
+     */
     public void manageSchedules(int houseId, String email) {
         Menu menu = new Menu("Schedules", new String[] {
                 "List Schedules",
@@ -458,6 +492,12 @@ public class ActionsUI {
     // SCENARIOS (user‑specific, no conditions)
     // ------------------------------------------------------------------------
 
+    /**
+     * Manages scenarios for a specific house.
+     *
+     * @param houseId The ID of the house.
+     * @param email The email of the user managing scenarios.
+     */
     public void manageScenarios(int houseId, String email) {
         Menu menu = new Menu("Scenarios", new String[] {
                 "List Scenarios",

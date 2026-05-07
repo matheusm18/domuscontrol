@@ -11,11 +11,20 @@ import java.util.Objects;
 /**
  * Condition that evaluates whether a {@link TemperatureSensor} reading satisfies
  * a threshold comparison. The condition is only true when the sensor is ON.
+ * Compares the current temperature reading against a trigger level using the specified operator.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class TemperatureSensorCondition implements Condition {
 
+    /** The identifier of the target temperature sensor. */
     private int sensorId;
+    /** The temperature threshold in degrees Celsius used for comparison. */
     private int triggerTemperature;
+    /** The comparison operator to apply when evaluating the condition. */
     private Operator operator;
 
     /**

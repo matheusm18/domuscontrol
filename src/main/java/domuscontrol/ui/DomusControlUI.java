@@ -18,6 +18,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Main user interface class for the DomusControl application.
+ * Handles application startup, user authentication, and main menu navigation.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
+ */
 public class DomusControlUI {
 
     private DomusControl model;
@@ -25,6 +34,9 @@ public class DomusControlUI {
     private final UserUI userUI;
     private String currentUserEmail;
 
+    /**
+     * Constructor for DomusControlUI. Initializes the model, scanner, user UI, and current user email.
+     */
     public DomusControlUI() {
         this.model = new DomusControl();
         this.sc = new Scanner(System.in);
@@ -32,6 +44,9 @@ public class DomusControlUI {
         this.currentUserEmail = null;
     }
 
+    /**
+     * Runs the main application loop.
+     */
     public void run() {
         printWelcome();
         Menu menu = new Menu(new String[]{
@@ -107,99 +122,197 @@ public class DomusControlUI {
         }
     }
 
-    private void doGlobalStatistics() {
-        Menu menu = new Menu("Statistics", new String[]{
-                "Most consuming house",
-                "Top 3 devices by active time",
-                "Top 3 devices by activations",
-                "Top 3 divisions by device count"
+     private void doGlobalStatistics() {
+        Menu menu = new Menu(new String[]{
+                "User Statistics",
+                "House Statistics",
+                "Device Statistics",
+                "Back"
         }, () -> model.getCurrentState());
 
-        menu.setPreCondition(1, () -> !model.getAllHouses().isEmpty());
+        menu.setPreCondition(1, () -> !model.getAllUsers().isEmpty());
         menu.setPreCondition(2, () -> !model.getAllHouses().isEmpty());
-        menu.setPreCondition(3, () -> !model.getAllHouses().isEmpty());
-        menu.setPreCondition(4, () -> !model.getAllHouses().isEmpty());
+        menu.setPreCondition(3, () -> !model.getAllDevices().isEmpty());
 
-        menu.setHandler(1, () -> {
-            List<House> top = model.getTopHousesByCriterion(3, House::calculateTotalConsumption);
-            if (top.isEmpty()) { System.out.println("  No houses in the system."); return; }
-            Ansi.listTitle("Most Consuming Houses");
-            for (int i = 0; i < top.size(); i++) {
-                House h = top.get(i);
-                Ansi.listRow(String.format("%d  %-22s %.2f Wh", i + 1, h.getName(), h.calculateTotalConsumption()));
-            }
-            Ansi.listSeparator();
-        });
-
-        menu.setHandler(2, () -> {
-            House house = selectHouseGlobal();
-            if (house == null) return;
-            List<Device> top = house.getDevices().values().stream()
-                .sorted(Comparator.comparingInt(Device::getTotalMinutesOn).reversed())
-                .limit(3).toList();
-            if (top.isEmpty()) { System.out.println("  No devices in this house."); return; }
-            Ansi.listTitle("Top Devices By Active Time - " + house.getName());
-            int[] w = deviceColWidths(top);
-            for (int i = 0; i < top.size(); i++) {
-                Device d = top.get(i);
-                Ansi.listRow(String.format("%d  %-" + w[0] + "s %-" + w[1] + "s %-" + w[2] + "s %d min active",
-                    i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalMinutesOn()));
-            }
-            Ansi.listSeparator();
-        });
-
-        menu.setHandler(3, () -> {
-            House house = selectHouseGlobal();
-            if (house == null) return;
-            List<Device> top = house.getDevices().values().stream()
-                .sorted(Comparator.comparingInt(Device::getTotalActivations).reversed())
-                .limit(3).toList();
-            if (top.isEmpty()) { System.out.println("  No devices in this house."); return; }
-            Ansi.listTitle("Top Devices By Activations - " + house.getName());
-            int[] w = deviceColWidths(top);
-            for (int i = 0; i < top.size(); i++) {
-                Device d = top.get(i);
-                Ansi.listRow(String.format("%d  %-" + w[0] + "s %-" + w[1] + "s %-" + w[2] + "s %d activation(s)",
-                    i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalActivations()));
-            }
-            Ansi.listSeparator();
-        });
-
-        menu.setHandler(4, () -> {
-            List<DivisionInfo> top = model.getTopDivisionsByDeviceCount(3);
-            if (top.isEmpty()) { System.out.println("  No divisions in the system."); return; }
-            Ansi.listTitle("Top Divisions By Device Count");
-            for (int i = 0; i < top.size(); i++) {
-                DivisionInfo di = top.get(i);
-                Ansi.listRow(String.format("%d  %-18s %-18s %d device(s)",
-                    i + 1, di.getDivisionName(), di.getHouseName(), di.getDeviceCount()));
-            }
-            Ansi.listSeparator();
-        });
+        menu.setHandler(1, this::doUserStatistics);
+        menu.setHandler(2, this::doHouseStatistics);
+        menu.setHandler(3, this::doDeviceStatistics);
 
         menu.run();
     }
 
-    private House selectHouseGlobal() {
-        List<House> houses = model.getAllHouses();
-        if (houses.isEmpty()) { System.out.println("  No houses in the system."); return null; }
-        Ansi.listTitle("All Houses");
-        for (int i = 0; i < houses.size(); i++)
-            Ansi.listRow(String.format("%d  %s", i + 1, houses.get(i).getName()));
-        Ansi.listSeparator();
-        System.out.print(Ansi.prompt("Select house (0 to cancel)"));
-        int choice;
-        try { choice = Integer.parseInt(sc.nextLine().trim()); } catch (NumberFormatException e) { return null; }
-        if (choice < 1 || choice > houses.size()) return null;
-        return houses.get(choice - 1);
+    // Menu para escolher ver o user com mais casas, o user com mais dispositivos, o user com mais consumo de energia, etc.
+    private void doUserStatistics() {
+        Menu menu = new Menu(new String[]{
+                "Top 3 Users with most houses",
+                "Top 3 Users with most devices",
+                "Top 3 Users with most energy consumption",
+                "Back"
+        }, () -> model.getCurrentState());
+
+        // usa getTopUsersByCriterion passando o critério correspondente, passa lhe o criterio só
+        menu.setHandler(1, () -> {
+            List<User> topUsers = model.getTopUsersByCriterion(3, u -> u.getHouseIds().size());
+            if (topUsers.isEmpty()) {
+                System.out.println("  No users in the system.");
+            } else {
+                Ansi.listTitle("Top 3 Users with Most Houses");
+                for (int i = 0; i < topUsers.size(); i++) {
+                    User u = topUsers.get(i);
+                    Ansi.listRow(String.format("%d  %-22s %d", i + 1, u.getName(), u.getHouseIds().size()));
+                }
+                Ansi.listSeparator();
+            }
+        });
+
+        menu.setHandler(2, () -> {
+            List<User> topUsers = model.getTopUsersByCriterion(3, u -> {
+                try { return model.getHousesByUser(u.getEmail()).stream().mapToInt(h -> h.getDevices().size()).sum(); }
+                catch (Exception e) { return 0; }
+            });
+            if (topUsers.isEmpty()) {
+                System.out.println("  No users in the system.");
+            } else {
+                Ansi.listTitle("Top 3 Users with Most Devices");
+                for (int i = 0; i < topUsers.size(); i++) {
+                    User u = topUsers.get(i);
+                    int devices = 0;
+                    try { devices = model.getHousesByUser(u.getEmail()).stream().mapToInt(h -> h.getDevices().size()).sum(); }
+                    catch (Exception ignored) {}
+                    Ansi.listRow(String.format("%d  %-22s %d", i + 1, u.getName(), devices));
+                }
+                Ansi.listSeparator();
+            }
+        });
+
+        menu.setHandler(3, () -> {
+            List<User> topUsers = model.getTopUsersByCriterion(3, u -> {
+                try { return (int) Math.round(model.getHousesByUser(u.getEmail()).stream().mapToDouble(House::calculateTotalConsumption).sum()); }
+                catch (Exception e) { return 0; }
+            });
+            if (topUsers.isEmpty()) {
+                System.out.println("  No users in the system.");
+            } else {
+                Ansi.listTitle("Top 3 Users with Most Consumption");
+                for (int i = 0; i < topUsers.size(); i++) {
+                    User u = topUsers.get(i);
+                    double consumption = 0;
+                    try { consumption = model.getHousesByUser(u.getEmail()).stream().mapToDouble(House::calculateTotalConsumption).sum(); }
+                    catch (Exception ignored) {}
+                    Ansi.listRow(String.format("%d  %-22s %.2f", i + 1, u.getName(), consumption));
+                }
+                Ansi.listSeparator();
+            }
+        }); 
     }
 
-    private int[] deviceColWidths(List<Device> devices) {
-        int type  = devices.stream().mapToInt(d -> d.getClass().getSimpleName().length()).max().orElse(10);
-        int brand = devices.stream().mapToInt(d -> d.getBrand().length()).max().orElse(8);
-        int model = devices.stream().mapToInt(d -> d.getModel().length()).max().orElse(10);
-        return new int[]{type + 2, brand + 2, model + 2};
+    private void doHouseStatistics() {
+        // Similar to doUserStatistics but for houses
+        Menu menu = new Menu(new String[]{
+                "Top 3 Houses with most devices",
+                "Top 3 Houses with most energy consumption",
+                "Back"
+        }, () -> model.getCurrentState());
+
+        menu.setHandler(1, () -> {
+            List<House> topHouses = model.getTopHousesByCriterion(3, h -> (double) h.getDevices().size());
+            if (topHouses.isEmpty()) {
+                System.out.println("  No houses in the system.");
+            } else {
+                Ansi.listTitle("Top 3 Houses with Most Devices");
+                for (int i = 0; i < topHouses.size(); i++) {
+                    House h = topHouses.get(i);
+                    Ansi.listRow(String.format("%d  %-22s %d", i + 1, h.getName(), h.getDevices().size()));
+                }
+                Ansi.listSeparator();
+            }
+        });
+
+        menu.setHandler(2, () -> {
+            List<House> topHouses = model.getTopHousesByCriterion(3, House::calculateTotalConsumption);
+            if (topHouses.isEmpty()) {
+                System.out.println("  No houses in the system.");
+            } else {
+                Ansi.listTitle("Top 3 Houses with Most Consumption");
+                for (int i = 0; i < topHouses.size(); i++) {
+                    House h = topHouses.get(i);
+                    double consumption = h.calculateTotalConsumption();
+                    Ansi.listRow(String.format("%d  %-22s %.2f", i + 1, h.getName(), consumption));
+                }
+                Ansi.listSeparator();
+            }
+        });
     }
+
+    private void doDeviceStatistics() {
+        // Similar to doUserStatistics but for devices
+        Menu menu = new Menu(new String[]{
+                "Top 3 devices by active time",
+                "Top 3 devices by activations",
+                "Top 3 Devices with most energy consumption",
+                "Back"
+        }, () -> model.getCurrentState());
+
+        menu.setHandler(1, () -> {
+            try {
+                List<Device> topDevices = model.getTopDevicesByCriterion(3, d -> (double) d.getTotalMinutesOn());
+                if (topDevices.isEmpty()) {
+                    System.out.println("  No devices in the system.");
+                } else {
+                    Ansi.listTitle("Top 3 Devices by Active Time");
+                    for (int i = 0; i < topDevices.size(); i++) {
+                        Device d = topDevices.get(i);
+                        Ansi.listRow(String.format("%d  %-22s %.2f", i + 1, d.getModel(), d.getTotalMinutesOn()));
+                    }
+                    Ansi.listSeparator();
+                }
+            } catch (UserNotFoundException e) {
+                System.out.println("  Error: user not found.");
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
+            }});
+
+        menu.setHandler(2, () -> {
+            try {                List<Device> topDevices = model.getTopDevicesByCriterion(3, d -> (double) d.getTotalActivations());
+                if (topDevices.isEmpty()) {
+                    System.out.println("  No devices in the system.");
+                } else {
+                    Ansi.listTitle("Top 3 Devices by Activations");
+                    for (int i = 0; i < topDevices.size(); i++) {
+                        Device d = topDevices.get(i);
+                        Ansi.listRow(String.format("%d  %-22s %.2f", i + 1, d.getModel(), d.getTotalActivations()));
+                    }
+                    Ansi.listSeparator();
+                }
+            } catch (UserNotFoundException e) {
+                System.out.println("  Error: user not found.");
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
+            }});
+
+            menu.setHandler(3, () -> {
+                try {
+                    List<Device> topDevices = model.getTopDevicesByCriterion(3, Device::getEnergyConsumption);
+                    if (topDevices.isEmpty()) {
+                        System.out.println("  No devices in the system.");
+                    } else {
+                        Ansi.listTitle("Top 3 Devices by Energy Consumption");
+                        for (int i = 0; i < topDevices.size(); i++) {
+                            Device d = topDevices.get(i);
+                            double consumption = d.getEnergyConsumption();
+                            Ansi.listRow(String.format("%d  %-22s %.2f", i + 1, d.getModel(), consumption));
+                        }
+                        Ansi.listSeparator();
+                    }
+                } catch (UserNotFoundException e) {
+                    System.out.println("  Error: user not found.");
+                } catch (HouseNotFoundException e) {
+                    System.out.println("  Error: house not found.");
+                }});
+        
+
+    }
+
 
     private void doLoadState() {
         System.out.print(Ansi.prompt("File name"));

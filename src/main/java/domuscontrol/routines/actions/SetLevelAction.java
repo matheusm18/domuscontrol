@@ -9,9 +9,26 @@ import java.util.Objects;
 
 /**
  * Action that sets the level of an adjustable device.
+ * 
+ * This action sets the level (brightness, volume, etc.) of any device implementing
+ * the AdjustableDevice interface to a target level value. If the device is not found
+ * in the house, the action fails silently.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class SetLevelAction implements Action {
+    /**
+     * The unique identifier of the target device whose level will be adjusted.
+     * Value of -1 indicates no target device is set.
+     */
     private int deviceId;
+    /**
+     * The target level value to set on the device.
+     * The interpretation of this value depends on the specific device type.
+     */
     private int targetLevel;
 
     /**

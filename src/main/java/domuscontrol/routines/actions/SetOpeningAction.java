@@ -9,9 +9,26 @@ import java.util.Objects;
 
 /**
  * Action that sets the opening percentage of an openable device.
+ * 
+ * This action sets the opening percentage (0-100) of any device implementing
+ * the OpenableDevice interface, such as curtains, blinds, or gates. If the device is
+ * not found in the house, the action fails silently.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class SetOpeningAction implements Action {
+    /**
+     * The unique identifier of the target device to open or close.
+     * Value of -1 indicates no target device is set.
+     */
     private int deviceId;
+    /**
+     * The target opening percentage (0-100) to set on the device.
+     * 0 represents fully closed, 100 represents fully open.
+     */
     private int targetPercentage;
 
     /**

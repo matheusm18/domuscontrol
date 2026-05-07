@@ -9,10 +9,20 @@ import domuscontrol.routines.Condition;
 
 /**
  * Condition that compares the level of an adjustable device with a trigger value.
+ * Evaluates whether a device's current level satisfies a comparison with a trigger level
+ * using the specified operator (EQUALS, GREATER_THAN, or LESS_THAN).
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class DeviceLevelCondition implements Condition {
+    /** The identifier of the target adjustable device. */
     private int deviceId;
+    /** The level value used for comparison in the condition evaluation. */
     private int triggerLevel;
+    /** The comparison operator to apply when evaluating the condition. */
     private Operator operator;
 
     /**
@@ -106,7 +116,7 @@ public class DeviceLevelCondition implements Condition {
      * Evaluates this condition against the current level of the target device.
      *
      * @param house the house where the target device is stored
-     * @param simulation the current simulation state
+     * @param state the current simulation state
      * @return true if the current level satisfies the operator comparison; false otherwise.
      */
     @Override

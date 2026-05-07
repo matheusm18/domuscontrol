@@ -11,11 +11,21 @@ import java.util.Objects;
 /**
  * Condition that evaluates whether a {@link RainfallSensor} reading satisfies
  * a threshold comparison. The condition is only true when the sensor is ON.
+ * Compares the current rainfall intensity against a trigger level using the specified operator.
+ * For EQUALS comparisons, a tolerance of ±0.5 mm/h is applied due to the continuous nature of readings.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class RainfallSensorCondition implements Condition {
 
+    /** The identifier of the target rainfall sensor. */
     private int sensorId;
+    /** The rainfall intensity threshold in millimeters per hour (mm/h) used for comparison. */
     private double triggerRainfall;
+    /** The comparison operator to apply when evaluating the condition. */
     private Operator operator;
 
     /**

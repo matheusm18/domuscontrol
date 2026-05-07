@@ -11,11 +11,20 @@ import java.util.Objects;
 /**
  * Condition that evaluates whether a {@link LuminositySensor} reading satisfies
  * a threshold comparison. The condition is only true when the sensor is ON.
+ * Compares the current luminosity reading against a trigger level using the specified operator.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class LuminositySensorCondition implements Condition {
 
+    /** The identifier of the target luminosity sensor. */
     private int sensorId;
+    /** The luminosity threshold value in lux used for comparison. */
     private int triggerLuminosity;
+    /** The comparison operator to apply when evaluating the condition. */
     private Operator operator;
 
     /**
@@ -30,9 +39,9 @@ public class LuminositySensorCondition implements Condition {
     /**
      * Creates a condition for the given sensor and threshold.
      *
-     * @param sensorId         the identifier of the target luminosity sensor
+     * @param sensorId the identifier of the target luminosity sensor
      * @param triggerLuminosity the threshold luminosity in lux
-     * @param operator          the comparison operator to apply
+     * @param operator the comparison operator to apply
      */
     public LuminositySensorCondition(int sensorId, int triggerLuminosity, Operator operator) {
         this.sensorId = sensorId;

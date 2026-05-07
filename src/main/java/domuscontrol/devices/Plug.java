@@ -5,7 +5,14 @@ import java.util.Objects;
 import domuscontrol.devices.types.SwitchableDevice;
 
 /**
- * Represents a smart plug device.
+ * Represents a smart plug device for controlling connected appliances.
+ * A simple on/off switchable device that allows remote control of any plugged-in appliance
+ * through simple turn on/off operations with power consumption tracking.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class Plug extends SwitchableDevice {
 

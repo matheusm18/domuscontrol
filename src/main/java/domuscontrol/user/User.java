@@ -11,15 +11,27 @@ import domuscontrol.exceptions.HouseNotFoundException;
 
 /**
  * Represents a user in the system.
+ * Stores user details, credentials, and roles for house access.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class User implements Serializable {
 
+    /** The next ID to be assigned to a user. */
     private static int nextId = 1;
 
+    /** The unique ID of the user. */
     private final int id;
+    /** The name of the user. */
     private String name;
+    /** The email of the user. */
     private String email;
+    /** The password of the user. */
     private String password;
+    /** A map of roles by house ID. */
     private Map<Integer, UserRole> rolesByHouseId;
 
     /**

@@ -8,6 +8,11 @@ import domuscontrol.simulation.SimulationState;
  * Sensors are always initialised in the ON state and do not consume energy.
  * Each tick, the house calls {@link #updateFromState(SimulationState)} to push
  * the latest environmental readings into the sensor.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public abstract class Sensor extends SwitchableDevice {
 

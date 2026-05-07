@@ -26,16 +26,34 @@ import java.util.function.Consumer;
 /**
  * Manager responsible for handling all houses in the system.
  * Centralizes storage, retrieval, and global simulation logic.
+ * Provides unified interface for managing houses, devices, divisions, and automations.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class HouseManager implements Serializable {
 
+    /**
+     * A map storing all houses in the system, indexed by their unique IDs.
+     */
     private final Map<Integer, House> housesById;
 
+    /**
+     * Creates a new HouseManager with an empty collection of houses.
+     */
     public HouseManager() {
         this.housesById = new HashMap<>();
     }
 
-    /** Creates a new house with the given name and registers it in the system. */
+    /**
+     * Creates a new house with the given name and registers it in the system.
+     *
+     * @param name The name of the new house.
+     * @return The newly created house with the given name.
+     * @throws HouseAlreadyExistsException if a house with the generated ID already exists.
+     */
     public House createHouse(String name) throws HouseAlreadyExistsException {
         House newHouse = new House();
         newHouse.setName(name);
@@ -55,7 +73,13 @@ public class HouseManager implements Serializable {
         return this.housesById.containsKey(id);
     }
 
-    /** Retrieves a clone of a house by its unique ID. */
+    /** 
+     * Retrieves a clone of a house by its unique ID.
+     *
+     * @param id The house ID to look up.
+     * @return A cloned copy of the house with the given ID.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     */
     public House getHouseById(int id) throws HouseNotFoundException {
         House house = this.housesById.get(id);
         if (house == null) {
@@ -112,6 +136,11 @@ public class HouseManager implements Serializable {
         return getHouseInternal(houseId).getDevice(deviceId);
     }
 
+    /**
+     * Returns a list of all devices across all houses in the system.
+     *
+     * @return A list of all devices registered in all houses.
+     */
     public List<Device> getAllDevices() {
         return this.housesById.values().stream()
                 .flatMap(house -> house.getDevices().values().stream())
@@ -143,7 +172,11 @@ public class HouseManager implements Serializable {
         h.removeDevice(deviceId);
     }
 
-    /** Returns the house with the highest energy consumption. */
+    /**
+     * Returns the house with the highest energy consumption.
+     *
+     * @return The house with the most energy consumption, or null if no houses exist.
+     */
     public House getMostConsumingHouse() {
         return this.housesById.values().stream()
                 .max(Comparator.comparingDouble(House::calculateTotalConsumption))
@@ -151,7 +184,11 @@ public class HouseManager implements Serializable {
                 .orElse(null);
     }
 
-    /** Returns a list of all houses in the system. */
+    /**
+     * Returns a list of all houses in the system.
+     *
+     * @return A list of cloned copies of all registered houses.
+     */
     public List<House> getAllHouses() {
         return this.housesById.values().stream()
                 .map(House::clone)
@@ -275,6 +312,10 @@ public class HouseManager implements Serializable {
     /**
      * Advances time for all houses in the system.
      * This cascades down to every device in every division.
+     * Returns a list of strings describing any automations that were triggered during this tick, formatted as "HouseName: AutomationName".
+     *
+     * @param simulation The simulation context containing the current time and other relevant data.
+     * @return A list of descriptions for each automation that was activated during this tick.
      */
     public List<String> tick(Simulation simulation) {
         List<String> activated = new ArrayList<>();
@@ -290,7 +331,12 @@ public class HouseManager implements Serializable {
         return activated;
     }
 
-    /** Returns the live (non-cloned) House reference for internal mutation. */
+    /**
+     * Returns the live (non-cloned) House reference for internal mutation.
+     * @param houseId The ID of the house to retrieve.
+     * @return The House object.
+     * @throws HouseNotFoundException if no house with the given ID exists.
+     */
     private House getHouseInternal(int houseId) throws HouseNotFoundException {
         House h = this.housesById.get(houseId);
 

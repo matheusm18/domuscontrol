@@ -49,6 +49,15 @@ import java.util.Scanner;
  * device control, and future automations/schedules/scenarios.
  * Received from {@link UserUI} after the user selects a house.
  */
+/**
+ * User interface class for house-related operations and interactions.
+ * Handles house management, device control, and division operations for users.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
+ */
 public class HouseUI {
 
     private DomusControl model;
@@ -67,11 +76,23 @@ public class HouseUI {
         this.actionsUI = new ActionsUI(model, sc);
     }
 
+    /**
+     * Sets the model for this UI controller.
+     *
+     * @param model The DomusControl model instance.
+     */
     public void setModel(DomusControl model) {
         this.model = model;
         this.actionsUI.setModel(model);
     }
 
+    /**
+     * Displays the house management interface for a specific house.
+     *
+     * @param email The email of the user.
+     * @param houseId The ID of the house to display.
+     * @param houseName The name of the house to display.
+     */
     public void show(String email, int houseId, String houseName) {
         int userId;
         try {

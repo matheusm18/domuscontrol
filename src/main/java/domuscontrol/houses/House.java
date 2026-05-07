@@ -36,6 +36,12 @@ import java.util.List;
  * Represents a complete House in the Domus Control automation system.
  * A House aggregates multiple Divisions (rooms), managing the overall state,
  * simulating the passage of time, and calculating global statistics.
+ * Manages devices, user roles, automations, scenarios, and interaction logging for suggestions.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class House implements Serializable {
 

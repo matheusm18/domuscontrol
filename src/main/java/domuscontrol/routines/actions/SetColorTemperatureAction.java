@@ -9,10 +9,26 @@ import java.util.Objects;
 
 /**
  * Action that sets the color temperature of a color-adjustable device.
+ * 
+ * This action sets the color temperature (in Kelvin) of any device implementing
+ * the ColorAdjustableDevice interface, such as smart lights. If the device is not
+ * found in the house, the action fails silently.
+ * 
+ * @author Afonso Barros a112178
+ * @author Martim Monteiro a111013
+ * @author Matheus Azevedo a111430
+ * @version 1.0
  */
 public class SetColorTemperatureAction implements Action {
-
+    /**
+     * The unique identifier of the target device whose color temperature will be adjusted.
+     * Value of -1 indicates no target device is set.
+     */
     private int deviceId;
+    /**
+     * The target color temperature in Kelvin (K) to set on the device.
+     * Typical values range from 2700K (warm white) to 6500K (cool white).
+     */
     private int targetTemperature;
 
     /**

@@ -56,19 +56,38 @@ import java.time.LocalDateTime;
 
 /**
  * Model facade of the DomusControl application.
+ * Provides a simplified interface to the core functionalities of the system, including user management, house management, device interactions, and simulation control.
+ * This class serves as the main entry point for the application's logic, coordinating between different components such as UserManager, HouseManager, and Simulation.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class DomusControl implements Serializable {
 
+    /* The user manager responsible for handling user-related operations. */
+    /** The user manager handling user authentication and role management. */
     private final UserManager userManager;
+    /** The house manager handling house and division management. */
     private final HouseManager houseManager;
+    /** The simulation engine managing weather and time progression. */
     private final Simulation simulation;
 
+    /**
+     * Creates a new DomusControl instance with empty user and house managers and a default simulation state.
+     */
     public DomusControl() {
         this.userManager  = new UserManager();
         this.houseManager = new HouseManager();
         this.simulation = new Simulation(LocalDateTime.of(2026, 1, 1, 12, 0), 20.0, WeatherCondition.SUNNY);
     }
 
+    /**
+     * Advances the simulation by the specified number of minutes, updating the environment and processing device interactions.
+     * @param minutes The number of minutes to advance the simulation.
+     * @return A list of descriptions of devices that were activated during the simulation ticks.
+     */
     public List<String> tick(int minutes) {
         if (minutes < 0) {
             throw new IllegalArgumentException("" + minutes);
@@ -205,6 +224,7 @@ public class DomusControl implements Serializable {
      * @return A clone of the newly created house.
      * @throws UserNotFoundException If the owner email does not correspond to a registered user.
      * @throws HouseAlreadyExistsException If a house with the same ID already exists.
+     * @throws UserAlreadyExistsException If the user is already assigned to the new house (should not happen on creation).
      */
     public House createHouse(String ownerEmail, String houseName) throws UserNotFoundException, HouseAlreadyExistsException, UserAlreadyExistsException {
         User owner = this.userManager.getUserByEmail(ownerEmail);
@@ -244,6 +264,13 @@ public class DomusControl implements Serializable {
         return this.houseManager.getHouseById(houseId);
     }
 
+    /**
+     * Retrieves all users in a specific house with their roles.
+     *
+     * @param houseId The ID of the house.
+     * @return A map of user IDs to their roles in the specified house.
+     * @throws HouseNotFoundException If the house does not exist.
+     */
     public Map<Integer, UserRole> getUsersInHouse(int houseId) throws HouseNotFoundException {
         if (!this.houseManager.existsHouseWithId(houseId)) throw new HouseNotFoundException("" + houseId);
         return this.userManager.getAllUsers().stream()
@@ -300,6 +327,7 @@ public class DomusControl implements Serializable {
      * @throws UserNotFoundException If the user does not exist.
      * @throws HouseNotFoundException If the house does not exist.
      * @throws LastAdminException If the user is the last administrator of the house.
+     * @throws UserAlreadyExistsException If the user is not assigned to the house.
      */
     public void deleteUserFromHouse(int houseId, int userId) throws UserNotFoundException, HouseNotFoundException, LastAdminException, UserAlreadyExistsException {
         User user = this.userManager.getUserById(userId);
@@ -364,11 +392,23 @@ public class DomusControl implements Serializable {
         return this.houseManager.getDevice(houseId, deviceId);
     }
 
+    /**
+     * Retrieves all devices from the specified house.
+     * @return A list of all devices in the system.
+     */
     public List<Device> getAllDevices() {
         return this.houseManager.getAllDevices();
     }
 
-    /** Toggles a switchable device ON or OFF and logs the interaction for the given user. */
+    /**
+     * Toggles the state of a switchable device and logs the interaction.
+     * @param houseId The ID of the house containing the device.
+     * @param deviceId The ID of the device to toggle.
+     * @param userId The ID of the user performing the interaction.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws DeviceNotFoundException If the device is not found in the specified house.
+     * @throws DeviceIsNotInstanceOfSwitchableDeviceException If the device is not switch
+     */
     public void toggleDevice(int houseId, int deviceId, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfSwitchableDeviceException {
         Device clone = this.houseManager.getDevice(houseId, deviceId);
         if (!(clone instanceof SwitchableDevice))
@@ -383,7 +423,16 @@ public class DomusControl implements Serializable {
         this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, type, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
 
-    /** Sets the level (0–100) of an adjustable device and logs the interaction. */
+    /**
+     * Sets the level of an adjustable device and logs the interaction.
+     * @param houseId The ID of the house containing the device.
+     * @param deviceId The ID of the device to adjust.
+     * @param level The level to set (device-specific range).
+     * @param userId The ID of the user performing the interaction.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws DeviceNotFoundException If the device is not found in the specified house.
+     * @throws DeviceIsNotInstanceOfAdjustableDeviceException If the device is not an instance of AdjustableDevice.
+     */
     public void setDeviceLevel(int houseId, int deviceId, int level, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfAdjustableDeviceException {
         Device clone = this.houseManager.getDevice(houseId, deviceId);
         if (!(clone instanceof AdjustableDevice))
@@ -392,7 +441,16 @@ public class DomusControl implements Serializable {
         this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_LEVEL, (double) level, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
 
-    /** Sets the opening percentage (0–100) of an openable device and logs the interaction. */
+    /**
+     * Sets the opening percentage (0–100) of an openable device and logs the interaction.
+     * @param houseId The ID of the house containing the device.
+     * @param deviceId The ID of the device to adjust.
+     * @param percentage The percentage to set (0–100).
+     * @param userId The ID of the user performing the interaction.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws DeviceNotFoundException If the device is not found in the specified house.
+     * @throws DeviceIsNotInstanceOfOpenableDeviceException If the device is not an instance of OpenableDevice.
+     */
     public void setDeviceOpening(int houseId, int deviceId, int percentage, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfOpenableDeviceException {
         Device clone = this.houseManager.getDevice(houseId, deviceId);
         if (!(clone instanceof OpenableDevice))
@@ -401,7 +459,16 @@ public class DomusControl implements Serializable {
         this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_OPENING, (double) percentage, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
 
-    /** Sets the color temperature of a color-adjustable device and logs the interaction. */
+    /**
+     * Sets the color temperature (in Kelvin) of a color-adjustable device and logs the interaction.
+     * @param houseId The ID of the house containing the device.
+     * @param deviceId The ID of the device to adjust.
+     * @param temperature The temperature to set (in Kelvin).
+     * @param userId The ID of the user performing the interaction.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws DeviceNotFoundException If the device is not found in the specified house.
+     * @throws DeviceIsNotInstanceOfColorAdjustableDeviceException If the device is not an instance of ColorAdjustableDevice.
+     */
     public void setDeviceColorTemperature(int houseId, int deviceId, int temperature, int userId) throws HouseNotFoundException, DeviceNotFoundException, DeviceIsNotInstanceOfColorAdjustableDeviceException {
         Device clone = this.houseManager.getDevice(houseId, deviceId);
         if (!(clone instanceof ColorAdjustableDevice))
@@ -410,40 +477,106 @@ public class DomusControl implements Serializable {
         this.houseManager.logInteraction(houseId, new DeviceInteraction(deviceId, InteractionType.SET_COLOR_TEMPERATURE, (double) temperature, userId, getCurrentDateTime(), getWeather(), getTemperature(), getLuminosity()));
     }
 
-    /** Returns automation and schedule suggestions based on this user's interaction history in the house. */
+    /**
+     * Generates automation suggestions for a user based on their interactions and the current simulation state.
+     * @param houseId The ID of the house for which to generate suggestions.
+     * @param userId The ID of the user for whom to generate suggestions.
+     * @return A list of automation suggestions relevant to the user's interactions and the current environment.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws ScheduleWithConditionDifferentFromTimeException If the house contains a schedule with a non-time condition, which is currently not supported for suggestions.
+     */
     public List<AutomationSuggestion> getSuggestions(int houseId, int userId) throws HouseNotFoundException, ScheduleWithConditionDifferentFromTimeException {
         return this.houseManager.getSuggestions(houseId, userId);
     }
 
-    /** Adds an accepted suggestion's automation to the house. */
+    /**
+     * Adds an automation to the specified house.
+     * @param houseId The ID of the house to which the automation will be added.
+     * @param automation The automation to add.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws NameAlreadyExistsException If an automation with the same name already exists in the house.
+     */
     public void addAutomation(int houseId, Automation automation) throws HouseNotFoundException, NameAlreadyExistsException {
         this.houseManager.addAutomation(houseId, automation);
     }
 
+    /**
+     * Removes an automation from the specified house by name.
+     * @param houseId The ID of the house from which the automation will be removed.
+     * @param name The name of the automation to remove.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws AutomationDoesntExistException If no automation with the given name exists in the specified house.
+     */
     public void removeAutomation(int houseId, String name) throws HouseNotFoundException, AutomationDoesntExistException {
         this.houseManager.removeAutomation(houseId, name);
     }
 
+    /**
+     * Retrieves all automations from the specified house.
+     * @param houseId The ID of the house for which to retrieve automations.
+     * @return A list of automations in the specified house.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     */
     public List<Automation> getAutomations(int houseId) throws HouseNotFoundException {
         return this.houseManager.getAutomations(houseId);
     }
 
+    /**
+     * Retrieves all schedules from the specified house.
+     * @param houseId The ID of the house for which to retrieve schedules.
+     * @return A list of schedules in the specified house.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     */
     public List<Automation> getSchedules(int houseId) throws HouseNotFoundException {
         return this.houseManager.getSchedules(houseId);
     }
 
+    /**
+     * Adds a scenario to the specified house for the given user.
+     * @param houseId The ID of the house to which the scenario will be added.
+     * @param userId The ID of the user to whom the scenario belongs.
+     * @param scenario The scenario to add.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws NameAlreadyExistsException If a scenario with the same name already exists for the user in the specified house.
+     */
     public void addScenario(int houseId, int userId, Scenario scenario) throws HouseNotFoundException, NameAlreadyExistsException {
         this.houseManager.addScenario(houseId, userId, scenario);
     }
 
+    /**
+     * Retrieves all scenarios associated with a specific user in a given house.
+     * @param houseId The ID of the house for which to retrieve scenarios.
+     * @param userId The ID of the user whose scenarios are to be retrieved.
+     * @return A list of scenarios associated with the specified user in the specified house.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws UserDoesntHaveScenarios If the user does not have any scenarios in the specified house.
+     */
     public List<Scenario> getScenarios(int houseId, int userId) throws HouseNotFoundException, UserDoesntHaveScenarios {
         return this.houseManager.getScenarios(houseId, userId);
     }
 
+    /**
+     * Removes a scenario from the specified house for the given user by name.
+     * @param houseId The ID of the house from which the scenario will be removed.
+     * @param userId The ID of the user to whom the scenario belongs.
+     * @param name The name of the scenario to remove.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws UserDoesntHaveScenarios If the user does not have any scenarios in the specified house.
+     * @throws ScenarioDoesntExistException If no scenario with the given name exists for the user in the specified house.
+     */
     public void removeScenario(int houseId, int userId, String name) throws HouseNotFoundException, UserDoesntHaveScenarios, ScenarioDoesntExistException {
         this.houseManager.removeScenario(houseId, userId, name);
     }
 
+    /**
+     * Executes a scenario in the specified house for the given user.
+     * @param houseId The ID of the house in which to execute the scenario.
+     * @param userId The ID of the user for whom to execute the scenario.
+     * @param name The name of the scenario to execute.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws UserDoesntHaveScenarios If the user does not have any scenarios in the specified house.
+     * @throws ScenarioDoesntExistException If no scenario with the given name exists for the user in the specified house.
+     */
     public void executeScenario(int houseId, int userId, String name) throws HouseNotFoundException, UserDoesntHaveScenarios, ScenarioDoesntExistException {
         this.houseManager.executeScenario(houseId, userId, name);
     }
@@ -468,39 +601,82 @@ public class DomusControl implements Serializable {
         return this.houseManager.getMostConsumingHouse();
     }
 
+    /**
+     * Returns the current date and time in the simulation.
+     *
+     * @return The current date and time in LocalDateTime format.
+     */
     public LocalDateTime getCurrentDateTime() {
         return this.simulation.getCurrentDateTime();
     }
 
+    /**
+     * Returns the date and time of the last simulation tick.
+     *
+     * @return The date and time of the last tick in LocalDateTime format.
+     */
     public LocalDateTime getLastTickDateTime() {
         return this.simulation.getPreviousDateTime();
     }
 
+    /**
+     * Sets the current time in the simulation to the specified value, updating the previous time accordingly.
+     *
+     * @param newTime The new current time to set in the simulation in LocalDateTime format.
+     */
     public void setCurrentTime(LocalDateTime newTime) {
         this.simulation.setPreviousDateTime(this.simulation.getCurrentDateTime());
         this.simulation.setCurrentDateTime(newTime);
     }
 
+    /**
+     * Returns the current time in the simulation.
+     *
+     * @return The current time in HH:mm format.
+     */
     public LocalTime getCurrentTime() {
         return this.simulation.getCurrentDateTime().toLocalTime();
     }
 
+    /**
+     * Returns the time of the last simulation tick.
+     *
+     * @return The time of the last tick in HH:mm format.
+     */
     public LocalTime getLastTickTime() {
         return this.simulation.getPreviousDateTime().toLocalTime();
     }
 
+    /**
+     * Returns the current temperature in the simulation.
+     *
+     * @return The current temperature in degrees Celsius.
+     */
     public double getTemperature() {
         return this.simulation.getTemperature();
     }
-
+    
+    /**
+     * Returns the current luminosity level in the simulation.
+     *
+     * @return The current luminosity level in lux.
+     */
     public double getLuminosity() {
         return this.simulation.getLuminosity();
     }
 
+    /**
+     * Returns the current weather condition in the simulation.
+     *
+     * @return The current WeatherCondition (e.g., SUNNY, RAINY, CLOUDY).
+     */
     public WeatherCondition getWeather() {
         return this.simulation.getWeather();
     }
 
+    /** Returns the current state of the simulation.
+     * @return A SimulationState object representing the current state of the simulation, including date/time, weather, temperature, and luminosity.
+     */
     public SimulationState getCurrentState() {
         return SimulationState.from(this.simulation);
     }
@@ -524,6 +700,7 @@ public class DomusControl implements Serializable {
      *
      * @param fileName The file to read.
      * @return The reconstructed DomusControl model.
+     * @throws FileNotFoundException If the file does not exist.
      * @throws IOException If reading fails.
      * @throws ClassNotFoundException If deserialization fails.
      */
@@ -567,9 +744,40 @@ public class DomusControl implements Serializable {
     }
 
     /**
+     * Returns the top N houses sorted by a given criterion, which can be energy consumption, number of devices, etc.
+     * @param n The number of top houses to return.
+     * @param criterion A function that takes a House and returns a double representing the value of the criterion for that house (e.g., energy consumption, number of devices).
+     * @return A list of the top N houses sorted by the specified criterion, in descending order.
+     */
+    public List<House> getTopHousesByCriterion(int n, Function<House, Double> criterion) {
+        return this.houseManager.getAllHouses().stream()
+            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
+            .limit(n)
+            .map(House::clone)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns the top N devices sorted by a given criterion, which can be energy consumption, number of interactions, etc.
+     * @param n The number of top devices to return.
+     * @param criterion A function that takes a Device and returns a double representing the value of the criterion for that device (e.g., energy consumption, number of interactions).
+     * @return A list of the top N devices sorted by the specified criterion, in descending order.
+     * @throws UserNotFoundException If the email does not correspond to a registered user.
+     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
+     */
+    public List<Device> getTopDevicesByCriterion (int n, Function<Device, Double> criterion) throws UserNotFoundException, HouseNotFoundException {
+        return this.houseManager.getAllDevices().stream()
+            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
+            .limit(n)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Helper method to get all devices for a given user by aggregating devices from all their houses.
      * @param email The email of the user whose devices we want to retrieve.
      * @return A list of all devices associated with the user's houses.
+     * @throws UserNotFoundException If the email does not correspond to a registered user.
+     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
      */
     private List<Device> getAllDevicesForUser(String email) throws UserNotFoundException, HouseNotFoundException {
         List<Device> devices = new ArrayList<>();
@@ -579,6 +787,15 @@ public class DomusControl implements Serializable {
         return devices;
     }
 
+    /**
+     * Returns the top N devices sorted by a given criterion, which can be energy consumption, number of interactions, etc.
+     * @param email The email of the user whose devices we want to evaluate.
+     * @param n The number of top devices to return. 
+     * @param criterion A function that takes a Device and returns an integer representing the value of the criterion for that device (e.g., energy consumption, number of interactions). 
+     * @return  A list of the top N devices sorted by the specified criterion, in descending order.
+     * @throws UserNotFoundException If the email does not correspond to a registered user. 
+     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
+     */
     public List<Device> getTopDevicesByCriterionForUser(String email, int n, ToIntFunction<Device> criterion) throws UserNotFoundException, HouseNotFoundException {
         return getAllDevicesForUser(email).stream()
             .sorted(Comparator.comparingInt(criterion).reversed())
@@ -586,7 +803,13 @@ public class DomusControl implements Serializable {
             .collect(Collectors.toList());
     }
 
-
+    /**
+     * Helper method to get all divisions for a given user by aggregating divisions from all their houses.
+     * @param email The email of the user whose divisions we want to retrieve.
+     * @return A list of all divisions associated with the user's houses.
+     * @throws UserNotFoundException If the email does not correspond to a registered user.
+     * @throws HouseNotFoundException If a house ID stored in the user's roles does not
+     */
     private List<DivisionInfo> getAllDivisionsForUser(String email) throws UserNotFoundException, HouseNotFoundException {
         List<DivisionInfo> divisions = new ArrayList<>();
         for (House house : this.getHousesByUser(email)) {
@@ -597,6 +820,15 @@ public class DomusControl implements Serializable {
         return divisions;
     }
 
+    /**
+     * Returns the top N divisions sorted by a given criterion, which can be the number of devices, total energy consumption of devices in the division, etc.
+     * @param email The email of the user whose divisions we want to evaluate.
+     * @param n The number of top divisions to return.
+     * @param criterion A function that takes a DivisionInfo and returns an integer representing the value of the criterion for that division (e.g., number of devices, total consumption).
+     * @return A list of the top N divisions sorted by the specified criterion, in descending order.
+     * @throws UserNotFoundException If the email does not correspond to a registered user.
+     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
+     */
     public List<DivisionInfo> getTopDivisionsByCriterionForUser(String email, int n, Function<DivisionInfo, Integer> criterion) throws UserNotFoundException, HouseNotFoundException {
         return getAllDivisionsForUser(email).stream()
             .sorted(Comparator.comparingInt(criterion::apply).reversed())
@@ -620,28 +852,17 @@ public class DomusControl implements Serializable {
     }
 
     /**
-     * Returns the top 3 most consuming houses based on total energy consumption.
-     * @return A list of the top 3 most consuming houses.
+     * Returns the top 3 most consuming houses based on total energy consumption for a given user.
+     *
+     * @param email The email of the user to get houses for.
+     * @return A list of the top 3 most consuming houses for this user.
+     * @throws UserNotFoundException If the email does not correspond to a registered user.
+     * @throws HouseNotFoundException If a house ID associated with the user does not exist.
      */
     public List<House> getTop3MostConsumingHousesForUSer(String email) throws UserNotFoundException, HouseNotFoundException {
         return this.getHousesByUser(email).stream()
                 .sorted(Comparator.comparingDouble(House::calculateTotalConsumption).reversed())
                 .limit(3)
                 .collect(Collectors.toList());
-    }
-
-    public List<House> getTopHousesByCriterion(int n, Function<House, Double> criterion) {
-        return this.houseManager.getAllHouses().stream()
-            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
-            .limit(n)
-            .map(House::clone)
-            .collect(Collectors.toList());
-    }
-
-    public List<Device> getTopDevicesByCriterion (int n, Function<Device, Double> criterion) throws UserNotFoundException, HouseNotFoundException {
-        return this.houseManager.getAllDevices().stream()
-            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
-            .limit(n)
-            .collect(Collectors.toList());
     }
 }

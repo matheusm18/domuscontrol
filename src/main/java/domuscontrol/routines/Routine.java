@@ -11,10 +11,18 @@ import domuscontrol.houses.House;
 /**
  * Base class for all routine types in the system.
  * A routine has a name and an ordered list of actions that can be executed
- * in a house context.
+ * in a house context. Subclasses like Automation and Scenario extend this
+ * class to provide specific triggering behavior.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public abstract class Routine implements Serializable {
+    /** The name of this routine. */
     private String name;
+    /** The list of actions to execute when this routine is triggered. */
     private List<Action> actions;
 
     /**

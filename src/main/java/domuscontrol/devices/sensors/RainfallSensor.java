@@ -12,9 +12,17 @@ import java.util.Objects;
  * When weather is {@link WeatherCondition#STORMY}, the reading is a random value in [15, 50) mm/h.
  * Any other weather condition results in 0 mm/h.
  * The reading is only updated while the sensor is ON.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class RainfallSensor extends Sensor {
 
+    /**
+     * The last recorded rainfall intensity in mm/h.
+     */
     private double rainfall;
 
     /**

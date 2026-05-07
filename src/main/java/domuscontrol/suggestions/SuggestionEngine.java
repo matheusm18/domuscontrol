@@ -40,13 +40,17 @@ import java.util.Map;
  * Stateless engine that analyses the interaction history of a house and
  * produces a list of automation or schedule suggestions based on detected patterns.
  *
- * Two types of patterns are detected:
- * - Time-based (Schedule): the same device action occurs repeatedly around the same time of day.
- * - Sequence-based (Automation): one device interaction is consistently followed by another
- *   on a different device within a short time window.
- * - Environment-based (Automation): the same device action occurs repeatedly under the same
- *   weather condition, under consistently hot/cold outside temperatures, or under
- *   consistently dark/bright outside luminosity.
+ * Detects five types of patterns:
+ * - Time-based (Schedule): same device action at consistent times of day
+ * - Sequence-based (Automation): one device interaction followed by another within time window
+ * - Temperature-based: same action when temperature is consistently hot or cold
+ * - Luminosity-based: same action when luminosity is consistently bright or dark
+ * - Rainfall-based: same action when rainfall conditions occur
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class SuggestionEngine {
 
@@ -80,6 +84,15 @@ public class SuggestionEngine {
      * @param devices the device map used to validate compatibility
      * @param userId the user identifier to generate suggestions for
      * @return a list of automation suggestions ready to be presented to the user
+     */
+    /**
+     * Analyzes interaction logs and suggests automations based on detected patterns.
+     *
+     * @param logger The interaction logger containing user interaction history.
+     * @param devices A map of available devices indexed by their IDs.
+     * @param userId The ID of the user whose interactions should be analyzed.
+     * @return A list of suggested automations based on detected patterns.
+     * @throws ScheduleWithConditionDifferentFromTimeException If a schedule suggestion requires a TimeCondition.
      */
     public static List<AutomationSuggestion> suggest(InteractionLogger logger, Map<Integer, Device> devices, int userId) throws ScheduleWithConditionDifferentFromTimeException {
         List<AutomationSuggestion> suggestions = new ArrayList<>();
@@ -452,6 +465,15 @@ public class SuggestionEngine {
         return suggestions;
     }
 
+    /**
+     * Looks for interactions that consistently occur when luminosity is above or below certain thresholds.
+     * If found, builds an Automation suggestion: when luminosity is bright/dark, perform the action on the device.
+     * 
+     * @param interactions the full interaction list
+     * @param devices the device map used to validate compatibility
+     * @return a list of luminosity-based suggestions
+     * @throws ScheduleWithConditionDifferentFromTimeException if a generated schedule contains a non-time condition (should never happen in this method)
+     */
     private static List<AutomationSuggestion> detectLuminosityPatterns(
             List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
 
@@ -500,6 +522,14 @@ public class SuggestionEngine {
         return suggestions;
     }
 
+    /**
+     * Looks for interactions that consistently occur when rainfall conditions indicate rain.
+     * If found, builds an Automation suggestion: when rainfall sensor indicates rain, perform the action on the device.
+     * @param interactions the full interaction list
+     * @param devices the device map used to validate compatibility
+     * @return a list of rainfall-based suggestions
+     * @throws ScheduleWithConditionDifferentFromTimeException if a generated schedule contains a non-time condition (should never happen in this method)
+     */
     private static List<AutomationSuggestion> detectRainPatterns(
             List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
 
@@ -541,6 +571,13 @@ public class SuggestionEngine {
         return suggestions;
     }
 
+    /**
+     * Finds the ID of the first device that matches the given predicate, or returns null if none found.
+     * Used to locate the relevant sensor IDs for temperature, luminosity, and rainfall pattern detection.
+     * @param devices the device map to search through
+     * @param predicate the condition that the device must satisfy
+     * @return the ID of the first matching device, or null if no match is found
+     */
     private static Integer findSensorId(Map<Integer, Device> devices, Predicate<Device> predicate) {
         return devices.values().stream()
             .filter(predicate)
@@ -549,6 +586,12 @@ public class SuggestionEngine {
             .orElse(null);
     }
 
+    /**
+     * Categorizes a temperature value into "COLD", "HOT", or null if in between, based on predefined thresholds.
+     * Used for grouping interactions in temperature-based pattern detection.
+     * @param temperature the temperature value to categorize, may be null
+     * @return "COLD" if below COLD_TEMPERATURE_THRESHOLD, "HOT" if above HOT_TEMPERATURE_THRESHOLD, or null if in between or if input is null
+     */
     private static String temperatureBand(Double temperature) {
         if (temperature == null) return null;
         if (temperature < COLD_TEMPERATURE_THRESHOLD) return "COLD";
@@ -556,6 +599,12 @@ public class SuggestionEngine {
         return null;
     }
 
+    /**
+     * Categorizes a luminosity value into "DARK", "BRIGHT", or null if in between, based on predefined thresholds.
+     * Used for grouping interactions in luminosity-based pattern detection.
+     * @param luminosity the luminosity value to categorize, may be null
+     * @return "DARK" if below DARK_LUMINOSITY_THRESHOLD, "BRIGHT" if above BRIGHT_LUMINOSITY_THRESHOLD, or null if in between or if input is null
+     */
     private static String luminosityBand(Double luminosity) {
         if (luminosity == null) return null;
         if (luminosity < DARK_LUMINOSITY_THRESHOLD) return "DARK";
@@ -563,6 +612,11 @@ public class SuggestionEngine {
         return null;
     }
 
+    /**
+     * Formats a device's class name and brand/model into a human-readable label for suggestion descriptions.
+     * @param device the device to format
+     * @return a string label describing the device, including its type and brand/model
+     */
     private static String deviceLabel(Device device) {
         return device.getClass().getSimpleName() + " '" + device.getBrand() + " " + device.getModel() + "'";
     }

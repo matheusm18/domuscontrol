@@ -7,6 +7,12 @@ import domuscontrol.devices.types.ColorAdjustableDevice;
 
 /**
  * Represents a smart lamp device.
+ * Capable of adjusting brightness (0-100) and color temperature (2700K-4000K).
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class Lamp extends AdjustableDevice implements ColorAdjustableDevice {
 

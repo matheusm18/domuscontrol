@@ -11,6 +11,11 @@ package domuscontrol.houses;
  *
  * Instances are produced exclusively by DomusControl query methods and consumed
  * by the UI layer for display purposes only.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class DivisionInfo {
 

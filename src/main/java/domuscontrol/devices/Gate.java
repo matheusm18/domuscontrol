@@ -6,6 +6,14 @@ import domuscontrol.devices.types.OpenableDevice;
 
 /**
  * Represents a smart gate device in the home automation system.
+ * Provides openable position control with 0-100% opening level capability.
+ * Supports partial opening (0% = fully closed, 100% = fully open) and convenience methods
+ * for full open and close operations.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class Gate extends OpenableDevice {
 

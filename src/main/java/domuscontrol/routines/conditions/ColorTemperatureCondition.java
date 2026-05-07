@@ -10,11 +10,21 @@ import java.util.Objects;
 
 /**
  * Condition that compares the color temperature of a color-adjustable device with a trigger value.
+ * Evaluates whether a device's current color temperature in Kelvin satisfies a comparison
+ * with a trigger temperature using the specified operator.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class ColorTemperatureCondition implements Condition {
 
+    /** The identifier of the target color-adjustable device. */
     private int deviceId;
+    /** The color temperature threshold in Kelvin used for comparison. */
     private int triggerTemperature;
+    /** The comparison operator to apply when evaluating the condition. */
     private Operator operator;
 
     /**
@@ -108,7 +118,7 @@ public class ColorTemperatureCondition implements Condition {
      * Evaluates this condition against the current color temperature of the target device.
      *
      * @param house the house where the target device is stored
-     * @param simulation the current simulation state
+     * @param state the current simulation state
      * @return true if the current temperature satisfies the operator comparison; false otherwise.
      */
     @Override

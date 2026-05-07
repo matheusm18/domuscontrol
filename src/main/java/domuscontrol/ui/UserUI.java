@@ -19,23 +19,48 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * User interface class for user-related operations and dashboard display.
+ * Handles user interactions, dashboard navigation, and delegates house-related UI actions.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
+ */
 public class UserUI {
 
     private DomusControl model;
     private final Scanner sc;
     private final HouseUI houseUI;
 
+    /**
+     * Constructs the UserUI with the given model and scanner.
+     *
+     * @param model the DomusControl model
+     * @param sc the Scanner for user input
+     */
     public UserUI(DomusControl model, Scanner sc) {
         this.model = model;
         this.sc = sc;
         this.houseUI = new HouseUI(model, sc);
     }
 
+    /**
+     * Sets the DomusControl model for this UI and updates the house UI model.
+     *
+     * @param model the DomusControl model
+     */
     public void setModel(DomusControl model) {
         this.model = model;
         this.houseUI.setModel(model);
     }
 
+    /**
+     * Displays the user dashboard menu for the given user email.
+     *
+     * @param email the user's email
+     */
     public void show(String email) {
         Menu menu = new Menu("Dashboard", new String[]{
                 "My Houses",
@@ -139,6 +164,11 @@ public class UserUI {
         menu.run();
     }
 
+    /**
+     * Displays detailed information about a user.
+     *
+     * @param user The user whose details should be displayed.
+     */
     public void showUserDetails(User user) {
         if (user == null) {
             System.out.println("  No user to display.");

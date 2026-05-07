@@ -7,12 +7,30 @@ import domuscontrol.exceptions.UserNotFoundException;
 
 /**
  * User Manager class responsible for handling user-related operations such as registration, retrieval, and updates.
- * This class maintains two maps for efficient user management: one for users by ID and another for users by email.
+ * Maintains user collections for efficient management and lookup by ID and email.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class UserManager implements Serializable {
+
+    /**
+     * Maps user IDs to User objects for efficient retrieval by ID.
+     * The key is the user's unique ID, and the value is the corresponding User object.
+     */
     private final Map<Integer, User> usersById;
+
+    /**
+     * Maps user email addresses to User objects for efficient retrieval by email.
+     * The key is the user's email address (case-insensitive), and the value is the corresponding User object.
+     */
     private final Map<String, User> usersByEmail;
 
+    /**
+     * Constructs a new UserManager with empty user collections.
+     */
     public UserManager() {
         this.usersById = new HashMap<>();
         this.usersByEmail = new HashMap<>();

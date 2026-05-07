@@ -14,12 +14,21 @@ import domuscontrol.routines.conditions.TimeBasedCondition;
 /**
  * Represents a routine that can be triggered automatically.
  * An automation has conditions in addition to the actions inherited from Routine.
- * Schedules are represented as automations whose conditions are time-based.
+ * When all conditions are met and were not previously met, the automation's actions
+ * are executed. Schedules are represented as automations whose conditions are time-based.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class Automation extends Routine {
     
+    /** The type of the automation. */
     private AutomationType type;
+    /** The conditions required to trigger the actions. */
     private List<Condition> conditions;
+    /** Indicates whether the conditions were met in a previous simulation step. */
     private boolean wasConditionMetPreviously;
 
     /**
@@ -170,7 +179,7 @@ public class Automation extends Routine {
      * This prevents actions from firing repeatedly while the conditions remain true.
      *
      * @param house the house where device conditions are evaluated and actions are executed
-     * @param simulation the current simulation state
+     * @param state the current simulation state
      * @return true if the automation was triggered, false otherwise
      */
     public boolean checkAndTrigger(House house, SimulationState state) {

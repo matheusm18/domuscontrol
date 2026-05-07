@@ -19,10 +19,18 @@ import domuscontrol.exceptions.AutomationDoesntExistException;
 /**
  * Manages the routines defined for a house.
  * Scenarios are stored per user, while automations and schedules are stored by name.
+ * Provides the lifecycle management for all routine objects in the system.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class RoutineManager implements Serializable {
 
+    /** The scenarios stored by user. */
     private Map<Integer, Map<String, Scenario>> scenariosByUser;
+    /** The automations and schedules stored by name. */
     private Map<String, Automation> automations;
 
     /**
@@ -164,7 +172,7 @@ public class RoutineManager implements Serializable {
      * @param userId the ID of the user
      * @param scenarioName the name of the scenario
      * @return a copied scenario
-     * @throws UserDoesntHaveScenarios      if the user has no scenarios.
+     * @throws UserDoesntHaveScenarios if the user has no scenarios.
      * @throws ScenarioDoesntExistException if no scenario with that name is found for the user.
      */
     public Scenario getScenarioByName(int userId, String scenarioName) throws UserDoesntHaveScenarios, ScenarioDoesntExistException {
@@ -317,7 +325,7 @@ public class RoutineManager implements Serializable {
      * triggering any whose conditions are met.
      *
      * @param house the house context to evaluate
-     * @param simulation the current simulation state
+     * @param state the current simulation state
      * @return a list of automation names that were triggered this tick
      */
     public List<String> tick(House house, SimulationState state) {

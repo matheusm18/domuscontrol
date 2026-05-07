@@ -8,9 +8,17 @@ import java.util.Objects;
 /**
  * A sensor device that reads the outside air temperature from the simulation.
  * The stored temperature is only updated while the sensor is ON.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class TemperatureSensor extends Sensor {
 
+    /**
+     * The last recorded temperature reading in degrees Celsius.
+     */
     private double temperature;
 
     /**

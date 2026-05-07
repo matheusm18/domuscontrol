@@ -4,10 +4,21 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Represents a generic device of the DomusControl application.
+ * Represents a generic device in the DomusControl home automation system.
+ * This is the base class for all smart devices, providing core functionality for
+ * device management, status tracking, and energy consumption monitoring.
+ * Devices can be either in ON/OFF or OPEN/CLOSED states depending on their type.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public abstract class Device implements Serializable{
 
+    /**
+     * Counter for automatically assigning unique device IDs.
+     */
     private static int nextId = 1;
 
     /** The unique identifier for the device. */
@@ -36,7 +47,7 @@ public abstract class Device implements Serializable{
      * Sets the next id to be assigned to a device. 
      * This method is used when loading devices from a file to ensure that the next id is greater than the last id of the loaded devices.
      * 
-     * @param lastId
+     * @param lastId The last id of the loaded devices.
      */
     public static void setNextId(int lastId) {
         nextId = lastId + 1;
@@ -268,6 +279,8 @@ public abstract class Device implements Serializable{
     /**
      * Creates a string representation of this device. 
      * The string representation includes the class name, id, brand, model, consumption rate, status, total minutes on, total activations and total energy consumption of the device.
+     * 
+     * @return A string representation of this device.
      */
     @Override
     public String toString() {

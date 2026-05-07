@@ -5,11 +5,20 @@ import java.util.Objects;
 import domuscontrol.devices.types.AdjustableDevice;
 
 /**
- * Represents a speaker device.
+ * Represents a smart speaker device with adjustable volume and selectable audio sources.
+ * Supports variable volume control from 0-100% and dynamic source selection (Spotify, Radio, Bluetooth, etc).
+ * The device maintains synchronization between volume level and ON/OFF state.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class Speaker extends AdjustableDevice {
 
-    /** The current source of the speaker. */
+    /**
+     * The current audio source of the speaker (e.g., "Spotify", "Radio", "Bluetooth").
+     */
     private String source;
 
     /** Creates a new speaker with default values. */

@@ -8,6 +8,11 @@ import domuscontrol.devices.types.SwitchableDevice;
  * Represents a smart relay device.
  * A relay is the simplest type of connected device, functioning as a basic
  * switch that allows or prevents electrical current from passing (on/off state).
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class Relay extends SwitchableDevice {
     

@@ -9,10 +9,18 @@ import domuscontrol.routines.Condition;
 
 /**
  * Time-based condition that checks whether the current simulation time is inside a time window.
- * Windows may also cross midnight.
+ * Windows may also cross midnight. When the start time is after the end time, the window is
+ * considered to wrap around midnight (e.g., 22:00 to 04:00).
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class TimeWindowCondition implements TimeBasedCondition {
+    /** The start time of the time window. */
     private LocalTime startTime;
+    /** The end time of the time window. */
     private LocalTime endTime;
 
     /**
@@ -84,7 +92,7 @@ public class TimeWindowCondition implements TimeBasedCondition {
      * Evaluates whether the current simulation time is inside the configured window.
      *
      * @param house the house context
-     * @param simulation the current simulation state
+     * @param state the current simulation state
      * @return true if current time is within the window (inclusive); false otherwise.
      */
     @Override

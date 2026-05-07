@@ -7,6 +7,12 @@ import domuscontrol.houses.House;
 /**
  * Represents an operation that can be executed as part of a routine.
  * Actions are the executable units used by scenarios, automations, and schedules.
+ * Each action targets a specific device and performs a defined operation.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public interface Action extends Serializable {
 

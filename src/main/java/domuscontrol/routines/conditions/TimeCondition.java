@@ -10,8 +10,16 @@ import domuscontrol.routines.Condition;
 
 /**
  * Time-based condition that checks whether a specific time was reached since the last tick.
+ * This condition evaluates to true when the simulation time crosses or reaches the trigger time
+ * between the previous simulation state and the current one.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class TimeCondition implements TimeBasedCondition {
+    /** The specific time of day that triggers this condition. */
     private LocalTime triggerTime;
 
     /**
@@ -61,7 +69,7 @@ public class TimeCondition implements TimeBasedCondition {
      * Evaluates whether the trigger time was reached between the previous and current simulation times.
      *
      * @param house the house context
-     * @param simulation the current simulation state
+     * @param state the current simulation state
      * @return true if the trigger time was reached or crossed since the last tick; false otherwise.
      */
     @Override

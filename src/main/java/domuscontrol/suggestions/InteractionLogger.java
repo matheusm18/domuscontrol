@@ -9,6 +9,12 @@ import java.util.Objects;
 /**
  * Stores the history of all manual device interactions performed in a house.
  * The logger is stored inside a house and is serialized with it.
+ * Used by the SuggestionEngine to detect patterns and generate automation recommendations.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class InteractionLogger implements Serializable {
 
@@ -72,6 +78,7 @@ public class InteractionLogger implements Serializable {
     /**
      * Records a new interaction.
      *
+     * @param interaction the interaction to record
      */
     public void log(DeviceInteraction interaction) {
         if (interaction != null) {

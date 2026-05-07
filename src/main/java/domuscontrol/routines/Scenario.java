@@ -6,7 +6,13 @@ import domuscontrol.houses.House;
 
 /**
  * Represents a routine that is triggered manually by a user.
- * A scenario has actions but no conditions.
+ * A scenario has actions but no conditions, allowing users to execute
+ * a predefined sequence of actions on demand.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class Scenario extends Routine {
 

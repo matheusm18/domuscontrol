@@ -9,8 +9,20 @@ import java.util.Objects;
 
 /**
  * Action that turns on a switchable device.
+ * 
+ * This action turns on any device implementing the SwitchableDevice interface.
+ * If the device is not found in the house, the action fails silently.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class TurnOnAction implements Action {
+    /**
+     * The unique identifier of the target device to turn on.
+     * Value of -1 indicates no target device is set.
+     */
     private int deviceId;
 
     /**

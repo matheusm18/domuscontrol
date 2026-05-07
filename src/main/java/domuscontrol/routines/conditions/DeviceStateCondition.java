@@ -9,9 +9,18 @@ import domuscontrol.routines.Condition;
 
 /**
  * Condition that checks whether a switchable device is on or off.
+ * Evaluates to true when the device's current state matches the expected triggerWhenOn state.
+ * The condition is false if the target device is not found.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class DeviceStateCondition implements Condition {
+    /** The identifier of the target switchable device. */
     private int deviceId;
+    /** Whether this condition should trigger when the device is on (true) or off (false). */
     private boolean triggerWhenOn;
 
     /**
@@ -83,7 +92,7 @@ public class DeviceStateCondition implements Condition {
      * Evaluates this condition against the current state of the target device.
      *
      * @param house the house where the target device is stored
-     * @param simulation the current simulation state
+     * @param state the current simulation state
      * @return true if the current state matches the triggerWhenOn requirement; false otherwise.
      */
     @Override

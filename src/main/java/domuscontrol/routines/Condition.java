@@ -7,6 +7,12 @@ import java.io.Serializable;
 /**
  * Represents a logical requirement that must be satisfied for a routine to trigger.
  * Conditions can depend on device state, simulation time, or environmental values.
+ * Implementations determine the evaluation logic for various condition types.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public interface Condition extends Serializable {
 

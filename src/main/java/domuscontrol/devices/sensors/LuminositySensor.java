@@ -7,10 +7,19 @@ import java.util.Objects;
 
 /**
  * A sensor device that reads the outside luminosity from the simulation.
+ * Measures ambient light intensity in lux units.
  * The stored luminosity is only updated while the sensor is ON.
+ * 
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class LuminositySensor extends Sensor {
 
+    /**
+     * The last recorded luminosity reading in lux.
+     */
     private double luminosity;
 
     /**

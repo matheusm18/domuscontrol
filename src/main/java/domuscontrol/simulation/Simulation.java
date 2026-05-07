@@ -5,19 +5,42 @@ import java.time.LocalDateTime;
 import java.time.Duration;
 import java.util.Objects;
 
+
 /**
  * Represents the state of the simulation environment, including the current date/time,
- * temperature, and weather condition. Also handles time advancement and environmental updates.
+ * temperature, and weather condition. Handles time advancement and environmental updates.
+ *
+ * @author Afonso Barros (a112178)
+ * @author Martim Monteiro (a111013)
+ * @author Matheus Azevedo (a111430)
+ * @version 1.0
  */
 public class Simulation implements Serializable {
 
+
+    /**
+     * The current date and time of the simulation.
+     */
     private LocalDateTime currentDateTime;
+
+    /**
+     * The previous date and time before the last simulation tick.
+     */
     private LocalDateTime previousDateTime;
 
+    /**
+     * The current temperature in Celsius.
+     */
     private double temperature;
+
+    /**
+     * The current weather condition in the simulation.
+     */
     private WeatherCondition weather;
 
-    /** Creates a new simulation starting at the current date/time, 20°C, and sunny weather. */
+    /**
+     * Creates a new simulation starting at the current date/time, 20°C, and sunny weather.
+     */
     public Simulation() {
         this.currentDateTime = LocalDateTime.now();
         this.previousDateTime = this.currentDateTime;
@@ -27,6 +50,7 @@ public class Simulation implements Serializable {
 
     /**
      * Creates a simulation with the specified date/time, temperature, and weather.
+     *
      * @param currentDateTime The starting date and time.
      * @param temperature The starting temperature in Celsius.
      * @param weather The starting weather condition.
@@ -40,6 +64,7 @@ public class Simulation implements Serializable {
 
     /**
      * Copy constructor.
+     *
      * @param simulation The simulation to copy.
      */
     public Simulation(Simulation simulation) {
@@ -51,6 +76,7 @@ public class Simulation implements Serializable {
 
     /**
      * Returns the current simulation date and time.
+     *
      * @return The current date/time.
      */
     public LocalDateTime getCurrentDateTime() {
@@ -59,6 +85,7 @@ public class Simulation implements Serializable {
 
     /**
      * Sets the current simulation date and time.
+     *
      * @param currentDateTime The new current date/time.
      */
     public void setCurrentDateTime(LocalDateTime currentDateTime) {
@@ -67,6 +94,7 @@ public class Simulation implements Serializable {
 
     /**
      * Returns the simulation date and time at the start of the last tick.
+     *
      * @return The previous date/time.
      */
     public LocalDateTime getPreviousDateTime() {
@@ -75,6 +103,7 @@ public class Simulation implements Serializable {
 
     /**
      * Sets the previous simulation date and time.
+     *
      * @param previousDateTime The previous date/time to set.
      */
     public void setPreviousDateTime(LocalDateTime previousDateTime) {
@@ -83,6 +112,7 @@ public class Simulation implements Serializable {
 
     /**
      * Returns the number of minutes elapsed since the last tick.
+     *
      * @return Minutes elapsed between the previous and current date/time.
      */
     public long getTimeElapsed() {
@@ -91,6 +121,7 @@ public class Simulation implements Serializable {
 
     /**
      * Returns the current temperature in Celsius.
+     *
      * @return The temperature.
      */
     public double getTemperature() {
@@ -99,6 +130,7 @@ public class Simulation implements Serializable {
 
     /**
      * Sets the temperature.
+     *
      * @param temperature The temperature in Celsius.
      */
     public void setTemperature(double temperature) {
@@ -107,6 +139,7 @@ public class Simulation implements Serializable {
 
     /**
      * Returns the ambient luminosity in lux, calculated from the time of day and weather.
+     *
      * @return The luminosity value.
      */
     public double getLuminosity() {
@@ -117,6 +150,7 @@ public class Simulation implements Serializable {
 
     /**
      * Returns the current weather condition.
+     *
      * @return The weather condition.
      */
     public WeatherCondition getWeather() {
@@ -125,6 +159,7 @@ public class Simulation implements Serializable {
 
     /**
      * Changes the current weather condition.
+     *
      * @param weather The new weather condition.
      */
     public void changeWeather(WeatherCondition weather) {
@@ -133,6 +168,7 @@ public class Simulation implements Serializable {
 
     /**
      * Returns whether it is currently raining or stormy.
+     *
      * @return true if the weather is RAINING or STORMY.
      */
     public boolean isRaining() {
@@ -141,6 +177,7 @@ public class Simulation implements Serializable {
 
     /**
      * Returns whether the weather is WINTER_IS_COMING.
+     *
      * @return true if winter is coming.
      */
     public boolean isWinterComing() {
@@ -150,6 +187,7 @@ public class Simulation implements Serializable {
     /**
      * Advances the simulation by the given number of minutes (ticks), updating temperature
      * and weather stochastically each tick.
+     *
      * @param ticks The number of minutes to simulate.
      */
     public void advanceSimulation(int ticks) {
@@ -234,6 +272,12 @@ public class Simulation implements Serializable {
         }
     }
 
+    /**
+     * Checks if this simulation is equal to another object.
+     *
+     * @param o The object to compare with.
+     * @return true if all fields are equal, false otherwise.
+     */
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;
@@ -247,11 +291,21 @@ public class Simulation implements Serializable {
                this.weather == s.getWeather();
     }
 
+    /**
+     * Returns the hash code for this simulation.
+     *
+     * @return the hash code value.
+     */
     @Override
     public int hashCode() {
         return Objects.hash(this.currentDateTime, this.previousDateTime, this.temperature, this.weather);
     }
 
+    /**
+     * Creates a deep copy of this simulation.
+     *
+     * @return a new Simulation object with the same state.
+     */
     @Override
     public Simulation clone() {
         return new Simulation(this);
