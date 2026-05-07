@@ -590,11 +590,8 @@ public class DomusControl implements Serializable {
     private List<DivisionInfo> getAllDivisionsForUser(String email) throws UserNotFoundException, HouseNotFoundException {
         List<DivisionInfo> divisions = new ArrayList<>();
         for (House house : this.getHousesByUser(email)) {
-            house.getDivisions().forEach((name, devices) -> 
-                divisions.add(new DivisionInfo(house, name, 
-                            devices.stream().
-                                    map(d -> String.valueOf(d.getId())).
-                                    collect(Collectors.toList())))
+            house.getDivisions().forEach((name, devices) ->
+                divisions.add(new DivisionInfo(house.getName(), name, devices.size()))
             );
         }
         return divisions;
@@ -603,6 +600,21 @@ public class DomusControl implements Serializable {
     public List<DivisionInfo> getTopDivisionsByCriterionForUser(String email, int n, Function<DivisionInfo, Integer> criterion) throws UserNotFoundException, HouseNotFoundException {
         return getAllDivisionsForUser(email).stream()
             .sorted(Comparator.comparingInt(criterion::apply).reversed())
+            .limit(n)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns the top N divisions across all houses in the system, ranked by device count.
+     *
+     * @param n The number of top divisions to return.
+     * @return A list of DivisionInfo DTOs in descending order of device count.
+     */
+    public List<DivisionInfo> getTopDivisionsByDeviceCount(int n) {
+        return this.houseManager.getAllHouses().stream()
+            .flatMap(h -> h.getDivisions().entrySet().stream()
+                .map(e -> new DivisionInfo(h.getName(), e.getKey(), e.getValue().size())))
+            .sorted(Comparator.comparingInt(DivisionInfo::getDeviceCount).reversed())
             .limit(n)
             .collect(Collectors.toList());
     }

@@ -1,50 +1,60 @@
 package domuscontrol.houses;
 
-import java.util.ArrayList;
-import java.util.List;
-
-//Auxiliar class for transporting division info.
+/**
+ * Data Transfer Object returned by division-related queries on the model facade.
+ *
+ * Because divisions are represented internally as String keys inside a House,
+ * there is no standalone Division object to return. When a query needs to surface
+ * information about a division to the view - particularly in cross-house statistics -
+ * it must bundle the division name together with its house context and device count.
+ * This class provides that grouping in an immutable, behaviour-free container.
+ *
+ * Instances are produced exclusively by DomusControl query methods and consumed
+ * by the UI layer for display purposes only.
+ */
 public class DivisionInfo {
-    // The house the division belongs to.
-    private final House house;
-    // The name of the division.
+
+    private final String houseName;
     private final String divisionName;
-    // The list of devices in the division.
-    private final List<String> devices;
+    private final int deviceCount;
 
     /**
-     * Constructor for DivisionInfo.
-     * @param house The house the division belongs to.
-     * @param divisionName The name of the division.
-     * @param devices The list of devices in the division.
+     * Constructs a DivisionInfo with the given house name, division name and device count.
+     *
+     * @param houseName     The name of the house the division belongs to.
+     * @param divisionName  The name of the division.
+     * @param deviceCount   The number of devices in the division.
      */
-    public DivisionInfo(House house, String divisionName, List<String> devices) {
-        this.house = house != null ? house.clone() : null;
+    public DivisionInfo(String houseName, String divisionName, int deviceCount) {
+        this.houseName = houseName;
         this.divisionName = divisionName;
-        this.devices = devices != null ? new ArrayList<>(devices) : new ArrayList<>();
+        this.deviceCount = deviceCount;
     }
 
     /**
-     * Gets the house the division belongs to.
-     * @return The house the division belongs to.
+     * Returns the name of the house this division belongs to.
+     *
+     * @return The house name.
      */
-    public House getHouse() {
-        return house != null ? house.clone() : null;
+    public String getHouseName() {
+        return houseName;
     }
 
     /**
-     * Gets the name of the division.
-     * @return The name of the division.
+     * Returns the name of the division.
+     *
+     * @return The division name.
      */
     public String getDivisionName() {
         return divisionName;
     }
 
     /**
-     * Gets the list of devices in the division.
-     * @return The list of devices in the division.
+     * Returns the number of devices in this division.
+     *
+     * @return The device count.
      */
-    public List<String> getDevices() {
-        return new ArrayList<>(devices);
+    public int getDeviceCount() {
+        return deviceCount;
     }
 }

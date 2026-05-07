@@ -138,7 +138,7 @@ public class DomusControlUI {
                 .sorted(Comparator.comparingInt(Device::getTotalMinutesOn).reversed())
                 .limit(3).toList();
             if (top.isEmpty()) { System.out.println("  No devices in this house."); return; }
-            Ansi.listTitle("Top Devices By Active Time — " + house.getName());
+            Ansi.listTitle("Top Devices By Active Time - " + house.getName());
             int[] w = deviceColWidths(top);
             for (int i = 0; i < top.size(); i++) {
                 Device d = top.get(i);
@@ -155,7 +155,7 @@ public class DomusControlUI {
                 .sorted(Comparator.comparingInt(Device::getTotalActivations).reversed())
                 .limit(3).toList();
             if (top.isEmpty()) { System.out.println("  No devices in this house."); return; }
-            Ansi.listTitle("Top Devices By Activations — " + house.getName());
+            Ansi.listTitle("Top Devices By Activations - " + house.getName());
             int[] w = deviceColWidths(top);
             for (int i = 0; i < top.size(); i++) {
                 Device d = top.get(i);
@@ -166,19 +166,13 @@ public class DomusControlUI {
         });
 
         menu.setHandler(4, () -> {
-            List<House> houses = model.getAllHouses();
-            List<DivisionInfo> top = houses.stream()
-                .flatMap(h -> h.getDivisions().entrySet().stream()
-                    .map(e -> new DivisionInfo(h, e.getKey(),
-                        e.getValue().stream().map(d -> String.valueOf(d.getId())).toList())))
-                .sorted(Comparator.comparingInt((DivisionInfo di) -> di.getDevices().size()).reversed())
-                .limit(3).toList();
+            List<DivisionInfo> top = model.getTopDivisionsByDeviceCount(3);
             if (top.isEmpty()) { System.out.println("  No divisions in the system."); return; }
             Ansi.listTitle("Top Divisions By Device Count");
             for (int i = 0; i < top.size(); i++) {
                 DivisionInfo di = top.get(i);
                 Ansi.listRow(String.format("%d  %-18s %-18s %d device(s)",
-                    i + 1, di.getDivisionName(), di.getHouse().getName(), di.getDevices().size()));
+                    i + 1, di.getDivisionName(), di.getHouseName(), di.getDeviceCount()));
             }
             Ansi.listSeparator();
         });

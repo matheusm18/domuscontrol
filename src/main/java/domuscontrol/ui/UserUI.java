@@ -204,7 +204,7 @@ public class UserUI {
                 System.out.println("  No devices in this house.");
                 return;
             }
-            Ansi.listTitle("Top Devices By Active Time — " + house.getName());
+            Ansi.listTitle("Top Devices By Active Time - " + house.getName());
             int[] w2 = deviceColWidths(topDevices);
             for (int i = 0; i < topDevices.size(); i++) {
                 Device d = topDevices.get(i);
@@ -224,7 +224,7 @@ public class UserUI {
                 System.out.println("  No devices in this house.");
                 return;
             }
-            Ansi.listTitle("Top Devices By Activations — " + house.getName());
+            Ansi.listTitle("Top Devices By Activations - " + house.getName());
             int[] w3 = deviceColWidths(topDevices);
             for (int i = 0; i < topDevices.size(); i++) {
                 Device d = topDevices.get(i);
@@ -235,7 +235,7 @@ public class UserUI {
         });
         menu.setHandler(4, () -> {
             try {
-                List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterionForUser(email, 3, div -> div.getHouse().getDivisions().get(div.getDivisionName()).size());
+                List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterionForUser(email, 3, DivisionInfo::getDeviceCount);
                 if (topDivisions.isEmpty()) {
                     System.out.println("  No divisions found for your houses.");
                 } else {
@@ -243,7 +243,7 @@ public class UserUI {
                     for (int i = 0; i < topDivisions.size(); i++) {
                         DivisionInfo div = topDivisions.get(i);
                         Ansi.listRow(String.format("%d  %-18s %-12s %d device(s)",
-                            i + 1, div.getDivisionName(), div.getHouse().getName(), div.getDevices().size()));
+                            i + 1, div.getDivisionName(), div.getHouseName(), div.getDeviceCount()));
                     }
                     Ansi.listSeparator();
                 }

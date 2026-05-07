@@ -160,7 +160,7 @@ public class SuggestionEngine {
     /**
      * Looks for pairs of interactions (A then B on a different device) that consistently
      * occur within SEQUENCE_WINDOW_MINUTES of each other at least MIN_OCCURRENCES times.
-     * Any interaction type can be the trigger — not just switchable ones.
+     * Any interaction type can be the trigger - not just switchable ones.
      * If found, builds an Automation suggestion: when device A is in the state it was
      * set to, perform the action on device B.
      *
