@@ -350,8 +350,9 @@ public class DomusControl implements Serializable {
      * @param houseId The ID of the house to which the division will be added.
      * @param divisionName The name of the new division.
      * @throws HouseNotFoundException If no house with the given ID exists.
+     * @throws NameAlreadyExistsException If a division with the same name already exists in the house.
      */
-    public void addDivision(int houseId, String divisionName) throws HouseNotFoundException {
+    public void addDivision(int houseId, String divisionName) throws HouseNotFoundException, NameAlreadyExistsException {
         this.houseManager.addDivision(houseId, divisionName);
     }
 

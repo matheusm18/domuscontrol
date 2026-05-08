@@ -94,8 +94,9 @@ public class HouseManager implements Serializable {
      * @param houseId The ID of the house to which the division will be added.
      * @param divisionName The name of the new division.
      * @throws HouseNotFoundException if no house with the given ID exists.
+     * @throws NameAlreadyExistsException if a division with the same name already exists in the house.
      */
-    public void addDivision(int houseId, String divisionName) throws HouseNotFoundException {
+    public void addDivision(int houseId, String divisionName) throws HouseNotFoundException, NameAlreadyExistsException {
         House h = getHouseInternal(houseId);
         h.addDivision(divisionName);
     }

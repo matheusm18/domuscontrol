@@ -275,8 +275,12 @@ public class House implements Serializable {
      * Adds an empty division to the house.
      *
      * @param name The name of the division.
+     * @throws NameAlreadyExistsException if a division with the same name already exists.
      */
-    public void addDivision(String name) {
+    public void addDivision(String name) throws NameAlreadyExistsException {
+        if (this.divisions.containsKey(name)) {
+            throw new NameAlreadyExistsException(name);
+        }
         this.divisions.put(name, new ArrayList<>());
     }
 

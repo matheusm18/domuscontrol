@@ -72,7 +72,7 @@ public class ScenarioTest {
 
     private House houseWithDivision() {
         House house = new House();
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
         return house;
     }
 }

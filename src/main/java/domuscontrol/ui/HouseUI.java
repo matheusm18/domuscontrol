@@ -194,6 +194,8 @@ public class HouseUI {
             System.out.println("  Division '" + name + "' added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
+        } catch (NameAlreadyExistsException e) {
+            System.out.println("  Error: division name already exists.");
         }
     }
 

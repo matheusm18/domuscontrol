@@ -126,16 +126,13 @@ public class ActionsUI {
             int choice = readInt();
             if (choice == 0) return;
 
-            Automation selected = automations.stream()
-                    .skip(choice - 1)
-                    .findFirst()
-                    .orElse(null);
-
-            if (selected != null) {
-                showAutomationInfo(selected, devices);
-            } else {
+            if (choice < 1 || choice > automations.size()) {
                 System.out.println("  Invalid Automation Number.");
+                return;
             }
+
+            Automation selected = automations.get(choice - 1);
+            showAutomationInfo(selected, devices);
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         }
@@ -300,16 +297,13 @@ public class ActionsUI {
             int choice = readInt();
             if (choice == 0) return;
 
-            Automation selected = schedules.stream()
-                    .skip(choice - 1)
-                    .findFirst()
-                    .orElse(null);
-
-            if (selected != null) {
-                showAutomationInfo(selected, devices);
-            } else {
+            if (choice < 1 || choice > schedules.size()) {
                 System.out.println("  Invalid Schedule Number.");
+                return;
             }
+
+            Automation selected = schedules.get(choice - 1);
+            showAutomationInfo(selected, devices);
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         }
@@ -528,16 +522,13 @@ public class ActionsUI {
             int choice = readInt();
             if (choice == 0) return;
 
-            Scenario selected = scenarios.stream()
-                    .skip(choice - 1)
-                    .findFirst()
-                    .orElse(null);
-
-            if (selected != null) {
-                showScenarioInfo(selected, devices);
-            } else {
+            if (choice < 1 || choice > scenarios.size()) {
                 System.out.println("  Invalid Scenario Number.");
+                return;
             }
+
+            Scenario selected = scenarios.get(choice - 1);
+            showScenarioInfo(selected, devices);
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (UserNotFoundException e) {
@@ -566,15 +557,14 @@ public class ActionsUI {
             int choice = readInt();
             if (choice == 0) return;
 
-            Scenario selected = scenarios.stream()
-                    .skip(choice - 1)
-                    .findFirst()
-                    .orElse(null);
-
-            if (selected != null) {
-                model.executeScenario(houseId, user.getId(), selected.getName());
-                System.out.println("  Scenario '" + selected.getName() + "' executed.");
+            if (choice < 1 || choice > scenarios.size()) {
+                System.out.println("  Invalid Scenario Number.");
+                return;
             }
+
+            Scenario selected = scenarios.get(choice - 1);
+            model.executeScenario(houseId, user.getId(), selected.getName());
+            System.out.println("  Scenario '" + selected.getName() + "' executed.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (UserNotFoundException e) {

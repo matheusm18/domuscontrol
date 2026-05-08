@@ -48,7 +48,7 @@ public class HouseTest {
     void addDivisionCreatesEmptyDivision() {
         House house = new House();
 
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
 
         assertEquals(1, house.divisionsNumber());
         assertTrue(house.getDivisions().containsKey("Kitchen"));
@@ -56,10 +56,17 @@ public class HouseTest {
     }
 
     @Test
+    void addDivisionThrowsOnDuplicateName() {
+        House house = new House();
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
+        assertThrows(NameAlreadyExistsException.class, () -> house.addDivision("Kitchen"));
+    }
+
+    @Test
     void deleteDivisionRemovesDivisionAndItsDevices() throws Exception {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 3.0);
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
         house.addDeviceToDivision(plug, "Kitchen");
 
         house.deleteDivision("Kitchen");
@@ -83,7 +90,7 @@ public class HouseTest {
     void addDeviceToDivisionStoresDevice() throws Exception {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 3.0);
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
 
         house.addDeviceToDivision(plug, "Kitchen");
 
@@ -96,7 +103,7 @@ public class HouseTest {
     void addDeviceToDivisionThrowsOnDuplicate() throws Exception {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 3.0);
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
 
         house.addDeviceToDivision(plug, "Kitchen");
 
@@ -118,7 +125,7 @@ public class HouseTest {
     void getDeviceReturnsClone() throws Exception {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 3.0);
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
         house.addDeviceToDivision(plug, "Kitchen");
 
         Plug copy = (Plug) house.getDevice(plug.getId());
@@ -132,7 +139,7 @@ public class HouseTest {
     void interactWithDeviceMutatesStoredDevice() throws Exception {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 60.0);
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
         house.addDeviceToDivision(plug, "Kitchen");
 
         house.interactWithDevice(plug.getId(), device -> {
@@ -151,7 +158,7 @@ public class HouseTest {
     void readDeviceReturnsComputedValueFromStoredDevice() throws Exception {
         House house = new House();
         Lamp lamp = new Lamp("Philips", "Hue", 9.0, 40, 3000);
-        house.addDivision("Living Room");
+        assertDoesNotThrow(() -> house.addDivision("Living Room"));
         house.addDeviceToDivision(lamp, "Living Room");
 
         int brightness = house.readDevice(lamp.getId(), device -> ((Lamp) device).getBrightness());
@@ -163,8 +170,8 @@ public class HouseTest {
     void removeDeviceDeletesItFromAllDivisions() throws Exception {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 3.0);
-        house.addDivision("Kitchen");
-        house.addDivision("Office");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
+        assertDoesNotThrow(() -> house.addDivision("Office"));
         house.addDeviceToDivision(plug, "Kitchen");
         house.addDeviceToDivision(plug, "Office");
 
@@ -179,7 +186,7 @@ public class HouseTest {
     void removeDeviceFromDivisionKeepsDeviceRegisteredGlobally() throws Exception {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 3.0);
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
         house.addDeviceToDivision(plug, "Kitchen");
 
         house.removeDeviceFromDivision(plug.getId(), "Kitchen");
@@ -193,7 +200,7 @@ public class HouseTest {
     void getDevicesAndDivisionsReturnCopies() throws Exception {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 3.0);
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
         house.addDeviceToDivision(plug, "Kitchen");
 
         Map<Integer, Device> devices = house.getDevices();
@@ -210,7 +217,7 @@ public class HouseTest {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 60.0);
         Lamp lamp = new Lamp("Philips", "Hue", 120.0, 50, 3000);
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
         house.addDeviceToDivision(plug, "Kitchen");
         house.addDeviceToDivision(lamp, "Kitchen");
 
@@ -230,8 +237,8 @@ public class HouseTest {
         Plug second = new Plug("B", "2", 1.0);
         Plug third = new Plug("C", "3", 1.0);
         Plug fourth = new Plug("D", "4", 1.0);
-        house.addDivision("One");
-        house.addDivision("Two");
+        assertDoesNotThrow(() -> house.addDivision("One"));
+        assertDoesNotThrow(() -> house.addDivision("Two"));
         house.addDeviceToDivision(first, "One");
         house.addDeviceToDivision(second, "One");
         house.addDeviceToDivision(third, "Two");
@@ -259,12 +266,12 @@ public class HouseTest {
     void cloneKeepsFieldsButIsIndependent() throws Exception {
         House house = new House();
         house.setName("Main Home");
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
         house.addDeviceToDivision(new Plug("TP-Link", "P100", 3.0), "Kitchen");
 
         House copy = house.clone();
         copy.setName("Copy");
-        copy.addDivision("Office");
+        assertDoesNotThrow(() -> copy.addDivision("Office"));
 
         assertNotSame(house, copy);
         assertEquals("Main Home", house.getName());
@@ -276,7 +283,7 @@ public class HouseTest {
     void toStringIncludesHouseAndDivisionInformation() {
         House house = new House();
         house.setName("Main Home");
-        house.addDivision("Kitchen");
+        assertDoesNotThrow(() -> house.addDivision("Kitchen"));
 
         String text = house.toString();
 
