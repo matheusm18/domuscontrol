@@ -177,7 +177,11 @@ public class LuminositySensorCondition implements Condition {
      */
     @Override
     public String toString() {
-        return "LuminositySensorCondition { Sensor #" + this.sensorId
-            + " luminosity " + this.operator + " " + this.triggerLuminosity + " lx }";
+        StringBuilder sb = new StringBuilder();
+        sb.append("LuminositySensorCondition { Sensor #").append(this.sensorId)
+          .append(" luminosity ").append(this.operator)
+          .append(" ").append(this.triggerLuminosity)
+          .append(" lx }");
+        return sb.toString();
     }
 }

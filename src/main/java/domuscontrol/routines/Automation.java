@@ -209,6 +209,20 @@ public class Automation extends Routine {
     }
 
     /**
+     * Removes all actions and conditions that target the given device.
+     * Used when a device is removed from the house.
+     *
+     * @param deviceId the device identifier to remove references to
+     */
+    @Override
+    public void removeDeviceById(int deviceId) {
+        super.removeDeviceById(deviceId);
+        if (this.conditions != null) {
+            this.conditions.removeIf(condition -> condition.hasDeviceId(deviceId));
+        }
+    }
+
+    /**
      * Compares this automation with another object for equality.
      *
      * @param o the object to compare with
@@ -261,19 +275,5 @@ public class Automation extends Routine {
           .append(", Actions: ").append(this.getActions() != null ? this.getActions().size() : 0)
           .append(" }");
         return sb.toString();
-    }
-
-    /**
-     * Removes all actions and conditions that target the given device.
-     * Used when a device is removed from the house.
-     *
-     * @param deviceId the device identifier to remove references to
-     */
-    @Override
-    public void removeDeviceById(int deviceId) {
-        super.removeDeviceById(deviceId);
-        if (this.conditions != null) {
-            this.conditions.removeIf(condition -> condition.hasDeviceId(deviceId));
-        }
     }
 }

@@ -2,6 +2,10 @@ package domuscontrol.ui;
 
 import domuscontrol.DomusControl;
 import domuscontrol.devices.Device;
+import domuscontrol.devices.sensors.LuminositySensor;
+import domuscontrol.devices.sensors.RainfallSensor;
+import domuscontrol.devices.sensors.Sensor;
+import domuscontrol.devices.sensors.TemperatureSensor;
 import domuscontrol.devices.types.AdjustableDevice;
 import domuscontrol.devices.types.ColorAdjustableDevice;
 import domuscontrol.devices.types.OpenableDevice;
@@ -12,10 +16,6 @@ import domuscontrol.menu.Menu;
 import domuscontrol.routines.*;
 import domuscontrol.routines.actions.*;
 import domuscontrol.routines.conditions.*;
-import domuscontrol.routines.conditions.DeviceOpenCondition;
-import domuscontrol.routines.conditions.LuminositySensorCondition;
-import domuscontrol.routines.conditions.RainfallSensorCondition;
-import domuscontrol.routines.conditions.TemperatureSensorCondition;
 import domuscontrol.user.User;
 import domuscontrol.utils.Ansi;
 
@@ -86,9 +86,6 @@ public class ActionsUI {
     // ------------------------------------------------------------------------
 
     /**
-     * Manages automations for a given house and user email. Displays a menu for listing, adding, and removing automations.
-     */
-    /**
      * Manages automations for a specific house.
      *
      * @param houseId The ID of the house.
@@ -127,8 +124,7 @@ public class ActionsUI {
 
             System.out.print(Ansi.prompt("Automation (0 to back)"));
             int choice = readInt();
-            if (choice == 0)
-                return;
+            if (choice == 0) return;
 
             Automation selected = automations.stream()
                     .skip(choice - 1)
@@ -167,56 +163,7 @@ public class ActionsUI {
         for (Action a : scenario.getActions())
             Ansi.listRow("    " + describeAction(a, devices));
         Ansi.listSeparator();
-    }
-
-    private String describeAction(Action a, Map<Integer, Device> devices) {
-        if (a instanceof TurnOnAction ta)
-            return "Turn ON   " + devLabel(ta.getDeviceId(), devices) + " [#" + ta.getDeviceId() + "]";
-        if (a instanceof TurnOffAction ta)
-            return "Turn OFF  " + devLabel(ta.getDeviceId(), devices) + " [#" + ta.getDeviceId() + "]";
-        if (a instanceof SetLevelAction sa)
-            return "Set level " + sa.getTargetLevel() + "%  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
-        if (a instanceof SetOpeningAction sa)
-            return "Set opening " + sa.getTargetPercentage() + "%  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
-        if (a instanceof SetColorTemperatureAction sa)
-            return "Set color " + sa.getTargetTemperature() + "K  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
-        return a.toString();
-    }
-
-    private String describeCondition(Condition c, Map<Integer, Device> devices) {
-        if (c instanceof TimeCondition tc)
-            return "At " + tc.getTriggerTime();
-        if (c instanceof TimeWindowCondition tw)
-            return "Between " + tw.getStartTime() + " and " + tw.getEndTime();
-        if (c instanceof DeviceStateCondition dc2)
-            return devLabel(dc2.getDeviceId(), devices) + " is " + (dc2.getTriggerWhenOn() ? "ON" : "OFF");
-        if (c instanceof DeviceLevelCondition dlc)
-            return devLabel(dlc.getDeviceId(), devices) + " level " + opSymbol(dlc.getOperator()) + " " + dlc.getTriggerLevel() + "%";
-        if (c instanceof DeviceOpenCondition doc)
-            return devLabel(doc.getDeviceId(), devices) + " opening " + opSymbol(doc.getOperator()) + " " + doc.getTriggerLevel() + "%";
-        if (c instanceof ColorTemperatureCondition ctc)
-            return devLabel(ctc.getDeviceId(), devices) + " color " + opSymbol(ctc.getOperator()) + " " + ctc.getTriggerTemperature() + "K";
-        if (c instanceof TemperatureSensorCondition tsc)
-            return "Temp (" + devLabel(tsc.getSensorId(), devices) + ") " + opSymbol(tsc.getOperator()) + " " + tsc.getTriggerTemperature() + "ºC";
-        if (c instanceof LuminositySensorCondition lsc)
-            return "Luminosity (" + devLabel(lsc.getSensorId(), devices) + ") " + opSymbol(lsc.getOperator()) + " " + lsc.getTriggerLuminosity() + " lx";
-        if (c instanceof RainfallSensorCondition rsc)
-            return "Rainfall (" + devLabel(rsc.getSensorId(), devices) + ") " + opSymbol(rsc.getOperator()) + " " + String.format("%.1f", rsc.getTriggerRainfall()) + " mm/h";
-        return c.toString();
-    }
-
-    private String devLabel(int id, Map<Integer, Device> devices) {
-        Device d = devices.get(id);
-        return d != null ? d.getBrand() + " " + d.getModel() : "#" + id;
-    }
-
-    private String opSymbol(Operator op) {
-        return switch (op) {
-            case GREATER_THAN -> ">";
-            case LESS_THAN    -> "<";
-            case EQUALS       -> "=";
-        };
-    }
+}
 
     private void addAutomation(int houseId) {
         System.out.print(Ansi.prompt("Automation name"));
@@ -351,8 +298,7 @@ public class ActionsUI {
 
             System.out.print(Ansi.prompt("Schedule (0 to back)"));
             int choice = readInt();
-            if (choice == 0)
-                return;
+            if (choice == 0) return;
 
             Automation selected = schedules.stream()
                     .skip(choice - 1)
@@ -567,7 +513,7 @@ public class ActionsUI {
             User user = model.getUserByEmail(email);
             List<Scenario> scenarios = model.getScenarios(houseId, user.getId());
             Map<Integer, Device> devices = model.getHouseById(houseId).getDevices();
-
+            
             if (scenarios.isEmpty()) {
                 System.out.println("  No scenarios.");
                 return;
@@ -580,8 +526,7 @@ public class ActionsUI {
 
             System.out.print(Ansi.prompt("Scenario (0 to back)"));
             int choice = readInt();
-            if (choice == 0)
-                return;
+            if (choice == 0) return;
 
             Scenario selected = scenarios.stream()
                     .skip(choice - 1)
@@ -619,8 +564,7 @@ public class ActionsUI {
 
             System.out.print(Ansi.prompt("Scenario (0 to back)"));
             int choice = readInt();
-            if (choice == 0)
-                return;
+            if (choice == 0) return;
 
             Scenario selected = scenarios.stream()
                     .skip(choice - 1)
@@ -808,6 +752,7 @@ public class ActionsUI {
             "Device ON/OFF State",
             "Device Opening State",
             "Device Level",
+            "Device Color Temperature",
             "Sensor Value",
             "Time Condition"
         };
@@ -819,13 +764,15 @@ public class ActionsUI {
         menu.setPreCondition(2, () -> !timeOnly);
         menu.setPreCondition(3, () -> !timeOnly);
         menu.setPreCondition(4, () -> !timeOnly);
-        menu.setPreCondition(5, () -> !hasTime[0]);
+        menu.setPreCondition(5, () -> !timeOnly);
+        menu.setPreCondition(6, () -> !hasTime[0]);
 
         menu.setHandler(1, () -> handleAddDeviceOnOffCondition(conditions, house));
         menu.setHandler(2, () -> handleAddDeviceOpeningCondition(conditions, house));
         menu.setHandler(3, () -> handleAddDeviceLevelCondition(conditions, house));
-        menu.setHandler(4, () -> handleAddSensorCondition(conditions, house));
-        menu.setHandler(5, () -> handleAddTimeCondition(conditions, hasTime));
+        menu.setHandler(4, () -> handleAddColorTempCondition(conditions, house));
+        menu.setHandler(5, () -> handleAddSensorCondition(conditions, house));
+        menu.setHandler(6, () -> handleAddTimeCondition(conditions, hasTime));
 
         menu.run();
         return conditions;
@@ -874,7 +821,7 @@ public class ActionsUI {
 
     private void handleAddDeviceOnOffCondition(List<Condition> conditions, House house) {
         List<Device> compatible = house.getDevices().values().stream()
-            .filter(d -> d instanceof SwitchableDevice && !(d instanceof domuscontrol.devices.sensors.Sensor))
+            .filter(d -> d instanceof SwitchableDevice && !(d instanceof Sensor))
             .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No switchable devices available."); return; }
         Device picked = pickFromList(compatible, "switchable device");
@@ -915,29 +862,52 @@ public class ActionsUI {
         System.out.println("  Condition added.");
     }
 
+    private void handleAddColorTempCondition(List<Condition> conditions, House house) {
+        List<Device> compatible = house.getDevices().values().stream()
+            .filter(d -> d instanceof ColorAdjustableDevice)
+            .collect(Collectors.toList());
+
+        if (compatible.isEmpty()) {
+            System.out.println("  No color adjustable devices available in this house.");
+            return;
+        }
+
+        Device picked = pickFromList(compatible, "color adjustable device");
+        if (picked == null) return;
+
+        System.out.print(Ansi.prompt("Trigger temperature (2700-4000K)"));
+        int temp = readIntInRange(2700, 4000, "Trigger temperature (2700-4000K)");
+
+        Operator op = pickOperator();
+        if (op == null) return;
+
+        conditions.add(new ColorTemperatureCondition(picked.getId(), temp, op));
+        System.out.println("  Color temperature condition added.");
+    }
+
     private void handleAddSensorCondition(List<Condition> conditions, House house) {
         List<Device> sensors = house.getDevices().values().stream()
-            .filter(d -> d instanceof domuscontrol.devices.sensors.Sensor)
+            .filter(d -> d instanceof Sensor)
             .collect(Collectors.toList());
         if (sensors.isEmpty()) { System.out.println("  No sensors available. Add a sensor device first."); return; }
         Device picked = pickFromList(sensors, "sensor");
         if (picked == null) return;
 
-        if (picked instanceof domuscontrol.devices.sensors.TemperatureSensor) {
+        if (picked instanceof TemperatureSensor) {
             System.out.print(Ansi.prompt("Trigger temperature (ºC)"));
             int temp = readInt();
             Operator op = pickOperator();
             if (op == null) return;
             conditions.add(new TemperatureSensorCondition(picked.getId(), temp, op));
             System.out.println("  Sensor condition added.");
-        } else if (picked instanceof domuscontrol.devices.sensors.LuminositySensor) {
+        } else if (picked instanceof LuminositySensor) {
             System.out.print(Ansi.prompt("Trigger luminosity (lx)"));
             int lux = readInt();
             Operator op = pickOperator();
             if (op == null) return;
             conditions.add(new LuminositySensorCondition(picked.getId(), lux, op));
             System.out.println("  Sensor condition added.");
-        } else if (picked instanceof domuscontrol.devices.sensors.RainfallSensor) {
+        } else if (picked instanceof RainfallSensor) {
             System.out.print(Ansi.prompt("Trigger rainfall (mm/h)"));
             double rainfall = readDouble();
             Operator op = pickOperator();
@@ -974,7 +944,61 @@ public class ActionsUI {
     }
 
     private double readDouble() {
-        try { return Double.parseDouble(sc.nextLine().trim()); }
-        catch (NumberFormatException e) { return 0.0; }
+        while (true) {
+            try {
+                return Double.parseDouble(sc.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.print(Ansi.prompt("Invalid input. Please enter a decimal number (e.g. 10.5)"));
+            }
+        }
+    }
+
+    private String describeAction(Action a, Map<Integer, Device> devices) {
+        if (a instanceof TurnOnAction ta)
+            return "Turn ON   " + devLabel(ta.getDeviceId(), devices) + " [#" + ta.getDeviceId() + "]";
+        if (a instanceof TurnOffAction ta)
+            return "Turn OFF  " + devLabel(ta.getDeviceId(), devices) + " [#" + ta.getDeviceId() + "]";
+        if (a instanceof SetLevelAction sa)
+            return "Set level " + sa.getTargetLevel() + "%  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
+        if (a instanceof SetOpeningAction sa)
+            return "Set opening " + sa.getTargetPercentage() + "%  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
+        if (a instanceof SetColorTemperatureAction sa)
+            return "Set color " + sa.getTargetTemperature() + "K  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
+        return a.toString();
+    }
+
+    private String describeCondition(Condition c, Map<Integer, Device> devices) {
+        if (c instanceof TimeCondition tc)
+            return "At " + tc.getTriggerTime();
+        if (c instanceof TimeWindowCondition tw)
+            return "Between " + tw.getStartTime() + " and " + tw.getEndTime();
+        if (c instanceof DeviceStateCondition dc2)
+            return devLabel(dc2.getDeviceId(), devices) + " is " + (dc2.getTriggerWhenOn() ? "ON" : "OFF");
+        if (c instanceof DeviceLevelCondition dlc)
+            return devLabel(dlc.getDeviceId(), devices) + " level " + opSymbol(dlc.getOperator()) + " " + dlc.getTriggerLevel() + "%";
+        if (c instanceof DeviceOpenCondition doc)
+            return devLabel(doc.getDeviceId(), devices) + " opening " + opSymbol(doc.getOperator()) + " " + doc.getTriggerLevel() + "%";
+        if (c instanceof ColorTemperatureCondition ctc)
+            return devLabel(ctc.getDeviceId(), devices) + " color " + opSymbol(ctc.getOperator()) + " " + ctc.getTriggerTemperature() + "K";
+        if (c instanceof TemperatureSensorCondition tsc)
+            return "Temp (" + devLabel(tsc.getSensorId(), devices) + ") " + opSymbol(tsc.getOperator()) + " " + tsc.getTriggerTemperature() + "ºC";
+        if (c instanceof LuminositySensorCondition lsc)
+            return "Luminosity (" + devLabel(lsc.getSensorId(), devices) + ") " + opSymbol(lsc.getOperator()) + " " + lsc.getTriggerLuminosity() + " lx";
+        if (c instanceof RainfallSensorCondition rsc)
+            return "Rainfall (" + devLabel(rsc.getSensorId(), devices) + ") " + opSymbol(rsc.getOperator()) + " " + String.format("%.1f", rsc.getTriggerRainfall()) + " mm/h";
+        return c.toString();
+    }
+
+    private String devLabel(int id, Map<Integer, Device> devices) {
+        Device d = devices.get(id);
+        return d != null ? d.getBrand() + " " + d.getModel() : "#" + id;
+    }
+
+    private String opSymbol(Operator op) {
+        return switch (op) {
+            case GREATER_THAN -> ">";
+            case LESS_THAN    -> "<";
+            case EQUALS       -> "=";
+        };
     }
 }

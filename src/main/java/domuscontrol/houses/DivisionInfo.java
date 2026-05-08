@@ -1,5 +1,8 @@
 package domuscontrol.houses;
 
+import java.io.Serializable;
+import java.util.Objects;
+
 /**
  * Data Transfer Object returned by division-related queries on the model facade.
  *
@@ -17,18 +20,27 @@ package domuscontrol.houses;
  * @author Matheus Azevedo (a111430)
  * @version 1.0
  */
-public class DivisionInfo {
+public class DivisionInfo implements Serializable {
 
     private final String houseName;
     private final String divisionName;
     private final int deviceCount;
 
     /**
-     * Constructs a DivisionInfo with the given house name, division name and device count.
+     * Constructs a DivisionInfo with default values.
+     */
+    public DivisionInfo() {
+        this.houseName = "";
+        this.divisionName = "";
+        this.deviceCount = 0;
+    }
+
+    /**
+     * Constructs a DivisionInfo with the given house name, division name, and device count.
      *
-     * @param houseName     The name of the house the division belongs to.
-     * @param divisionName  The name of the division.
-     * @param deviceCount   The number of devices in the division.
+     * @param houseName    the name of the house the division belongs to
+     * @param divisionName the name of the division
+     * @param deviceCount  the number of devices in the division
      */
     public DivisionInfo(String houseName, String divisionName, int deviceCount) {
         this.houseName = houseName;
@@ -37,29 +49,96 @@ public class DivisionInfo {
     }
 
     /**
+     * Constructs a DivisionInfo by copying another DivisionInfo.
+     *
+     * @param other the DivisionInfo to copy
+     */
+    public DivisionInfo(DivisionInfo other) {
+        this.houseName = other.houseName;
+        this.divisionName = other.divisionName;
+        this.deviceCount = other.deviceCount;
+    }
+
+    /**
      * Returns the name of the house this division belongs to.
      *
-     * @return The house name.
+     * @return the house name
      */
     public String getHouseName() {
-        return houseName;
+        return this.houseName;
     }
 
     /**
      * Returns the name of the division.
      *
-     * @return The division name.
+     * @return the division name
      */
     public String getDivisionName() {
-        return divisionName;
+        return this.divisionName;
     }
 
     /**
      * Returns the number of devices in this division.
      *
-     * @return The device count.
+     * @return the device count
      */
     public int getDeviceCount() {
-        return deviceCount;
+        return this.deviceCount;
+    }
+
+    /**
+     * Creates a copy of this division info.
+     *
+     * @return a new DivisionInfo with the same values
+     */
+    @Override
+    public DivisionInfo clone() {
+        return new DivisionInfo(this);
+    }
+
+    /**
+     * Compares this division info with another object for equality.
+     *
+     * @param o the object to compare with
+     * @return true if all values match, false otherwise
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o == null || o.getClass() != this.getClass()) {
+            return false;
+        }
+        DivisionInfo other = (DivisionInfo) o;
+        return this.deviceCount == other.deviceCount
+            && Objects.equals(this.houseName, other.houseName)
+            && Objects.equals(this.divisionName, other.divisionName);
+    }
+
+    /**
+     * Generates a hash code for this division info.
+     *
+     * @return the hash code
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.houseName, this.divisionName, this.deviceCount);
+    }
+
+    /**
+     * Returns a string representation of this division info.
+     *
+     * @return a formatted string with the division info values
+     */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("DivisionInfo { ")
+          .append("houseName: ").append(this.houseName)
+          .append(", divisionName: ").append(this.divisionName)
+          .append(", deviceCount: ").append(this.deviceCount)
+          .append(" }");
+        return sb.toString();
     }
 }

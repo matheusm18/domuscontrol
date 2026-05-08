@@ -6,6 +6,7 @@ import domuscontrol.devices.Lamp;
 import domuscontrol.devices.Plug;
 import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
+import domuscontrol.exceptions.NameAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -79,17 +80,27 @@ public class HouseTest {
     }
 
     @Test
-    void addDeviceToDivisionStoresDeviceAndAvoidsDuplicates() throws Exception {
+    void addDeviceToDivisionStoresDevice() throws Exception {
         House house = new House();
         Plug plug = new Plug("TP-Link", "P100", 3.0);
         house.addDivision("Kitchen");
 
         house.addDeviceToDivision(plug, "Kitchen");
-        house.addDeviceToDivision(plug, "Kitchen");
 
         assertEquals(1, house.devicesNumber());
         assertEquals(1, house.getDivisions().get("Kitchen").size());
         assertEquals(plug, house.getDevice(plug.getId()));
+    }
+
+    @Test
+    void addDeviceToDivisionThrowsOnDuplicate() throws Exception {
+        House house = new House();
+        Plug plug = new Plug("TP-Link", "P100", 3.0);
+        house.addDivision("Kitchen");
+
+        house.addDeviceToDivision(plug, "Kitchen");
+
+        assertThrows(NameAlreadyExistsException.class, () -> house.addDeviceToDivision(plug, "Kitchen"));
     }
 
     @Test

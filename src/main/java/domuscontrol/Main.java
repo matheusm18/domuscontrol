@@ -4,7 +4,7 @@ import domuscontrol.ui.DomusControlUI;
 
 /**
  * Application entry point.
- * Bootstraps the MVC delegate chain by instantiating {@link domuscontrol.ui.DomusControlUI},
+ * Bootstraps the MVC delegate chain by instantiating {@link DomusControlUI},
  * which owns the model and acts as the top-level View/Controller.
  *
  * @author Afonso Barros (a112178)

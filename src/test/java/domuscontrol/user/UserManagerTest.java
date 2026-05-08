@@ -5,6 +5,8 @@ import domuscontrol.exceptions.UserNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class UserManagerTest {
@@ -78,7 +80,7 @@ public class UserManagerTest {
         UserManager manager = new UserManager();
         User first = manager.createUser("Ada", "ada@example.com", "secret");
         User second = manager.createUser("Grace", "grace@example.com", "secret");
-        User missing = new User("Missing", "missing@example.com", "secret", java.util.Map.of());
+        User missing = new User("Missing", "missing@example.com", "secret", Map.of());
 
         assertThrows(UserNotFoundException.class, () -> manager.updateUser(missing));
 

@@ -2,6 +2,7 @@ package domuscontrol;
 
 import domuscontrol.devices.Device;
 import domuscontrol.devices.DeviceStatus;
+import domuscontrol.devices.Gate;
 import domuscontrol.devices.Lamp;
 import domuscontrol.devices.Plug;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfAdjustableDeviceException;
@@ -94,7 +95,7 @@ public class DomusControlTest {
         User user = model.getUserByEmail("ada@example.com");
         Plug plug = new Plug("TP-Link", "P100", 3.0);
         Lamp lamp = new Lamp("Philips", "Hue", 9.0, 0, 2700);
-        domuscontrol.devices.Gate gate = new domuscontrol.devices.Gate("Nice", "Road", 80.0, 0);
+        Gate gate = new Gate("Nice", "Road", 80.0, 0);
 
         model.addDivision(house.getId(), "Kitchen");
         model.addDeviceToDivision(house.getId(), plug, "Kitchen");

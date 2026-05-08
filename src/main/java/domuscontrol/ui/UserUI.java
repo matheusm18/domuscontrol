@@ -6,18 +6,16 @@ import domuscontrol.exceptions.*;
 import domuscontrol.houses.DivisionInfo;
 import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
+import domuscontrol.simulation.ActivationEvent;
 import domuscontrol.user.User;
 import domuscontrol.user.UserRole;
 import domuscontrol.utils.Ansi;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * User interface class for user-related operations and dashboard display.
@@ -198,7 +196,7 @@ public class UserUI {
 
     private void statistics(String email) {
         Menu menu = new Menu("Statistics", new String[]{
-                "Most consuming houses",
+                "Top 3 most consuming houses",
                 "Top 3 devices by active time",
                 "Top 3 devices by activations",
                 "Top 3 divisions by device count"
@@ -206,7 +204,7 @@ public class UserUI {
 
         menu.setHandler(1, () -> {
             try {
-                List<House> topHouses = model.getTop3MostConsumingHousesForUSer(email);
+                List<House> topHouses = model.getTopHousesByCriterionForUser(email, 3, House::calculateTotalConsumption);
                 if (topHouses.isEmpty()) {
                     System.out.println("  No houses in the system.");
                 } else {
@@ -217,19 +215,15 @@ public class UserUI {
                     }
                     Ansi.listSeparator();
                 }
-            } catch (UserNotFoundException e) {
-                System.out.println("  Error: user not found.");
-            } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+            } catch (UserNotFoundException | HouseNotFoundException e) {
+                System.out.println("  Error: " + e.getMessage());
             }
         });
         menu.setHandler(2, () -> {
             House house = selectHouse(email);
             if (house == null) return;
-            List<Device> topDevices = house.getDevices().values().stream()
-                .sorted(Comparator.comparingInt(Device::getTotalMinutesOn).reversed())
-                .limit(3)
-                .toList();
+
+            List<Device> topDevices = house.top3Devices(d -> (double) d.getTotalMinutesOn());
             if (topDevices.isEmpty()) {
                 System.out.println("  No devices in this house.");
                 return;
@@ -246,10 +240,7 @@ public class UserUI {
         menu.setHandler(3, () -> {
             House house = selectHouse(email);
             if (house == null) return;
-            List<Device> topDevices = house.getDevices().values().stream()
-                .sorted(Comparator.comparingInt(Device::getTotalActivations).reversed())
-                .limit(3)
-                .toList();
+            List<Device> topDevices = house.top3Devices(d -> (double) d.getTotalActivations());
             if (topDevices.isEmpty()) {
                 System.out.println("  No devices in this house.");
                 return;
@@ -265,7 +256,7 @@ public class UserUI {
         });
         menu.setHandler(4, () -> {
             try {
-                List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterionForUser(email, 3, DivisionInfo::getDeviceCount);
+                List<DivisionInfo> topDivisions = model.getTopDivisionsByCriterionForUser(email, 3, div -> (double) div.getDeviceCount());
                 if (topDivisions.isEmpty()) {
                     System.out.println("  No divisions found for your houses.");
                 } else {
@@ -277,10 +268,8 @@ public class UserUI {
                     }
                     Ansi.listSeparator();
                 }
-            } catch (UserNotFoundException e) {
-                System.out.println("  Error: user not found.");
-            } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+            } catch (UserNotFoundException | HouseNotFoundException e) {
+                System.out.println("  Error: " + e.getMessage());
             }
         });
 
@@ -328,21 +317,28 @@ public class UserUI {
             return;
         }
 
-        List<String> activated = model.tick(minutes);
+        List<ActivationEvent> activated = model.tick(minutes);
         System.out.println("  Simulation advanced by " + minutes + " minute(s).");
 
         try {
-            Set<String> myHouseNames = model.getHousesByUser(email).stream()
-                .map(House::getName).collect(Collectors.toSet());
-            List<String> mine = activated.stream()
-                .filter(s -> myHouseNames.stream().anyMatch(h -> s.startsWith(h + ":")))
+            List<Integer> myHouseIds = model.getHousesByUser(email).stream()
+                .map(House::getId)
+                .toList();
+            List<ActivationEvent> mine = activated.stream()
+                .filter(event -> myHouseIds.contains(event.getHouseId()))
                 .toList();
             if (!mine.isEmpty()) {
                 Ansi.listTitle("Routines Activated");
-                for (String name : mine) Ansi.listRow(" - " + name);
+                for (ActivationEvent event : mine) {
+                    Ansi.listRow(" - " + event.getHouseName() + ": " + event.getRoutineName());
+                }
                 Ansi.listSeparator();
             }
-        } catch (UserNotFoundException | HouseNotFoundException ignored) {}
+        } catch (UserNotFoundException e) {
+            System.out.println("  Error: user not found.");
+        } catch (HouseNotFoundException e) {
+            System.out.println("  Error: house not found.");
+        }
     }
 
     private void saveState() {
@@ -359,10 +355,12 @@ public class UserUI {
     }
 
     private int readInt() {
-        try {
-            return Integer.parseInt(sc.nextLine().trim());
-        } catch (NumberFormatException e) {
-            return -1;
+        while (true) {
+            try {
+                return Integer.parseInt(sc.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.print(Ansi.prompt("Invalid input. Please enter an integer"));
+            }
         }
     }
 }

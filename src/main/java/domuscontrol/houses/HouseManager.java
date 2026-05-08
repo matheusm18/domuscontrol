@@ -1,6 +1,7 @@
 package domuscontrol.houses;
 
 import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.ActivationEvent;
 import domuscontrol.suggestions.AutomationSuggestion;
 import domuscontrol.suggestions.DeviceInteraction;
 
@@ -119,7 +120,7 @@ public class HouseManager implements Serializable {
      * @throws HouseNotFoundException if no house with the given ID exists.
      * @throws DivisionNotFoundException if no division with the given name exists in the specified house.
      */
-    public void addDeviceToDivision(int houseId, Device device, String division) throws HouseNotFoundException, DivisionNotFoundException {
+    public void addDeviceToDivision(int houseId, Device device, String division) throws HouseNotFoundException, DivisionNotFoundException, NameAlreadyExistsException {
         House h = getHouseInternal(houseId);
         h.addDeviceToDivision(device, division);
     }
@@ -312,23 +313,34 @@ public class HouseManager implements Serializable {
     /**
      * Advances time for all houses in the system.
      * This cascades down to every device in every division.
-     * Returns a list of strings describing any automations that were triggered during this tick, formatted as "HouseName: AutomationName".
+     * Returns a list of activation events for automations that were triggered during this tick.
      *
      * @param simulation The simulation context containing the current time and other relevant data.
-     * @return A list of descriptions for each automation that was activated during this tick.
+     * @return A list of events for each automation that was activated during this tick.
      */
-    public List<String> tick(Simulation simulation) {
-        List<String> activated = new ArrayList<>();
+    public List<ActivationEvent> tick(Simulation simulation) {
+        List<ActivationEvent> activated = new ArrayList<>();
 
         for (House house : this.housesById.values()) {
             List<String> houseActivated = house.tick(simulation);
 
             for (String automationName : houseActivated) {
-                activated.add(house.getName() + ": " + automationName);
+                activated.add(new ActivationEvent(house.getId(), house.getName(), automationName));
             }
         }
 
         return activated;
+    }
+
+    /**
+     * Returns information about all divisions across all houses.
+     * * @return A list of DivisionInfo DTOs.
+     */
+    public List<DivisionInfo> getAllDivisionsInfo() {
+        return this.housesById.values().stream()
+                .flatMap(h -> h.getDivisions().entrySet().stream()
+                        .map(e -> new DivisionInfo(h.getName(), e.getKey(), e.getValue().size())))
+                .collect(Collectors.toList());
     }
 
     /**

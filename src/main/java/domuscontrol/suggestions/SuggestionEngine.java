@@ -27,6 +27,7 @@ import domuscontrol.routines.conditions.Operator;
 import domuscontrol.routines.conditions.RainfallSensorCondition;
 import domuscontrol.routines.conditions.TemperatureSensorCondition;
 import domuscontrol.routines.conditions.TimeCondition;
+import domuscontrol.simulation.WeatherCondition;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -74,17 +75,6 @@ public class SuggestionEngine {
     private SuggestionEngine() {
     }
 
-    /**
-     * Analyses the interaction log and produces a list of suggestions based on
-     * detected time-based and sequence-based patterns.
-     *
-     * The device map is used only to validate compatibility and build descriptions.
-     *
-     * @param logger the interaction logger containing the house's history
-     * @param devices the device map used to validate compatibility
-     * @param userId the user identifier to generate suggestions for
-     * @return a list of automation suggestions ready to be presented to the user
-     */
     /**
      * Analyzes interaction logs and suggests automations based on detected patterns.
      *
@@ -540,8 +530,8 @@ public class SuggestionEngine {
         Map<String, List<DeviceInteraction>> groups = new HashMap<>();
         for (DeviceInteraction i : interactions) {
             if (i.getWeather() == null) continue;
-            boolean raining = i.getWeather() == domuscontrol.simulation.WeatherCondition.RAINING
-                           || i.getWeather() == domuscontrol.simulation.WeatherCondition.STORMY;
+            boolean raining = i.getWeather() == WeatherCondition.RAINING
+                           || i.getWeather() == WeatherCondition.STORMY;
             if (!raining) continue;
             String key = i.getDeviceId() + "_" + i.getType() + "_" + roundedValue(i.getValue()) + "_rain";
             groups.computeIfAbsent(key, k -> new ArrayList<>()).add(i);

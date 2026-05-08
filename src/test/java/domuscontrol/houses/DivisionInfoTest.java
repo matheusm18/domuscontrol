@@ -1,64 +1,38 @@
 package domuscontrol.houses;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DivisionInfoTest {
 
-    @BeforeEach
-    void setUp() {
-        House.setNextId(0);
-    }
-
     @Test
-    void constructorStoresDivisionNameAndCopiesDevicesList() {
-        House house = new House();
-        house.setName("Home");
-        List<String> devices = new ArrayList<>(List.of("Lamp", "Plug"));
+    void constructorStoresAllFields() {
+        DivisionInfo info = new DivisionInfo("Home", "Living Room", 3);
 
-        DivisionInfo info = new DivisionInfo(house, "Living Room", devices);
-        devices.add("Relay");
-
+        assertEquals("Home", info.getHouseName());
         assertEquals("Living Room", info.getDivisionName());
-        assertEquals(List.of("Lamp", "Plug"), info.getDevices());
+        assertEquals(3, info.getDeviceCount());
     }
 
     @Test
-    void getDevicesReturnsCopy() {
-        DivisionInfo info = new DivisionInfo(null, "Kitchen", List.of("Lamp"));
+    void gettersReturnCorrectValues() {
+        DivisionInfo info = new DivisionInfo("Casa da Praia", "Kitchen", 0);
 
-        List<String> devices = info.getDevices();
-        devices.add("Plug");
-
-        assertEquals(List.of("Lamp"), info.getDevices());
+        assertEquals("Casa da Praia", info.getHouseName());
+        assertEquals("Kitchen", info.getDivisionName());
+        assertEquals(0, info.getDeviceCount());
     }
 
     @Test
-    void constructorAndGetterCloneHouse() {
-        House house = new House();
-        house.setName("Original");
-
-        DivisionInfo info = new DivisionInfo(house, "Office", List.of());
-        house.setName("Changed");
-
-        House firstCopy = info.getHouse();
-        firstCopy.setName("Mutated copy");
-
-        assertEquals("Original", info.getHouse().getName());
-        assertNotSame(house, info.getHouse());
+    void deviceCountCanBeZero() {
+        DivisionInfo info = new DivisionInfo("House", "Empty Room", 0);
+        assertEquals(0, info.getDeviceCount());
     }
 
     @Test
-    void nullHouseAndDevicesAreHandled() {
-        DivisionInfo info = new DivisionInfo(null, "Empty", null);
-
-        assertNull(info.getHouse());
-        assertEquals("Empty", info.getDivisionName());
-        assertTrue(info.getDevices().isEmpty());
+    void divisionNameIsStoredExactly() {
+        DivisionInfo info = new DivisionInfo("H", "Sala de Estar", 5);
+        assertEquals("Sala de Estar", info.getDivisionName());
     }
 }

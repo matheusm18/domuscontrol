@@ -179,7 +179,11 @@ public class RainfallSensorCondition implements Condition {
      */
     @Override
     public String toString() {
-        return "RainfallSensorCondition { Sensor #" + this.sensorId
-            + " rainfall " + this.operator + " " + String.format("%.1f", this.triggerRainfall) + " mm/h }";
+        StringBuilder sb = new StringBuilder();
+        sb.append("RainfallSensorCondition { Sensor #").append(this.sensorId)
+          .append(" rainfall ").append(this.operator)
+          .append(" ").append(String.format("%.1f", this.triggerRainfall))
+          .append(" mm/h }");
+        return sb.toString();
     }
 }

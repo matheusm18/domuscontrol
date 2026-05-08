@@ -301,17 +301,17 @@ public class House implements Serializable {
     /**
      * Adds a device to a specific division. If the device is not in the global map, it is added.
      *
-     * @param device   The device to add.
+     * @param device The device to add.
      * @param division The name of the division.
      * @throws DivisionNotFoundException if the division does not exist.
+     * @throws NameAlreadyExistsException if the device is already present in the division.
      */
-    public void addDeviceToDivision(Device device, String division) throws DivisionNotFoundException {
+    public void addDeviceToDivision(Device device, String division) throws DivisionNotFoundException, NameAlreadyExistsException {
         if (!this.divisions.containsKey(division)) throw new DivisionNotFoundException(division);
+        List<Device> divisionDevices = this.divisions.get(division);
+        if (divisionDevices.stream().anyMatch(d -> d.getId() == device.getId())) throw new NameAlreadyExistsException("" + device.getId());
         Device stored = this.devices.computeIfAbsent(device.getId(), k -> device.clone());
-        List<Device> divisionDevices = this.divisions.get(division);                                                                                                                                          
-        if (divisionDevices.stream().noneMatch(d -> d.getId() == device.getId())) {
-            divisionDevices.add(stored);                                                                                                                                                                      
-        }                
+        divisionDevices.add(stored);
     }
 
     /**
@@ -479,9 +479,9 @@ public class House implements Serializable {
      * @param f A function that extracts an integer value from a device to rank by.
      * @return A list of up to 3 cloned devices in descending order.
      */
-    public List<Device> top3Devices(Function<Device, Integer> f) {
+    public List<Device> top3Devices(Function<Device, Double> f) {
         return this.devices.values().stream()
-            .sorted(Comparator.comparing(f).reversed())
+            .sorted(Comparator.comparingDouble(f::apply).reversed())
             .limit(3)
             .map(Device::clone)
             .collect(Collectors.toList());

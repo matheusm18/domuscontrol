@@ -2,6 +2,7 @@ package domuscontrol.simulation;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * Immutable snapshot of the simulation state at a specific point in time.
@@ -40,6 +41,18 @@ public final class SimulationState implements Serializable {
     private final WeatherCondition weather;
 
     /**
+     * Constructs a SimulationState with default simulation values.
+     */
+    public SimulationState() {
+        LocalDateTime now = LocalDateTime.now();
+        this.currentDateTime = now;
+        this.previousDateTime = now;
+        this.temperature = 20.0;
+        this.luminosity = 1000.0;
+        this.weather = WeatherCondition.SUNNY;
+    }
+
+    /**
      * Constructs a SimulationState with the given parameters.
      *
      * @param currentDateTime the current date and time
@@ -55,6 +68,19 @@ public final class SimulationState implements Serializable {
         this.temperature = temperature;
         this.luminosity = luminosity;
         this.weather = weather;
+    }
+
+    /**
+     * Constructs a SimulationState by copying another SimulationState.
+     *
+     * @param state the simulation state to copy
+     */
+    public SimulationState(SimulationState state) {
+        this.currentDateTime = state.getCurrentDateTime();
+        this.previousDateTime = state.getPreviousDateTime();
+        this.temperature = state.getTemperature();
+        this.luminosity = state.getLuminosity();
+        this.weather = state.getWeather();
     }
 
     /**
@@ -78,35 +104,45 @@ public final class SimulationState implements Serializable {
      *
      * @return the current date and time
      */
-    public LocalDateTime getCurrentDateTime() { return this.currentDateTime; }
+    public LocalDateTime getCurrentDateTime() {
+        return this.currentDateTime;
+    }
 
     /**
      * Returns the previous date and time.
      *
      * @return the previous date and time
      */
-    public LocalDateTime getPreviousDateTime() { return this.previousDateTime; }
+    public LocalDateTime getPreviousDateTime() {
+        return this.previousDateTime;
+    }
 
     /**
      * Returns the current temperature in Celsius.
      *
      * @return the temperature
      */
-    public double getTemperature() { return this.temperature; }
+    public double getTemperature() {
+        return this.temperature;
+    }
 
     /**
      * Returns the current luminosity in lux.
      *
      * @return the luminosity
      */
-    public double getLuminosity() { return this.luminosity; }
+    public double getLuminosity() {
+        return this.luminosity;
+    }
 
     /**
      * Returns the current weather condition.
      *
      * @return the weather condition
      */
-    public WeatherCondition getWeather() { return this.weather; }
+    public WeatherCondition getWeather() {
+        return this.weather;
+    }
 
     /**
      * Checks if it is currently raining or stormy.
@@ -115,5 +151,65 @@ public final class SimulationState implements Serializable {
      */
     public boolean isRaining() {
         return this.weather == WeatherCondition.RAINING || this.weather == WeatherCondition.STORMY;
+    }
+
+    /**
+     * Creates a copy of this simulation state.
+     *
+     * @return a new SimulationState with the same values
+     */
+    @Override
+    public SimulationState clone() {
+        return new SimulationState(this);
+    }
+
+    /**
+     * Compares this simulation state with another object for equality.
+     *
+     * @param o the object to compare with
+     * @return true if all simulation state values match, false otherwise
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o == null || o.getClass() != this.getClass()) {
+            return false;
+        }
+        SimulationState state = (SimulationState) o;
+        return Double.compare(this.temperature, state.temperature) == 0
+            && Double.compare(this.luminosity, state.luminosity) == 0
+            && Objects.equals(this.currentDateTime, state.currentDateTime)
+            && Objects.equals(this.previousDateTime, state.previousDateTime)
+            && this.weather == state.weather;
+    }
+
+    /**
+     * Generates a hash code for this simulation state.
+     *
+     * @return the hash code
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.currentDateTime, this.previousDateTime, this.temperature, this.luminosity, this.weather);
+    }
+
+    /**
+     * Returns a string representation of this simulation state.
+     *
+     * @return a formatted string with the simulation state values
+     */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SimulationState { ")
+          .append("Current: ").append(this.currentDateTime)
+          .append(", Previous: ").append(this.previousDateTime)
+          .append(", Temperature: ").append(this.temperature)
+          .append(", Luminosity: ").append(this.luminosity)
+          .append(", Weather: ").append(this.weather)
+          .append(" }");
+        return sb.toString();
     }
 }

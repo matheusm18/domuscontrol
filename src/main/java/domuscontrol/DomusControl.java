@@ -4,6 +4,7 @@ import domuscontrol.exceptions.DeviceNotFoundException;
 import domuscontrol.exceptions.DivisionNotFoundException;
 import domuscontrol.exceptions.HouseAlreadyExistsException;
 import domuscontrol.exceptions.HouseNotFoundException;
+import domuscontrol.exceptions.InvalidMinutesException;
 import domuscontrol.exceptions.LastAdminException;
 import domuscontrol.exceptions.LoginInvalidPasswordException;
 import domuscontrol.exceptions.UserAlreadyExistsException;
@@ -28,6 +29,7 @@ import domuscontrol.exceptions.UserDoesntHaveScenarios;
 import domuscontrol.routines.Automation;
 import domuscontrol.routines.Scenario;
 import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.ActivationEvent;
 import domuscontrol.simulation.WeatherCondition;
 import domuscontrol.simulation.SimulationState;
 import domuscontrol.suggestions.AutomationSuggestion;
@@ -50,7 +52,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
 
@@ -86,18 +87,18 @@ public class DomusControl implements Serializable {
     /**
      * Advances the simulation by the specified number of minutes, updating the environment and processing device interactions.
      * @param minutes The number of minutes to advance the simulation.
-     * @return A list of descriptions of devices that were activated during the simulation ticks.
+     * @return A list of routine activation events produced during the simulation ticks.
      */
-    public List<String> tick(int minutes) {
+    public List<ActivationEvent> tick(int minutes) {
         if (minutes < 0) {
-            throw new IllegalArgumentException("" + minutes);
+            throw new InvalidMinutesException(minutes);
         }
 
-        List<String> activatedAll = new ArrayList<>();
+        List<ActivationEvent> activatedAll = new ArrayList<>();
         for (int i = 0; i < minutes; i++) {
             this.simulation.advanceSimulation(1);
-            List<String> activatedNow = this.houseManager.tick(this.simulation);
-            for (String act : activatedNow) {
+            List<ActivationEvent> activatedNow = this.houseManager.tick(this.simulation);
+            for (ActivationEvent act : activatedNow) {
                 if (!activatedAll.contains(act)) {
                     activatedAll.add(act);
                 }
@@ -374,8 +375,9 @@ public class DomusControl implements Serializable {
      * @param division The name of the division.
      * @throws HouseNotFoundException If no house with the given ID exists.
      * @throws DivisionNotFoundException If the division does not exist in the specified house.
+     * @throws NameAlreadyExistsException If the device is already present in the division.
      */
-    public void addDeviceToDivision(int houseId, Device device, String division) throws HouseNotFoundException, DivisionNotFoundException {
+    public void addDeviceToDivision(int houseId, Device device, String division) throws HouseNotFoundException, DivisionNotFoundException, NameAlreadyExistsException {
         this.houseManager.addDeviceToDivision(houseId, device, division);
     }
 
@@ -727,27 +729,21 @@ public class DomusControl implements Serializable {
         }
     }
 
-    // ---- Queries ----
+    // Queries: global
 
     /**
-     * Returns the top N users sorted by a given criterion, which can be the number of houses, devices, total energy consumption, etc.
-     * @param n The number of top users to return.
-     * @param criterion A function that takes a User and returns an integer representing the value of the criterion for that user (e.g., number of houses, devices, total consumption).
-     * @return A list of the top N users sorted by the specified criterion, in descending order.
+     * Returns the top N users sorted by a given criterion (e.g., house count, device count).
      */
-    public List<User> getTopUsersByCriterion(int n, Function<User, Integer> criterion) {
+    public List<User> getTopUsersByCriterion(int n, Function<User, Double> criterion) {
         return this.userManager.getAllUsers().stream()
-            .sorted(Comparator.comparingInt(criterion::apply).reversed())
+            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
             .limit(n)
             .map(User::clone)
             .collect(Collectors.toList());
     }
 
     /**
-     * Returns the top N houses sorted by a given criterion, which can be energy consumption, number of devices, etc.
-     * @param n The number of top houses to return.
-     * @param criterion A function that takes a House and returns a double representing the value of the criterion for that house (e.g., energy consumption, number of devices).
-     * @return A list of the top N houses sorted by the specified criterion, in descending order.
+     * Returns the top N houses sorted by a given criterion (e.g., energy consumption, device count).
      */
     public List<House> getTopHousesByCriterion(int n, Function<House, Double> criterion) {
         return this.houseManager.getAllHouses().stream()
@@ -758,14 +754,9 @@ public class DomusControl implements Serializable {
     }
 
     /**
-     * Returns the top N devices sorted by a given criterion, which can be energy consumption, number of interactions, etc.
-     * @param n The number of top devices to return.
-     * @param criterion A function that takes a Device and returns a double representing the value of the criterion for that device (e.g., energy consumption, number of interactions).
-     * @return A list of the top N devices sorted by the specified criterion, in descending order.
-     * @throws UserNotFoundException If the email does not correspond to a registered user.
-     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
+     * Returns the top N devices globally sorted by a given criterion (e.g., active time).
      */
-    public List<Device> getTopDevicesByCriterion (int n, Function<Device, Double> criterion) throws UserNotFoundException, HouseNotFoundException {
+    public List<Device> getTopDevicesByCriterion(int n, Function<Device, Double> criterion) {
         return this.houseManager.getAllDevices().stream()
             .sorted(Comparator.comparingDouble(criterion::apply).reversed())
             .limit(n)
@@ -773,43 +764,39 @@ public class DomusControl implements Serializable {
     }
 
     /**
-     * Helper method to get all devices for a given user by aggregating devices from all their houses.
-     * @param email The email of the user whose devices we want to retrieve.
-     * @return A list of all devices associated with the user's houses.
-     * @throws UserNotFoundException If the email does not correspond to a registered user.
-     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
+     * Returns the top N divisions globally sorted by a given criterion.
      */
-    private List<Device> getAllDevicesForUser(String email) throws UserNotFoundException, HouseNotFoundException {
-        List<Device> devices = new ArrayList<>();
-        for (House house : this.getHousesByUser(email)) {
-            devices.addAll(house.getDevices().values());
-        }
-        return devices;
+    public List<DivisionInfo> getTopDivisionsByCriterion(int n, Function<DivisionInfo, Double> criterion) {
+        return this.houseManager.getAllDivisionsInfo().stream()
+            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
+            .limit(n)
+            .collect(Collectors.toList());
     }
 
+    // Queries: for user
+
     /**
-     * Returns the top N devices sorted by a given criterion, which can be energy consumption, number of interactions, etc.
-     * @param email The email of the user whose devices we want to evaluate.
-     * @param n The number of top devices to return. 
-     * @param criterion A function that takes a Device and returns an integer representing the value of the criterion for that device (e.g., energy consumption, number of interactions). 
-     * @return  A list of the top N devices sorted by the specified criterion, in descending order.
-     * @throws UserNotFoundException If the email does not correspond to a registered user. 
-     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
+     * Returns the top N houses for a specific user, sorted by a given criterion.
      */
-    public List<Device> getTopDevicesByCriterionForUser(String email, int n, ToIntFunction<Device> criterion) throws UserNotFoundException, HouseNotFoundException {
-        return getAllDevicesForUser(email).stream()
-            .sorted(Comparator.comparingInt(criterion).reversed())
+    public List<House> getTopHousesByCriterionForUser(String email, int n, Function<House, Double> criterion) throws UserNotFoundException, HouseNotFoundException {
+        return this.getHousesByUser(email).stream()
+            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
             .limit(n)
             .collect(Collectors.toList());
     }
 
     /**
-     * Helper method to get all divisions for a given user by aggregating divisions from all their houses.
-     * @param email The email of the user whose divisions we want to retrieve.
-     * @return A list of all divisions associated with the user's houses.
-     * @throws UserNotFoundException If the email does not correspond to a registered user.
-     * @throws HouseNotFoundException If a house ID stored in the user's roles does not
+     * Returns the top N divisions for a specific user, sorted by a given criterion.
      */
+    public List<DivisionInfo> getTopDivisionsByCriterionForUser(String email, int n, Function<DivisionInfo, Double> criterion) throws UserNotFoundException, HouseNotFoundException {
+        return getAllDivisionsForUser(email).stream()
+            .sorted(Comparator.comparingDouble(criterion::apply).reversed())
+            .limit(n)
+            .collect(Collectors.toList());
+    }
+
+    // Queries: helpers
+
     private List<DivisionInfo> getAllDivisionsForUser(String email) throws UserNotFoundException, HouseNotFoundException {
         List<DivisionInfo> divisions = new ArrayList<>();
         for (House house : this.getHousesByUser(email)) {
@@ -818,51 +805,5 @@ public class DomusControl implements Serializable {
             );
         }
         return divisions;
-    }
-
-    /**
-     * Returns the top N divisions sorted by a given criterion, which can be the number of devices, total energy consumption of devices in the division, etc.
-     * @param email The email of the user whose divisions we want to evaluate.
-     * @param n The number of top divisions to return.
-     * @param criterion A function that takes a DivisionInfo and returns an integer representing the value of the criterion for that division (e.g., number of devices, total consumption).
-     * @return A list of the top N divisions sorted by the specified criterion, in descending order.
-     * @throws UserNotFoundException If the email does not correspond to a registered user.
-     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
-     */
-    public List<DivisionInfo> getTopDivisionsByCriterionForUser(String email, int n, Function<DivisionInfo, Integer> criterion) throws UserNotFoundException, HouseNotFoundException {
-        return getAllDivisionsForUser(email).stream()
-            .sorted(Comparator.comparingInt(criterion::apply).reversed())
-            .limit(n)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Returns the top N divisions across all houses in the system, ranked by device count.
-     *
-     * @param n The number of top divisions to return.
-     * @return A list of DivisionInfo DTOs in descending order of device count.
-     */
-    public List<DivisionInfo> getTopDivisionsByDeviceCount(int n) {
-        return this.houseManager.getAllHouses().stream()
-            .flatMap(h -> h.getDivisions().entrySet().stream()
-                .map(e -> new DivisionInfo(h.getName(), e.getKey(), e.getValue().size())))
-            .sorted(Comparator.comparingInt(DivisionInfo::getDeviceCount).reversed())
-            .limit(n)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Returns the top 3 most consuming houses based on total energy consumption for a given user.
-     *
-     * @param email The email of the user to get houses for.
-     * @return A list of the top 3 most consuming houses for this user.
-     * @throws UserNotFoundException If the email does not correspond to a registered user.
-     * @throws HouseNotFoundException If a house ID associated with the user does not exist.
-     */
-    public List<House> getTop3MostConsumingHousesForUSer(String email) throws UserNotFoundException, HouseNotFoundException {
-        return this.getHousesByUser(email).stream()
-                .sorted(Comparator.comparingDouble(House::calculateTotalConsumption).reversed())
-                .limit(3)
-                .collect(Collectors.toList());
     }
 }

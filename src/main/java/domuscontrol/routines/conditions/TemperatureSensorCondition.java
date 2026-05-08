@@ -177,7 +177,11 @@ public class TemperatureSensorCondition implements Condition {
      */
     @Override
     public String toString() {
-        return "TemperatureSensorCondition { Sensor #" + this.sensorId
-            + " temperature " + this.operator + " " + this.triggerTemperature + " ºC }";
+        StringBuilder sb = new StringBuilder();
+        sb.append("TemperatureSensorCondition { Sensor #").append(this.sensorId)
+          .append(" temperature ").append(this.operator)
+          .append(" ").append(this.triggerTemperature)
+          .append(" ºC }");
+        return sb.toString();
     }
 }
