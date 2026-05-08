@@ -22,8 +22,11 @@ import java.util.Objects;
  */
 public class DivisionInfo implements Serializable {
 
+    /** The name of the house this division belongs to. */
     private final String houseName;
+    /** The name of the division. */
     private final String divisionName;
+    /** The number of devices in this division. */
     private final int deviceCount;
 
     /**

@@ -733,6 +733,10 @@ public class DomusControl implements Serializable {
 
     /**
      * Returns the top N users sorted by a given criterion (e.g., house count, device count).
+     * 
+     * @param n The number of top users to return.
+     * @param criterion The function used to determine the ranking criterion.
+     * @return A list of User objects representing the top users globally.
      */
     public List<User> getTopUsersByCriterion(int n, Function<User, Double> criterion) {
         return this.userManager.getAllUsers().stream()
@@ -744,6 +748,10 @@ public class DomusControl implements Serializable {
 
     /**
      * Returns the top N houses sorted by a given criterion (e.g., energy consumption, device count).
+     * 
+     * @param n The number of top houses to return.
+     * @param criterion The function used to determine the ranking criterion.
+     * @return A list of House objects representing the top houses globally.
      */
     public List<House> getTopHousesByCriterion(int n, Function<House, Double> criterion) {
         return this.houseManager.getAllHouses().stream()
@@ -755,6 +763,10 @@ public class DomusControl implements Serializable {
 
     /**
      * Returns the top N devices globally sorted by a given criterion (e.g., active time).
+     * 
+     * @param n The number of top devices to return.
+     * @param criterion The function used to determine the ranking criterion.
+     * @return A list of Device objects representing the top devices globally.
      */
     public List<Device> getTopDevicesByCriterion(int n, Function<Device, Double> criterion) {
         return this.houseManager.getAllDevices().stream()
@@ -765,6 +777,10 @@ public class DomusControl implements Serializable {
 
     /**
      * Returns the top N divisions globally sorted by a given criterion.
+     * 
+     * @param n The number of top divisions to return.
+     * @param criterion The function used to determine the ranking criterion.
+     * @return A list of DivisionInfo objects representing the top divisions globally.
      */
     public List<DivisionInfo> getTopDivisionsByCriterion(int n, Function<DivisionInfo, Double> criterion) {
         return this.houseManager.getAllDivisionsInfo().stream()
@@ -777,6 +793,13 @@ public class DomusControl implements Serializable {
 
     /**
      * Returns the top N houses for a specific user, sorted by a given criterion.
+     * 
+     * @param email The email of the user for whom to retrieve houses.
+     * @param n The number of top houses to return.
+     * @param criterion The function used to determine the ranking criterion.
+     * @return A list of House objects representing the top houses for the user.
+     * @throws UserNotFoundException If the email does not correspond to a registered user.
+     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
      */
     public List<House> getTopHousesByCriterionForUser(String email, int n, Function<House, Double> criterion) throws UserNotFoundException, HouseNotFoundException {
         return this.getHousesByUser(email).stream()
@@ -787,6 +810,13 @@ public class DomusControl implements Serializable {
 
     /**
      * Returns the top N divisions for a specific user, sorted by a given criterion.
+     * 
+     * @param email The email of the user for whom to retrieve divisions.
+     * @param n The number of top divisions to return.
+     * @param criterion The function used to determine the ranking criterion.
+     * @return A list of DivisionInfo objects representing the top divisions for the user.
+     * @throws UserNotFoundException If the email does not correspond to a registered user.
+     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
      */
     public List<DivisionInfo> getTopDivisionsByCriterionForUser(String email, int n, Function<DivisionInfo, Double> criterion) throws UserNotFoundException, HouseNotFoundException {
         return getAllDivisionsForUser(email).stream()
@@ -797,6 +827,14 @@ public class DomusControl implements Serializable {
 
     // Queries: helpers
 
+    /**
+     * Helper method to retrieve all divisions across all houses for a specific user, along with their device counts.
+     * 
+     * @param email The email of the user for whom to retrieve divisions.
+     * @return A list of DivisionInfo objects representing all divisions the user has access to, including the house name, division name, and device count.
+     * @throws UserNotFoundException If the email does not correspond to a registered user.
+     * @throws HouseNotFoundException If a house ID stored in the user's roles does not exist.
+     */
     private List<DivisionInfo> getAllDivisionsForUser(String email) throws UserNotFoundException, HouseNotFoundException {
         List<DivisionInfo> divisions = new ArrayList<>();
         for (House house : this.getHousesByUser(email)) {

@@ -119,6 +119,7 @@ public class HouseManager implements Serializable {
      * @param division The name of the division to which the device will be added.
      * @throws HouseNotFoundException if no house with the given ID exists.
      * @throws DivisionNotFoundException if no division with the given name exists in the specified house.
+     * @throws NameAlreadyExistsException if a device with the same ID already exists in the specified house.
      */
     public void addDeviceToDivision(int houseId, Device device, String division) throws HouseNotFoundException, DivisionNotFoundException, NameAlreadyExistsException {
         House h = getHouseInternal(houseId);
@@ -334,7 +335,7 @@ public class HouseManager implements Serializable {
 
     /**
      * Returns information about all divisions across all houses.
-     * * @return A list of DivisionInfo DTOs.
+     * @return A list of DivisionInfo DTOs.
      */
     public List<DivisionInfo> getAllDivisionsInfo() {
         return this.housesById.values().stream()

@@ -245,8 +245,8 @@ public class HouseTest {
             plug.turnOn();
         });
 
-        List<Device> topDevices = house.top3Devices(Device::getTotalActivations);
-        List<String> topDivisions = house.top3Divisions(List::size);
+        List<Device> topDevices = house.top3Devices(device -> (double) device.getTotalActivations());
+        List<String> topDivisions = house.top3Divisions(list -> list.size());
 
         assertEquals(3, topDevices.size());
         assertEquals(third.getId(), topDevices.get(0).getId());
