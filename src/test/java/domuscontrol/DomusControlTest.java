@@ -6,6 +6,7 @@ import domuscontrol.devices.Gate;
 import domuscontrol.devices.Lamp;
 import domuscontrol.devices.Plug;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfAdjustableDeviceException;
+import domuscontrol.exceptions.InvalidMinutesException;
 import domuscontrol.exceptions.DeviceIsNotInstanceOfSwitchableDeviceException;
 import domuscontrol.exceptions.LastAdminException;
 import domuscontrol.exceptions.LoginInvalidPasswordException;
@@ -145,7 +146,7 @@ public class DomusControlTest {
         assertEquals(20.0, model.getTemperature());
         assertEquals(1000.0, model.getLuminosity());
         assertNotNull(model.getCurrentState());
-        assertThrows(IllegalArgumentException.class, () -> model.tick(-1));
+        assertThrows(InvalidMinutesException.class, () -> model.tick(-1));
         assertDoesNotThrow(() -> model.tick(1));
     }
 

@@ -9,6 +9,7 @@ import domuscontrol.routines.actions.TurnOnAction;
 import domuscontrol.routines.conditions.DeviceStateCondition;
 import domuscontrol.routines.conditions.TimeCondition;
 import domuscontrol.simulation.SimulationState;
+import domuscontrol.simulation.SimulationStateStub;
 import domuscontrol.simulation.WeatherCondition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -219,6 +220,6 @@ public class AutomationTest {
 
     private SimulationState state() {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 12, 0);
-        return new SimulationState(now, now.minusMinutes(1), 20.0, 500.0, WeatherCondition.SUNNY);
+        return new SimulationStateStub(now, now.minusMinutes(1), 20.0, 500.0, WeatherCondition.SUNNY);
     }
 }

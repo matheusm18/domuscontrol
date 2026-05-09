@@ -9,24 +9,11 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SimulationStateTest {
 
     @Test
-    void constructorStoresSnapshotFields() {
-        LocalDateTime now = LocalDateTime.of(2026, 1, 1, 12, 0);
-        LocalDateTime previous = now.minusHours(1);
-        SimulationState state = new SimulationState(now, previous, 20.5, 700.0, WeatherCondition.CLOUDY);
-
-        assertEquals(now, state.getCurrentDateTime());
-        assertEquals(previous, state.getPreviousDateTime());
-        assertEquals(20.5, state.getTemperature());
-        assertEquals(700.0, state.getLuminosity());
-        assertEquals(WeatherCondition.CLOUDY, state.getWeather());
-    }
-
-    @Test
-    void fromBuildsSnapshotFromSimulation() {
+    void simulationImplementsInterface() {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 12, 0);
         Simulation simulation = new Simulation(now, 22.0, WeatherCondition.CLOUDY);
 
-        SimulationState state = SimulationState.from(simulation);
+        SimulationState state = simulation;
 
         assertEquals(now, state.getCurrentDateTime());
         assertEquals(now, state.getPreviousDateTime());
@@ -36,11 +23,27 @@ public class SimulationStateTest {
     }
 
     @Test
+    void cloneIsIsolatedFromOriginal() {
+        Simulation simulation = new Simulation(LocalDateTime.of(2026, 1, 1, 12, 0), 20.0, WeatherCondition.SUNNY);
+
+        SimulationState snapshot = simulation.clone();
+        simulation.changeWeather(WeatherCondition.STORMY);
+        simulation.setTemperature(5.0);
+
+        assertEquals(WeatherCondition.SUNNY, snapshot.getWeather());
+        assertEquals(20.0, snapshot.getTemperature());
+    }
+
+    @Test
     void isRainingMatchesRainAndStorm() {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 12, 0);
 
-        assertTrue(new SimulationState(now, now, 20.0, 0.0, WeatherCondition.RAINING).isRaining());
-        assertTrue(new SimulationState(now, now, 20.0, 0.0, WeatherCondition.STORMY).isRaining());
-        assertFalse(new SimulationState(now, now, 20.0, 0.0, WeatherCondition.SUNNY).isRaining());
+        SimulationState raining = new Simulation(now, 20.0, WeatherCondition.RAINING);
+        SimulationState stormy = new Simulation(now, 20.0, WeatherCondition.STORMY);
+        SimulationState sunny = new Simulation(now, 20.0, WeatherCondition.SUNNY);
+
+        assertTrue(raining.isRaining());
+        assertTrue(stormy.isRaining());
+        assertFalse(sunny.isRaining());
     }
 }

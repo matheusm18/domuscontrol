@@ -4,6 +4,7 @@ import domuscontrol.DomusControl;
 import domuscontrol.devices.Device;
 import domuscontrol.exceptions.LoginInvalidPasswordException;
 import domuscontrol.exceptions.UserAlreadyExistsException;
+import domuscontrol.exceptions.HouseNotFoundException;
 import domuscontrol.exceptions.UserNotFoundException;
 import domuscontrol.houses.DivisionInfo;
 import domuscontrol.houses.House;
@@ -146,35 +147,39 @@ public class DomusControlUI {
         menu.setHandler(2, () -> {
             House house = selectHouseGlobal();
             if (house == null) return;
-            
-            List<Device> top = house.top3Devices(d -> (double) d.getTotalMinutesOn());
-            
-            if (top.isEmpty()) {System.out.println("  No devices in this house."); return; }
-            Ansi.listTitle("Top Devices By Active Time - " + house.getName());
-            int[] w = deviceColWidths(top);
-            for (int i = 0; i < top.size(); i++) {
-                Device d = top.get(i);
-                Ansi.listRow(String.format("%d  %-" + w[0] + "s %-" + w[1] + "s %-" + w[2] + "s %d min active",
-                    i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalMinutesOn()));
+            try {
+                List<Device> top = model.getTopDevicesInHouse(house.getId(), 3, d -> (double) d.getTotalMinutesOn());
+                if (top.isEmpty()) { System.out.println("  No devices in this house."); return; }
+                Ansi.listTitle("Top Devices By Active Time - " + house.getName());
+                int[] w = deviceColWidths(top);
+                for (int i = 0; i < top.size(); i++) {
+                    Device d = top.get(i);
+                    Ansi.listRow(String.format("%d  %-" + w[0] + "s %-" + w[1] + "s %-" + w[2] + "s %d min active",
+                        i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalMinutesOn()));
+                }
+                Ansi.listSeparator();
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
             }
-            Ansi.listSeparator();
         });
 
         menu.setHandler(3, () -> {
             House house = selectHouseGlobal();
             if (house == null) return;
-            
-            List<Device> top = house.top3Devices(d -> (double) d.getTotalActivations());
-            
-            if (top.isEmpty()) { System.out.println("  No devices in this house."); return; }
-            Ansi.listTitle("Top Devices By Activations - " + house.getName());
-            int[] w = deviceColWidths(top);
-            for (int i = 0; i < top.size(); i++) {
-                Device d = top.get(i);
-                Ansi.listRow(String.format("%d  %-" + w[0] + "s %-" + w[1] + "s %-" + w[2] + "s %d activation(s)",
-                    i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalActivations()));
+            try {
+                List<Device> top = model.getTopDevicesInHouse(house.getId(), 3, d -> (double) d.getTotalActivations());
+                if (top.isEmpty()) { System.out.println("  No devices in this house."); return; }
+                Ansi.listTitle("Top Devices By Activations - " + house.getName());
+                int[] w = deviceColWidths(top);
+                for (int i = 0; i < top.size(); i++) {
+                    Device d = top.get(i);
+                    Ansi.listRow(String.format("%d  %-" + w[0] + "s %-" + w[1] + "s %-" + w[2] + "s %d activation(s)",
+                        i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalActivations()));
+                }
+                Ansi.listSeparator();
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
             }
-            Ansi.listSeparator();
         });
 
         menu.setHandler(4, () -> {

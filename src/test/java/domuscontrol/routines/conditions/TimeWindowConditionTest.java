@@ -2,6 +2,7 @@ package domuscontrol.routines.conditions;
 
 import domuscontrol.routines.Condition;
 import domuscontrol.simulation.SimulationState;
+import domuscontrol.simulation.SimulationStateStub;
 import domuscontrol.simulation.WeatherCondition;
 import org.junit.jupiter.api.Test;
 
@@ -95,6 +96,6 @@ public class TimeWindowConditionTest {
     }
 
     private SimulationState state(LocalDateTime now) {
-        return new SimulationState(now, null, 20.0, 500.0, WeatherCondition.SUNNY);
+        return new SimulationStateStub(now, null, 20.0, 500.0, WeatherCondition.SUNNY);
     }
 }

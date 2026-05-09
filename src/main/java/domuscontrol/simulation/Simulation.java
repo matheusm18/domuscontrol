@@ -15,7 +15,7 @@ import java.util.Objects;
  * @author Matheus Azevedo (a111430)
  * @version 1.0
  */
-public class Simulation implements Serializable {
+public class Simulation implements SimulationState, Serializable {
 
 
     /**

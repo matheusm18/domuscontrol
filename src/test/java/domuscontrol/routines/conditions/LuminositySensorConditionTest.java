@@ -6,6 +6,7 @@ import domuscontrol.devices.sensors.LuminositySensor;
 import domuscontrol.houses.House;
 import domuscontrol.routines.Condition;
 import domuscontrol.simulation.SimulationState;
+import domuscontrol.simulation.SimulationStateStub;
 import domuscontrol.simulation.WeatherCondition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -135,6 +136,6 @@ public class LuminositySensorConditionTest {
 
     private SimulationState state(double luminosity) {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 12, 0);
-        return new SimulationState(now, now.minusHours(1), 20.0, luminosity, WeatherCondition.SUNNY);
+        return new SimulationStateStub(now, now.minusHours(1), 20.0, luminosity, WeatherCondition.SUNNY);
     }
 }

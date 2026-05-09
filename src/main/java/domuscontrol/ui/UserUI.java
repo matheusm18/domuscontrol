@@ -222,37 +222,38 @@ public class UserUI {
         menu.setHandler(2, () -> {
             House house = selectHouse(email);
             if (house == null) return;
-
-            List<Device> topDevices = house.top3Devices(d -> (double) d.getTotalMinutesOn());
-            if (topDevices.isEmpty()) {
-                System.out.println("  No devices in this house.");
-                return;
+            try {
+                List<Device> topDevices = model.getTopDevicesInHouse(house.getId(), 3, d -> (double) d.getTotalMinutesOn());
+                if (topDevices.isEmpty()) { System.out.println("  No devices in this house."); return; }
+                Ansi.listTitle("Top Devices By Active Time - " + house.getName());
+                int[] w2 = deviceColWidths(topDevices);
+                for (int i = 0; i < topDevices.size(); i++) {
+                    Device d = topDevices.get(i);
+                    Ansi.listRow(String.format("%d  %-" + w2[0] + "s %-" + w2[1] + "s %-" + w2[2] + "s %d min active",
+                        i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalMinutesOn()));
+                }
+                Ansi.listSeparator();
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
             }
-            Ansi.listTitle("Top Devices By Active Time - " + house.getName());
-            int[] w2 = deviceColWidths(topDevices);
-            for (int i = 0; i < topDevices.size(); i++) {
-                Device d = topDevices.get(i);
-                Ansi.listRow(String.format("%d  %-" + w2[0] + "s %-" + w2[1] + "s %-" + w2[2] + "s %d min active",
-                    i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalMinutesOn()));
-            }
-            Ansi.listSeparator();
         });
         menu.setHandler(3, () -> {
             House house = selectHouse(email);
             if (house == null) return;
-            List<Device> topDevices = house.top3Devices(d -> (double) d.getTotalActivations());
-            if (topDevices.isEmpty()) {
-                System.out.println("  No devices in this house.");
-                return;
+            try {
+                List<Device> topDevices = model.getTopDevicesInHouse(house.getId(), 3, d -> (double) d.getTotalActivations());
+                if (topDevices.isEmpty()) { System.out.println("  No devices in this house."); return; }
+                Ansi.listTitle("Top Devices By Activations - " + house.getName());
+                int[] w3 = deviceColWidths(topDevices);
+                for (int i = 0; i < topDevices.size(); i++) {
+                    Device d = topDevices.get(i);
+                    Ansi.listRow(String.format("%d  %-" + w3[0] + "s %-" + w3[1] + "s %-" + w3[2] + "s %d activation(s)",
+                        i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalActivations()));
+                }
+                Ansi.listSeparator();
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
             }
-            Ansi.listTitle("Top Devices By Activations - " + house.getName());
-            int[] w3 = deviceColWidths(topDevices);
-            for (int i = 0; i < topDevices.size(); i++) {
-                Device d = topDevices.get(i);
-                Ansi.listRow(String.format("%d  %-" + w3[0] + "s %-" + w3[1] + "s %-" + w3[2] + "s %d activation(s)",
-                    i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel(), d.getTotalActivations()));
-            }
-            Ansi.listSeparator();
         });
         menu.setHandler(4, () -> {
             try {
@@ -317,7 +318,13 @@ public class UserUI {
             return;
         }
 
-        List<ActivationEvent> activated = model.tick(minutes);
+        List<ActivationEvent> activated;
+        try {
+            activated = model.tick(minutes);
+        } catch (InvalidMinutesException e) {
+            System.out.println("  Invalid number of minutes.");
+            return;
+        }
         System.out.println("  Simulation advanced by " + minutes + " minute(s).");
 
         try {

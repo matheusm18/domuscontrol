@@ -55,7 +55,7 @@ public enum WeatherCondition {
 
     /**
      * Returns the display name of this weather condition.
-     * @return A human-readable string representing this weather condition.
+     * @return A string representing this weather condition.
      */
     @Override
     public String toString() {

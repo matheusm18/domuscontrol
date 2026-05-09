@@ -1,7 +1,6 @@
 package domuscontrol.houses;
 
 import domuscontrol.devices.sensors.Sensor;
-import domuscontrol.simulation.Simulation;
 import domuscontrol.simulation.SimulationState;
 import domuscontrol.suggestions.AutomationSuggestion;
 import domuscontrol.suggestions.DeviceInteraction;
@@ -478,15 +477,16 @@ public class House implements Serializable {
     }
 
     /**
-     * Returns the top 3 devices ranked by the given integer criterion.
+     * Returns the top N devices ranked by the given criterion.
      *
-     * @param f A function that extracts an integer value from a device to rank by.
-     * @return A list of up to 3 cloned devices in descending order.
+     * @param n The maximum number of devices to return.
+     * @param f A function that extracts a double value from a device to rank by.
+     * @return A list of up to N cloned devices in descending order.
      */
-    public List<Device> top3Devices(Function<Device, Double> f) {
+    public List<Device> topNDevices(int n, Function<Device, Double> f) {
         return this.devices.values().stream()
             .sorted(Comparator.comparingDouble(f::apply).reversed())
-            .limit(3)
+            .limit(n)
             .map(Device::clone)
             .collect(Collectors.toList());
     }
@@ -509,13 +509,12 @@ public class House implements Serializable {
      * Simulates the passing of time for the house. Updates device logic and checks
      * all automations and schedules.
      *
-     * @param simulation The current simulation state.
+     * @param state The current simulation state.
      * @return A list of strings describing the actions taken during this tick, such as
      *         which automations were triggered and which devices were affected.
      */
-    public List<String> tick(Simulation simulation) {
-        SimulationState state = SimulationState.from(simulation);
-        int minutes = (int) simulation.getTimeElapsed();
+    public List<String> tick(SimulationState state) {
+        int minutes = (int) state.getTimeElapsed();
         this.devices.values().forEach(device -> device.tick(minutes));
         this.updateSensors(state);
         return this.routineManager.tick(this, state);

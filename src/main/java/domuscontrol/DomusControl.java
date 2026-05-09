@@ -88,8 +88,9 @@ public class DomusControl implements Serializable {
      * Advances the simulation by the specified number of minutes, updating the environment and processing device interactions.
      * @param minutes The number of minutes to advance the simulation.
      * @return A list of routine activation events produced during the simulation ticks.
+     * @throws InvalidMinutesException if minutes is negative.
      */
-    public List<ActivationEvent> tick(int minutes) {
+    public List<ActivationEvent> tick(int minutes) throws InvalidMinutesException {
         if (minutes < 0) {
             throw new InvalidMinutesException(minutes);
         }
@@ -97,7 +98,7 @@ public class DomusControl implements Serializable {
         List<ActivationEvent> activatedAll = new ArrayList<>();
         for (int i = 0; i < minutes; i++) {
             this.simulation.advanceSimulation(1);
-            List<ActivationEvent> activatedNow = this.houseManager.tick(this.simulation);
+            List<ActivationEvent> activatedNow = this.houseManager.tick((SimulationState) this.simulation.clone());
             for (ActivationEvent act : activatedNow) {
                 if (!activatedAll.contains(act)) {
                     activatedAll.add(act);
@@ -366,6 +367,28 @@ public class DomusControl implements Serializable {
      */
     public void removeDivision(int houseId, String divisionName) throws HouseNotFoundException, DivisionNotFoundException {
         this.houseManager.removeDivision(houseId, divisionName);
+    }
+
+    /**
+     * Returns all divisions and their devices for the specified house.
+     *
+     * @param houseId The ID of the house.
+     * @return A map of division names to lists of devices.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     */
+    public Map<String, List<Device>> getDivisions(int houseId) throws HouseNotFoundException {
+        return this.houseManager.getHouseById(houseId).getDivisions();
+    }
+
+    /**
+     * Returns all devices in the specified house.
+     *
+     * @param houseId The ID of the house.
+     * @return A map of device IDs to devices.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     */
+    public Map<Integer, Device> getDevices(int houseId) throws HouseNotFoundException {
+        return this.houseManager.getHouseById(houseId).getDevices();
     }
 
     /**
@@ -681,7 +704,7 @@ public class DomusControl implements Serializable {
      * @return A SimulationState object representing the current state of the simulation, including date/time, weather, temperature, and luminosity.
      */
     public SimulationState getCurrentState() {
-        return SimulationState.from(this.simulation);
+        return this.simulation.clone();
     }
 
     /**
@@ -763,8 +786,21 @@ public class DomusControl implements Serializable {
     }
 
     /**
+     * Returns the top N devices in a specific house sorted by a given criterion.
+     *
+     * @param houseId The ID of the house.
+     * @param n The number of top devices to return.
+     * @param criterion The function used to determine the ranking criterion.
+     * @return A list of Device objects representing the top devices in the house.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     */
+    public List<Device> getTopDevicesInHouse(int houseId, int n, Function<Device, Double> criterion) throws HouseNotFoundException {
+        return this.houseManager.getHouseById(houseId).topNDevices(n, criterion);
+    }
+
+    /**
      * Returns the top N devices globally sorted by a given criterion (e.g., active time).
-     * 
+     *
      * @param n The number of top devices to return.
      * @param criterion The function used to determine the ranking criterion.
      * @return A list of Device objects representing the top devices globally.

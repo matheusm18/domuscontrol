@@ -11,7 +11,6 @@ import domuscontrol.devices.types.ColorAdjustableDevice;
 import domuscontrol.devices.types.OpenableDevice;
 import domuscontrol.devices.types.SwitchableDevice;
 import domuscontrol.exceptions.*;
-import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
 import domuscontrol.routines.*;
 import domuscontrol.routines.actions.*;
@@ -111,7 +110,7 @@ public class ActionsUI {
     private void listAutomations(int houseId) {
         try {
             List<Automation> automations = model.getAutomations(houseId);
-            Map<Integer, Device> devices = model.getHouseById(houseId).getDevices();
+            Map<Integer, Device> devices = model.getDevices(houseId);
             if (automations.isEmpty()) {
                 System.out.println("  No automations.");
                 return;
@@ -171,8 +170,7 @@ public class ActionsUI {
         }
 
         try {
-            House house = model.getHouseById(houseId);
-            List<Action> actions = readActionsDialog(house);
+            List<Action> actions = readActionsDialog(houseId);
             if (actions.isEmpty()) {
                 System.out.println("  Error: automation must have at least one action.");
                 return;
@@ -184,7 +182,7 @@ public class ActionsUI {
             }
             Ansi.listSeparator();
 
-            List<Condition> conditions = readConditionsDialog(house, false);
+            List<Condition> conditions = readConditionsDialog(houseId, false);
             if (conditions.isEmpty()) {
                 System.out.println("  Error: automation must have at least one condition.");
                 return;
@@ -197,7 +195,7 @@ public class ActionsUI {
             Ansi.listSeparator();
 
             TimeWindowCondition timeWindow = findTimeWindowCondition(conditions);
-            List<Action> endActions = readEndActionsIfNeeded(house, timeWindow);
+            List<Action> endActions = readEndActionsIfNeeded(houseId, timeWindow);
             if (timeWindow != null && endActions.isEmpty()) {
                 System.out.println("  Error: time window routines must have at least one end action.");
                 return;
@@ -282,7 +280,7 @@ public class ActionsUI {
     private void listSchedules(int houseId) {
         try {
             List<Automation> schedules = model.getSchedules(houseId);
-            Map<Integer, Device> devices = model.getHouseById(houseId).getDevices();
+            Map<Integer, Device> devices = model.getDevices(houseId);
             if (schedules.isEmpty()) {
                 System.out.println("  No schedules.");
                 return;
@@ -318,21 +316,20 @@ public class ActionsUI {
         }
 
         try {
-            House house = model.getHouseById(houseId);
-            List<Action> actions = readActionsDialog(house);
+            List<Action> actions = readActionsDialog(houseId);
             if (actions.isEmpty()) {
                 System.out.println("  Error: schedule must have at least one action.");
                 return;
             }
 
-            List<Condition> conditions = readConditionsDialog(house, true);
+            List<Condition> conditions = readConditionsDialog(houseId, true);
             if (conditions.isEmpty()) {
                 System.out.println("  Error: schedule must have at least one condition.");
                 return;
             }
 
             TimeWindowCondition timeWindow = findTimeWindowCondition(conditions);
-            List<Action> endActions = readEndActionsIfNeeded(house, timeWindow);
+            List<Action> endActions = readEndActionsIfNeeded(houseId, timeWindow);
             if (timeWindow != null && endActions.isEmpty()) {
                 System.out.println("  Error: time window schedules must have at least one end action.");
                 return;
@@ -362,7 +359,7 @@ public class ActionsUI {
         return null;
     }
 
-    private List<Action> readEndActionsIfNeeded(House house, TimeWindowCondition timeWindow) {
+    private List<Action> readEndActionsIfNeeded(int houseId, TimeWindowCondition timeWindow) {
         if (timeWindow == null) {
             return new ArrayList<>();
         }
@@ -371,7 +368,7 @@ public class ActionsUI {
         Ansi.listRow("Select what should happen when the time window ends.");
         Ansi.listSeparator();
 
-        return readActionsDialog(house);
+        return readActionsDialog(houseId);
     }
 
     private void addTimeWindowEndRoutine(int houseId, String name, AutomationType type, List<Condition> conditions,
@@ -496,7 +493,7 @@ public class ActionsUI {
 
     private boolean houseHasDevices(int houseId) {
         try {
-            return !model.getHouseById(houseId).getDevices().isEmpty();
+            return !model.getDevices(houseId).isEmpty();
         } catch (HouseNotFoundException e) {
             return false;
         }
@@ -506,8 +503,8 @@ public class ActionsUI {
         try {
             User user = model.getUserByEmail(email);
             List<Scenario> scenarios = model.getScenarios(houseId, user.getId());
-            Map<Integer, Device> devices = model.getHouseById(houseId).getDevices();
-            
+            Map<Integer, Device> devices = model.getDevices(houseId);
+
             if (scenarios.isEmpty()) {
                 System.out.println("  No scenarios.");
                 return;
@@ -585,9 +582,8 @@ public class ActionsUI {
         }
 
         try {
-            House house = model.getHouseById(houseId);
             User user = model.getUserByEmail(email);
-            List<Action> actions = readActionsDialog(house);
+            List<Action> actions = readActionsDialog(houseId);
             if (actions.isEmpty()) {
                 System.out.println("  Error: scenario must have at least one action.");
                 return;
@@ -647,14 +643,20 @@ public class ActionsUI {
     // Helper methods for Actions & Conditions
     // ------------------------------------------------------------------------
 
-    private List<Action> readActionsDialog(House house) {
+    private List<Action> readActionsDialog(int houseId) {
         List<Action> actions = new ArrayList<>();
         boolean adding = true;
 
         while (adding) {
             Ansi.listTitle("Available Devices");
             int num = 1;
-            List<Device> deviceList = new ArrayList<>(house.getDevices().values());
+            List<Device> deviceList;
+            try {
+                deviceList = new ArrayList<>(model.getDevices(houseId).values());
+            } catch (HouseNotFoundException e) {
+                System.out.println("  Error: house not found.");
+                break;
+            }
 
             for (Device d : deviceList) {
                 Ansi.listRow(String.format("%d  %-15s %-12s %s",
@@ -728,7 +730,7 @@ public class ActionsUI {
      * @param timeOnly if true, only TimeCondition / TimeWindowCondition can be
      *                 added (for schedules)
      */
-    private List<Condition> readConditionsDialog(House house, boolean timeOnly) {
+    private List<Condition> readConditionsDialog(int houseId, boolean timeOnly) {
         List<Condition> conditions = new ArrayList<>();
         boolean[] hasTime = { false };
 
@@ -757,11 +759,11 @@ public class ActionsUI {
         menu.setPreCondition(5, () -> !timeOnly);
         menu.setPreCondition(6, () -> !hasTime[0]);
 
-        menu.setHandler(1, () -> handleAddDeviceOnOffCondition(conditions, house));
-        menu.setHandler(2, () -> handleAddDeviceOpeningCondition(conditions, house));
-        menu.setHandler(3, () -> handleAddDeviceLevelCondition(conditions, house));
-        menu.setHandler(4, () -> handleAddColorTempCondition(conditions, house));
-        menu.setHandler(5, () -> handleAddSensorCondition(conditions, house));
+        menu.setHandler(1, () -> handleAddDeviceOnOffCondition(conditions, houseId));
+        menu.setHandler(2, () -> handleAddDeviceOpeningCondition(conditions, houseId));
+        menu.setHandler(3, () -> handleAddDeviceLevelCondition(conditions, houseId));
+        menu.setHandler(4, () -> handleAddColorTempCondition(conditions, houseId));
+        menu.setHandler(5, () -> handleAddSensorCondition(conditions, houseId));
         menu.setHandler(6, () -> handleAddTimeCondition(conditions, hasTime));
 
         menu.run();
@@ -809,8 +811,11 @@ public class ActionsUI {
         timeMenu.run();
     }
 
-    private void handleAddDeviceOnOffCondition(List<Condition> conditions, House house) {
-        List<Device> compatible = house.getDevices().values().stream()
+    private void handleAddDeviceOnOffCondition(List<Condition> conditions, int houseId) {
+        List<Device> compatible;
+        try { compatible = new ArrayList<>(model.getDevices(houseId).values()); }
+        catch (HouseNotFoundException e) { return; }
+        compatible = compatible.stream()
             .filter(d -> d instanceof SwitchableDevice && !(d instanceof Sensor))
             .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No switchable devices available."); return; }
@@ -822,8 +827,11 @@ public class ActionsUI {
         System.out.println("  Condition added.");
     }
 
-    private void handleAddDeviceOpeningCondition(List<Condition> conditions, House house) {
-        List<Device> compatible = house.getDevices().values().stream()
+    private void handleAddDeviceOpeningCondition(List<Condition> conditions, int houseId) {
+        List<Device> compatible;
+        try { compatible = new ArrayList<>(model.getDevices(houseId).values()); }
+        catch (HouseNotFoundException e) { return; }
+        compatible = compatible.stream()
             .filter(d -> d instanceof OpenableDevice)
             .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No openable devices available."); return; }
@@ -837,8 +845,11 @@ public class ActionsUI {
         System.out.println("  Condition added.");
     }
 
-    private void handleAddDeviceLevelCondition(List<Condition> conditions, House house) {
-        List<Device> compatible = house.getDevices().values().stream()
+    private void handleAddDeviceLevelCondition(List<Condition> conditions, int houseId) {
+        List<Device> compatible;
+        try { compatible = new ArrayList<>(model.getDevices(houseId).values()); }
+        catch (HouseNotFoundException e) { return; }
+        compatible = compatible.stream()
             .filter(d -> d instanceof AdjustableDevice)
             .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No adjustable devices available."); return; }
@@ -852,8 +863,11 @@ public class ActionsUI {
         System.out.println("  Condition added.");
     }
 
-    private void handleAddColorTempCondition(List<Condition> conditions, House house) {
-        List<Device> compatible = house.getDevices().values().stream()
+    private void handleAddColorTempCondition(List<Condition> conditions, int houseId) {
+        List<Device> compatible;
+        try { compatible = new ArrayList<>(model.getDevices(houseId).values()); }
+        catch (HouseNotFoundException e) { return; }
+        compatible = compatible.stream()
             .filter(d -> d instanceof ColorAdjustableDevice)
             .collect(Collectors.toList());
 
@@ -875,8 +889,11 @@ public class ActionsUI {
         System.out.println("  Color temperature condition added.");
     }
 
-    private void handleAddSensorCondition(List<Condition> conditions, House house) {
-        List<Device> sensors = house.getDevices().values().stream()
+    private void handleAddSensorCondition(List<Condition> conditions, int houseId) {
+        List<Device> sensors;
+        try { sensors = new ArrayList<>(model.getDevices(houseId).values()); }
+        catch (HouseNotFoundException e) { return; }
+        sensors = sensors.stream()
             .filter(d -> d instanceof Sensor)
             .collect(Collectors.toList());
         if (sensors.isEmpty()) { System.out.println("  No sensors available. Add a sensor device first."); return; }

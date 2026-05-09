@@ -147,8 +147,8 @@ public class HouseUI {
             Ansi.listTitle("House Details");
             Ansi.listRow(String.format("%-12s %s", "Name", house.getName()));
             Ansi.listRow(String.format("%-12s %d", "ID", house.getId()));
-            Ansi.listRow(String.format("%-12s %d", "Divisions", house.getDivisions().size()));
-            Ansi.listRow(String.format("%-12s %d", "Devices", house.getDevices().size()));
+            Ansi.listRow(String.format("%-12s %d", "Divisions", model.getDivisions(houseId).size()));
+            Ansi.listRow(String.format("%-12s %d", "Devices", model.getDevices(houseId).size()));
             Ansi.listSeparator();
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
@@ -169,8 +169,7 @@ public class HouseUI {
 
     private void listDivisions(int houseId) {
         try {
-            House house = model.getHouseById(houseId);
-            Map<String, List<Device>> divisions = house.getDivisions();
+            Map<String, List<Device>> divisions = model.getDivisions(houseId);
             if (divisions.isEmpty()) { System.out.println("  No divisions."); return; }
             Ansi.listTitle("Divisions");
             for (Map.Entry<String, List<Device>> entry : divisions.entrySet()) {
@@ -201,8 +200,7 @@ public class HouseUI {
 
     private void removeDivision(int houseId) {
         try {
-            House house = model.getHouseById(houseId);
-            Map<String, List<Device>> divisions = house.getDivisions();
+            Map<String, List<Device>> divisions = model.getDivisions(houseId);
             if (divisions.isEmpty()) { System.out.println("  No divisions."); return; }
 
             List<String> names = new ArrayList<>(divisions.keySet());
@@ -214,7 +212,14 @@ public class HouseUI {
             int choice = readInt();
             if (choice < 1 || choice > names.size()) return;
 
-            model.removeDivision(houseId, names.get(choice - 1));
+            String divName = names.get(choice - 1);
+            int deviceCount = divisions.get(divName).size();
+            if (deviceCount > 0) {
+                System.out.printf("  Warning: %d device(s) will also be deleted. Confirm? (y/n) ", deviceCount);
+                if (!sc.nextLine().trim().equalsIgnoreCase("y")) return;
+            }
+
+            model.removeDivision(houseId, divName);
             System.out.println("  Division removed.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
@@ -245,8 +250,7 @@ public class HouseUI {
 
     private void listDevices(int houseId) {
         try {
-            House house = model.getHouseById(houseId);
-            Map<Integer, Device> devices = house.getDevices();
+            Map<Integer, Device> devices = model.getDevices(houseId);
             if (devices.isEmpty()) { System.out.println("  No devices."); return; }
             Ansi.listTitle("Select Device");
             devices.values().forEach(device ->
@@ -293,8 +297,7 @@ public class HouseUI {
 
     private void addDevice(int houseId) {
         try {
-            House house = model.getHouseById(houseId);
-            Map<String, List<Device>> divisions = house.getDivisions();
+            Map<String, List<Device>> divisions = model.getDivisions(houseId);
             if (divisions.isEmpty()) { System.out.println("  Add a division first."); return; }
 
             List<String> divNames = new ArrayList<>(divisions.keySet());
@@ -804,8 +807,7 @@ public class HouseUI {
     }
 
     private Device pickDevice(int houseId) throws HouseNotFoundException {
-        House house = model.getHouseById(houseId);
-        Map<Integer, Device> devices = house.getDevices();
+        Map<Integer, Device> devices = model.getDevices(houseId);
         if (devices.isEmpty()) { System.out.println("  No devices."); return null; }
 
         List<Device> deviceList = new ArrayList<>(devices.values());
@@ -986,7 +988,7 @@ public class HouseUI {
 
     private boolean houseHasDevices(int houseId) {
         try {
-            return !model.getHouseById(houseId).getDevices().isEmpty();
+            return !model.getDevices(houseId).isEmpty();
         } catch (HouseNotFoundException e) {
             return false;
         }
@@ -994,7 +996,7 @@ public class HouseUI {
 
     private boolean houseHasDivisions(int houseId) {
         try {
-            return !model.getHouseById(houseId).getDivisions().isEmpty();
+            return !model.getDivisions(houseId).isEmpty();
         } catch (HouseNotFoundException e) {
             return false;
         }

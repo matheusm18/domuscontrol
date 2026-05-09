@@ -1,6 +1,6 @@
 package domuscontrol.houses;
 
-import domuscontrol.simulation.Simulation;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.simulation.ActivationEvent;
 import domuscontrol.suggestions.AutomationSuggestion;
 import domuscontrol.suggestions.DeviceInteraction;
@@ -317,14 +317,14 @@ public class HouseManager implements Serializable {
      * This cascades down to every device in every division.
      * Returns a list of activation events for automations that were triggered during this tick.
      *
-     * @param simulation The simulation context containing the current time and other relevant data.
+     * @param state The simulation context containing the current time and other relevant data.
      * @return A list of events for each automation that was activated during this tick.
      */
-    public List<ActivationEvent> tick(Simulation simulation) {
+    public List<ActivationEvent> tick(SimulationState state) {
         List<ActivationEvent> activated = new ArrayList<>();
 
         for (House house : this.housesById.values()) {
-            List<String> houseActivated = house.tick(simulation);
+            List<String> houseActivated = house.tick(state);
 
             for (String automationName : houseActivated) {
                 activated.add(new ActivationEvent(house.getId(), house.getName(), automationName));

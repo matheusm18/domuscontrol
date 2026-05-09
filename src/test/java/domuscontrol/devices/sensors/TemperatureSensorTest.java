@@ -2,6 +2,7 @@ package domuscontrol.devices.sensors;
 
 import domuscontrol.devices.Device;
 import domuscontrol.simulation.SimulationState;
+import domuscontrol.simulation.SimulationStateStub;
 import domuscontrol.simulation.WeatherCondition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,6 +72,6 @@ public class TemperatureSensorTest {
 
     private SimulationState state(double temperature, double luminosity, WeatherCondition weather) {
         LocalDateTime now = LocalDateTime.of(2026, 1, 1, 12, 0);
-        return new SimulationState(now, now.minusHours(1), temperature, luminosity, weather);
+        return new SimulationStateStub(now, now.minusHours(1), temperature, luminosity, weather);
     }
 }

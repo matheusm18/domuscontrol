@@ -8,7 +8,7 @@ package domuscontrol.exceptions;
  * @author Matheus Azevedo (a111430)
  * @version 1.0
  */
-public class InvalidMinutesException extends IllegalArgumentException {
+public class InvalidMinutesException extends Exception {
 
     /**
      * Constructs an InvalidMinutesException with the invalid minute value.
