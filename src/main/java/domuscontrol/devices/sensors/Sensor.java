@@ -27,8 +27,8 @@ public abstract class Sensor extends SwitchableDevice {
     /**
      * Creates a sensor with the given hardware details, turned ON immediately.
      *
-     * @param brand              the sensor brand
-     * @param model              the sensor model
+     * @param brand the sensor brand
+     * @param model the sensor model
      * @param consumptionPerHour the standby power consumption in Wh (usually near zero)
      */
     public Sensor(String brand, String model, double consumptionPerHour) {

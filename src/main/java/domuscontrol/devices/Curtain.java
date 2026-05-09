@@ -5,15 +5,9 @@ import java.util.Objects;
 import domuscontrol.devices.types.OpenableDevice;
 
 /**
- * Represents a smart curtain device with automated opening and closing control.
- * The curtain can be adjusted to any opening level from 0% (fully closed) to 100% (fully open).
- * Key capabilities:
- * - Adjustable opening levels (0-100%)
- * - Automatic OPEN/CLOSED state management
- * - Convenience methods to fully open or close the curtain
- * - Energy consumption tracking based on opening level
- * - Useful for light control and privacy management
- * 
+ * Represents a smart curtain device with adjustable opening control.
+ * Opening ranges from 0% (fully closed) to 100% (fully open), with convenience methods for both extremes.
+ *
  * @author Afonso Barros (a112178)
  * @author Martim Monteiro (a111013)
  * @author Matheus Azevedo (a111430)

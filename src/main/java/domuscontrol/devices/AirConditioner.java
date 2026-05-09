@@ -5,14 +5,9 @@ import domuscontrol.devices.types.AdjustableDevice;
 import java.util.Objects;
 
 /**
- * Represents a smart air conditioner device that provides adjustable cooling power.
- * The cooling power ranges from 0% (off) to 100% (maximum cooling).
- * Key capabilities:
- * - Adjustable cooling power levels (0-100%)
- * - Automatic ON/OFF state management (turns off at 0% cooling power)
- * - Energy consumption tracking based on cooling level
- * - Suitable for climate control in residential environments
- * 
+ * Represents a smart air conditioner device with adjustable cooling power.
+ * Cooling power ranges from 0% (off) to 100% (maximum cooling).
+ *
  * @author Afonso Barros (a112178)
  * @author Martim Monteiro (a111013)
  * @author Matheus Azevedo (a111430)

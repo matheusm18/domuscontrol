@@ -407,6 +407,15 @@ public class SuggestionEngine {
         return interaction.getValue() != null ? " to " + interaction.getValue().intValue() : "";
     }
 
+    /**
+     * Looks for interactions that consistently occur when temperature is above or below certain thresholds.
+     * If found, builds an Automation suggestion: when temperature is cold/hot, perform the action on the device.
+     *
+     * @param interactions the full interaction list
+     * @param devices the device map used to validate compatibility
+     * @return a list of temperature-based suggestions
+     * @throws ScheduleWithConditionDifferentFromTimeException if a generated schedule contains a non-time condition (should never happen in this method)
+     */
     private static List<AutomationSuggestion> detectTemperaturePatterns(
             List<DeviceInteraction> interactions, Map<Integer, Device> devices) throws ScheduleWithConditionDifferentFromTimeException {
 

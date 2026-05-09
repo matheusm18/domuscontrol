@@ -6,13 +6,8 @@ import java.util.Objects;
 
 /**
  * Represents a smart fan device with adjustable speed control.
- * The fan speed ranges from 0% (off) to 100% (maximum speed).
- * Key capabilities:
- * - Adjustable speed levels (0-100%)
- * - Automatic ON/OFF state management (turns off at 0% speed)
- * - Speed-dependent energy consumption
- * - Suitable for air circulation in residential and commercial spaces
- * 
+ * Speed ranges from 0% (off) to 100% (maximum speed).
+ *
  * @author Afonso Barros (a112178)
  * @author Martim Monteiro (a111013)
  * @author Matheus Azevedo (a111430)

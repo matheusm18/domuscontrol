@@ -7,7 +7,6 @@ import domuscontrol.devices.types.AdjustableDevice;
 /**
  * Represents a smart speaker device with adjustable volume and selectable audio sources.
  * Supports variable volume control from 0-100% and dynamic source selection (Spotify, Radio, Bluetooth, etc).
- * The device maintains synchronization between volume level and ON/OFF state.
  * 
  * @author Afonso Barros (a112178)
  * @author Martim Monteiro (a111013)

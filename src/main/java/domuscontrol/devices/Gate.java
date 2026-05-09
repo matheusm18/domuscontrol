@@ -28,10 +28,10 @@ public class Gate extends OpenableDevice {
     /**
      * Parameterized constructor.
      *
-     * @param brand              The brand of the gate.
-     * @param model              The model of the gate.
+     * @param brand The brand of the gate.
+     * @param model The model of the gate.
      * @param consumptionPerHour The power consumption of the gate in Wh/h.
-     * @param openingLevel       The initial opening percentage (0-100).
+     * @param openingLevel The initial opening percentage (0-100).
      */
     public Gate(String brand, String model, double consumptionPerHour, int openingLevel) {
         super(brand, model, consumptionPerHour, openingLevel); 

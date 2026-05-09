@@ -33,8 +33,8 @@ public class LuminositySensor extends Sensor {
     /**
      * Creates a luminosity sensor with the given hardware details.
      *
-     * @param brand              the sensor brand
-     * @param model              the sensor model
+     * @param brand the sensor brand
+     * @param model the sensor model
      * @param consumptionPerHour the standby power consumption in Wh
      */
     public LuminositySensor(String brand, String model, double consumptionPerHour) {

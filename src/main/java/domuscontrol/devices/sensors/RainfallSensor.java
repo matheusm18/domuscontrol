@@ -36,8 +36,8 @@ public class RainfallSensor extends Sensor {
     /**
      * Creates a rainfall sensor with the given hardware details.
      *
-     * @param brand              the sensor brand
-     * @param model              the sensor model
+     * @param brand the sensor brand
+     * @param model the sensor model
      * @param consumptionPerHour the standby power consumption in Wh
      */
     public RainfallSensor(String brand, String model, double consumptionPerHour) {

@@ -254,8 +254,8 @@ public abstract class Device implements Serializable{
 
         Device d = (Device) o;
         return d.getId() == this.id && d.getBrand().equals(this.brand) && d.getModel().equals(this.model)
-            && d.getConsumptionPerHour() == this.consumptionPerHour && d.getStatus() == this.status  && 
-            d.getTotalActivations() == this.totalActivations && d.getTotalMinutesOn() == this.totalMinutesOn;
+            && Double.compare(d.getConsumptionPerHour(), this.consumptionPerHour) == 0 && d.getStatus() == this.status
+            && d.getTotalActivations() == this.totalActivations && d.getTotalMinutesOn() == this.totalMinutesOn;
     }
 
     /**

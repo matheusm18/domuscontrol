@@ -6,13 +6,8 @@ import java.util.Objects;
 
 /**
  * Represents a smart heater device with adjustable heating power.
- * The heating power ranges from 0% (off) to 100% (maximum heating).
- * Key capabilities:
- * - Adjustable heating power levels (0-100%)
- * - Automatic ON/OFF state management (turns off at 0% heating power)
- * - Power-dependent energy consumption
- * - Ideal for temperature control and space heating in residential environments
- * 
+ * Heating power ranges from 0% (off) to 100% (maximum heating).
+ *
  * @author Afonso Barros (a112178)
  * @author Martim Monteiro (a111013)
  * @author Matheus Azevedo (a111430)

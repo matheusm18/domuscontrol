@@ -7,7 +7,6 @@ import java.util.Objects;
 /**
  * Represents a smart television device with adjustable volume and selectable video sources.
  * Provides variable volume control from 0-100% and dynamic video source selection (HDMI, Cable, Streaming, etc).
- * The device maintains synchronization between volume level and ON/OFF state.
  * 
  * @author Afonso Barros (a112178)
  * @author Martim Monteiro (a111013)
