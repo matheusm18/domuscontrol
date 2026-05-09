@@ -16,14 +16,10 @@ import java.util.Objects;
  */
 public class TemperatureSensor extends Sensor {
 
-    /**
-     * The last recorded temperature reading in degrees Celsius.
-     */
+    /** The last recorded temperature reading in degrees Celsius. */
     private double temperature;
 
-    /**
-     * Creates a temperature sensor with default values.
-     */
+    /** Creates a temperature sensor with default values. */
     public TemperatureSensor() {
         super();
         this.temperature = 0.0;

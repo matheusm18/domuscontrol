@@ -17,7 +17,6 @@ import java.util.Objects;
  */
 public class Simulation implements SimulationState, Serializable {
 
-
     /**
      * The current date and time of the simulation.
      */

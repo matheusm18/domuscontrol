@@ -18,6 +18,7 @@ import domuscontrol.routines.Condition;
  * @version 1.0
  */
 public class DeviceStateCondition implements Condition {
+    
     /** The identifier of the target switchable device. */
     private int deviceId;
     /** Whether this condition should trigger when the device is on (true) or off (false). */

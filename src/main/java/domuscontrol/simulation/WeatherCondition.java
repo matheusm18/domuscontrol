@@ -12,6 +12,7 @@ package domuscontrol.simulation;
  * @version 1.0
  */
 public enum WeatherCondition {
+    
     /** Sunny weather with high luminosity (100% base level). */
     SUNNY(1.0, "SUNNY"),
     /** Partly cloudy weather (80% luminosity). */
@@ -38,7 +39,7 @@ public enum WeatherCondition {
     /**
      * Constructs a WeatherCondition with the specified luminosity multiplier and display name.
      * @param luminosityMultiplier the multiplier applied to base luminosity for this weather condition
-     * @param displayName the human-readable name for this weather condition
+     * @param displayName the display name for this weather condition
      */
     WeatherCondition(double luminosityMultiplier, String displayName) {
         this.luminosityMultiplier = luminosityMultiplier;

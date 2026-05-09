@@ -18,6 +18,7 @@ import domuscontrol.routines.Condition;
  * @version 1.0
  */
 public class DeviceLevelCondition implements Condition {
+    
     /** The identifier of the target adjustable device. */
     private int deviceId;
     /** The level value used for comparison in the condition evaluation. */

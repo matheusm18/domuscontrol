@@ -16,9 +16,7 @@ import domuscontrol.simulation.SimulationState;
  */
 public abstract class Sensor extends SwitchableDevice {
 
-    /**
-     * Creates a sensor with default values, turned ON immediately.
-     */
+    /** Creates a sensor with default values, turned ON immediately. */
     public Sensor() {
         super();
         this.turnOn();

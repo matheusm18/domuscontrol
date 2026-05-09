@@ -25,12 +25,16 @@ public class User implements Serializable {
 
     /** The unique ID of the user. */
     private final int id;
+
     /** The name of the user. */
     private String name;
+    
     /** The email of the user. */
     private String email;
+
     /** The password of the user. */
     private String password;
+    
     /** A map of roles by house ID. */
     private Map<Integer, UserRole> rolesByHouseId;
 

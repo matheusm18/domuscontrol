@@ -20,6 +20,7 @@ import domuscontrol.houses.House;
  * @version 1.0
  */
 public abstract class Routine implements Serializable {
+    
     /** The name of this routine. */
     private String name;
     /** The list of actions to execute when this routine is triggered. */

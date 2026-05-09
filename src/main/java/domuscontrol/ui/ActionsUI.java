@@ -13,6 +13,7 @@ import domuscontrol.devices.types.SwitchableDevice;
 import domuscontrol.exceptions.*;
 import domuscontrol.menu.Menu;
 import domuscontrol.routines.*;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.routines.actions.*;
 import domuscontrol.routines.conditions.*;
 import domuscontrol.user.User;
@@ -37,7 +38,10 @@ import java.util.Scanner;
  */
 public class ActionsUI {
 
+    /** The application model facade. */
     private DomusControl model;
+
+    /** Shared scanner for reading user input. */
     private final Scanner sc;
 
     /**
@@ -104,7 +108,7 @@ public class ActionsUI {
                 "List Automations",
                 "Add Automation",
                 "Remove Automation"
-        }, model::getCurrentState);
+        }, () -> stateHeader(model.getCurrentState()));
 
         menu.setPreCondition(1, () -> hasAutomations(houseId));
         menu.setPreCondition(2, () -> houseHasDevices(houseId));
@@ -263,7 +267,7 @@ public class ActionsUI {
                 "List Schedules",
                 "Add Schedule",
                 "Remove Schedule"
-        }, model::getCurrentState);
+        }, () -> stateHeader(model.getCurrentState()));
 
         menu.setPreCondition(1, () -> hasSchedules(houseId));
         menu.setPreCondition(2, () -> houseHasDevices(houseId));
@@ -428,7 +432,7 @@ public class ActionsUI {
                 "Execute Scenario",
                 "Add Scenario",
                 "Remove Scenario"
-        }, model::getCurrentState);
+        }, () -> stateHeader(model.getCurrentState()));
         
         if (!houseHasDevices(houseId)) {
             System.out.println("  No devices in this house.");
@@ -654,7 +658,7 @@ public class ActionsUI {
     private void handleDeviceActionSelection(Device device, List<Action> actions) {
         Menu typeMenu = new Menu("Action: " + device.getModel(), 
             new String[] { "Turn On", "Turn Off", "Set Level", "Set Opening", "Set Color Temperature" },
-            model::getCurrentState);
+            () -> stateHeader(model.getCurrentState()));
 
         typeMenu.setPreCondition(1, () -> device instanceof SwitchableDevice);
         typeMenu.setPreCondition(2, () -> device instanceof SwitchableDevice);
@@ -721,7 +725,7 @@ public class ActionsUI {
             "Time Condition"
         };
 
-        Menu menu = new Menu("Add Condition", options, model::getCurrentState);
+        Menu menu = new Menu("Add Condition", options, () -> stateHeader(model.getCurrentState()));
         menu.setExitLabel("Done");
 
         menu.setPreCondition(1, () -> !timeOnly);
@@ -750,7 +754,7 @@ public class ActionsUI {
 
         Menu timeMenu = new Menu("Time Condition Type", new String[] {
                 "Single Time", "Time Window"
-        }, model::getCurrentState);
+        }, () -> stateHeader(model.getCurrentState()));
 
         timeMenu.setHandler(1, () -> {
             try {
@@ -923,7 +927,7 @@ public class ActionsUI {
         Operator[] op = { null };
         Menu opMenu = new Menu("Select Operator", new String[] {
             "EQUALS (==)", "GREATER THAN (>)", "LESS THAN (<)"
-        }, model::getCurrentState);
+        }, () -> stateHeader(model.getCurrentState()));
         opMenu.setHandler(1, () -> { op[0] = Operator.EQUALS;       opMenu.stop(); });
         opMenu.setHandler(2, () -> { op[0] = Operator.GREATER_THAN; opMenu.stop(); });
         opMenu.setHandler(3, () -> { op[0] = Operator.LESS_THAN;    opMenu.stop(); });
@@ -988,5 +992,10 @@ public class ActionsUI {
             case LESS_THAN    -> "<";
             case EQUALS       -> "=";
         };
+    }
+
+    private static String stateHeader(SimulationState s) {
+        return s.getCurrentDateTime().toLocalDate() + "  " + s.getCurrentDateTime().toLocalTime() + "\n" +
+               String.format("%.1fºC  %s  %.0f lx", s.getTemperature(), s.getWeather(), s.getLuminosity());
     }
 }

@@ -1,6 +1,5 @@
 package domuscontrol.menu;
 
-import domuscontrol.simulation.SimulationState;
 import domuscontrol.utils.Ansi;
 import java.util.*;
 import java.util.function.Supplier;
@@ -55,9 +54,9 @@ public class Menu {
     private final String title;
 
     /**
-     * Supplier for the current simulation state (for display).
+     * Supplier for the header text displayed above the menu options.
      */
-    private final Supplier<SimulationState> state;
+    private final Supplier<String> header;
 
     /**
      * List of menu option labels.
@@ -88,10 +87,10 @@ public class Menu {
      * Constructs a menu with the default title and given options.
      *
      * @param opcoes the menu options
-     * @param state the simulation state supplier
+     * @param header supplier of header text shown above the options
      */
-    public Menu(String[] opcoes, Supplier<SimulationState> state) {
-        this("DomusControl", opcoes, state);
+    public Menu(String[] opcoes, Supplier<String> header) {
+        this("DomusControl", opcoes, header);
     }
 
     /**
@@ -99,11 +98,11 @@ public class Menu {
      *
      * @param title the menu title
      * @param opcoes the menu options
-     * @param state the simulation state supplier
+     * @param header supplier of header text shown above the options
      */
-    public Menu(String title, String[] opcoes, Supplier<SimulationState> state) {
+    public Menu(String title, String[] opcoes, Supplier<String> header) {
         this.title = title;
-        this.state = state;
+        this.header = header;
         this.opcoes = Arrays.asList(opcoes);
         this.disponivel = new ArrayList<>();
         this.handlers = new ArrayList<>();
@@ -175,7 +174,9 @@ public class Menu {
         System.out.println(Ansi.CYAN + " ╔" + horiz + "╗" + Ansi.RESET);
         printTitle(title);
         System.out.println(Ansi.CYAN + " ║" + " ".repeat(WIDTH) + "║" + Ansi.RESET);
-        printState(state.get());
+        for (String line : header.get().split("\n")) {
+            printCenteredLine(line);
+        }
         System.out.println(Ansi.CYAN + " ╠" + horiz + "╣" + Ansi.RESET);
         for (int i = 0; i < opcoes.size(); i++) {
             boolean avail = disponivel.get(i).validate();
@@ -199,20 +200,6 @@ public class Menu {
         System.out.println(Ansi.CYAN + " ║" + Ansi.RESET + content + Ansi.CYAN + "║" + Ansi.RESET);
     }
 
-    /**
-     * Prints the simulation state information.
-     *
-     * @param stateObj the simulation state
-     */
-    private void printState(SimulationState stateObj) {
-        String line1 = stateObj.getCurrentDateTime().toLocalDate().toString() + "  " + stateObj.getCurrentDateTime().toLocalTime().toString();
-        String line2 = String.format("%.1f", stateObj.getTemperature()) + "ºC  " + stateObj.getWeather().toString()
-                + "  " + String.format("%.0f", stateObj.getLuminosity()) + " lx";
-
-        printCenteredLine(line1);
-        printCenteredLine(line2);
-    }
-    
     /**
      * Prints a centered line in the menu.
      *

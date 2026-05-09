@@ -7,6 +7,7 @@ import domuscontrol.houses.DivisionInfo;
 import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
 import domuscontrol.simulation.ActivationEvent;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.user.User;
 import domuscontrol.user.UserRole;
 import domuscontrol.utils.Ansi;
@@ -28,8 +29,13 @@ import java.util.Scanner;
  */
 public class UserUI {
 
+    /** The application model facade. */
     private DomusControl model;
+
+    /** Shared scanner for reading user input. */
     private final Scanner sc;
+
+    /** Sub-UI for house-related operations. */
     private final HouseUI houseUI;
 
     /**
@@ -67,7 +73,7 @@ public class UserUI {
                 "Statistics",
                 "Advance Simulation",
                 "Save State"
-        }, model::getCurrentState);
+        }, () -> stateHeader(model.getCurrentState()));
 
         menu.setPreCondition(1, () -> hasHouses(email));
         menu.setPreCondition(4, () -> hasHouses(email));
@@ -138,7 +144,7 @@ public class UserUI {
             return;
         }
 
-        Menu menu = new Menu("Profile", new String[]{"Change Name", "Change Password"}, model::getCurrentState);
+        Menu menu = new Menu("Profile", new String[]{"Change Name", "Change Password"}, () -> stateHeader(model.getCurrentState()));
         menu.setHandler(1, () -> {
             System.out.print(Ansi.prompt("New name"));
             String name = sc.nextLine();
@@ -200,7 +206,7 @@ public class UserUI {
                 "Top 3 devices by active time",
                 "Top 3 devices by activations",
                 "Top 3 divisions by device count"
-        }, model::getCurrentState);
+        }, () -> stateHeader(model.getCurrentState()));
 
         menu.setHandler(1, () -> {
             try {
@@ -375,5 +381,10 @@ public class UserUI {
                 System.out.print(Ansi.prompt("Invalid input. Please enter an integer"));
             }
         }
+    }
+
+    private static String stateHeader(SimulationState s) {
+        return s.getCurrentDateTime().toLocalDate() + "  " + s.getCurrentDateTime().toLocalTime() + "\n" +
+               String.format("%.1fºC  %s  %.0f lx", s.getTemperature(), s.getWeather(), s.getLuminosity());
     }
 }

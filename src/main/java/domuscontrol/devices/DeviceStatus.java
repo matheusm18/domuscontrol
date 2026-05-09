@@ -10,6 +10,7 @@ package domuscontrol.devices;
  * @version 1.0
  */
 public enum DeviceStatus {
+    
     /** Device is turned on (for switchable devices). */
     ON,
     /** Device is turned off (for switchable devices). */

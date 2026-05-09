@@ -9,6 +9,7 @@ package domuscontrol.user;
  * @version 1.0
  */
 public enum UserRole {
+    
     /**
      * Administrator role with full system access and control.
      */

@@ -19,6 +19,7 @@ import domuscontrol.routines.Condition;
  * @version 1.0
  */
 public class TimeCondition implements TimeBasedCondition {
+    
     /** The specific time of day that triggers this condition. */
     private LocalTime triggerTime;
 

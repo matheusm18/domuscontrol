@@ -17,9 +17,7 @@ import java.util.Objects;
  */
 public class LuminositySensor extends Sensor {
 
-    /**
-     * The last recorded luminosity reading in lux.
-     */
+    /** The last recorded luminosity reading in lux. */
     private double luminosity;
 
     /**

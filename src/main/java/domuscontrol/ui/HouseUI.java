@@ -33,6 +33,7 @@ import domuscontrol.exceptions.ScheduleWithConditionDifferentFromTimeException;
 import domuscontrol.exceptions.UserNotFoundException;
 import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.routines.Automation;
 import domuscontrol.routines.AutomationType;
 import domuscontrol.suggestions.AutomationSuggestion;
@@ -56,8 +57,13 @@ import java.util.Scanner;
  */
 public class HouseUI {
 
+    /** The application model facade. */
     private DomusControl model;
+
+    /** Shared scanner for reading user input. */
     private final Scanner sc;
+
+    /** Sub-UI for automation and scenario operations. */
     private final ActionsUI actionsUI;
 
     /**
@@ -108,7 +114,7 @@ public class HouseUI {
                 "Automations",
                 "Schedules",
                 "Scenarios"
-        }, model::getCurrentState);
+        }, () -> stateHeader(model.getCurrentState()));
 
         menu.setPreCondition(2, () -> isAdmin(email, houseId));
         menu.setPreCondition(3, () -> isAdmin(email, houseId) && houseHasDivisions(houseId));
@@ -159,7 +165,7 @@ public class HouseUI {
     // ---- Divisions ----
 
     private void manageDivisions(int houseId) {
-        Menu menu = new Menu("Divisions", new String[]{"List Divisions", "Add Division", "Remove Division"}, model::getCurrentState);
+        Menu menu = new Menu("Divisions", new String[]{"List Divisions", "Add Division", "Remove Division"}, () -> stateHeader(model.getCurrentState()));
         menu.setPreCondition(1, () -> houseHasDivisions(houseId));
         menu.setPreCondition(3, () -> houseHasDivisions(houseId));
         menu.setHandler(1, () -> listDivisions(houseId));
@@ -244,7 +250,7 @@ public class HouseUI {
                                 "List Devices", 
                                 "Add Device", 
                                 "Remove Device"
-                            }, model::getCurrentState);
+                            }, () -> stateHeader(model.getCurrentState()));
 
         menu.setPreCondition(1, () -> houseHasDevices(houseId));
         menu.setPreCondition(2, () -> houseHasDivisions(houseId));
@@ -318,7 +324,7 @@ public class HouseUI {
                     "Lamp", "Speaker", "Curtain", "Gate", "Plug", "Relay",
                     "Heater", "Fan", "Air Conditioner", "Television",
                     "Temperature Sensor", "Luminosity Sensor", "Rainfall Sensor"
-            }, model::getCurrentState);
+            }, () -> stateHeader(model.getCurrentState()));
             typeMenu.setHandler(1, () -> addLamp(houseId, division));
             typeMenu.setHandler(2, () -> addSpeaker(houseId, division));
             typeMenu.setHandler(3, () -> addCurtain(houseId, division));
@@ -721,7 +727,7 @@ public class HouseUI {
                                 "List Users", 
                                 "Add User", 
                                 "Remove User"
-                            }, model::getCurrentState);
+                            }, () -> stateHeader(model.getCurrentState()));
 
         menu.setHandler(1, () -> listUsers(houseId));
         menu.setHandler(2, () -> addUser(houseId));
@@ -863,7 +869,7 @@ public class HouseUI {
 
             Menu opMenu = new Menu("Operate Device",
                     new String[] { "Toggle ON/OFF", "Set Level", "Set Opening", "Set Color Temperature" },
-                    model::getCurrentState);
+                    () -> stateHeader(model.getCurrentState()));
 
             opMenu.setPreCondition(1, () -> dev instanceof SwitchableDevice);
             opMenu.setPreCondition(2, () -> dev instanceof AdjustableDevice);
@@ -1041,5 +1047,10 @@ public class HouseUI {
                 System.out.print(Ansi.prompt("Invalid input. Please enter a decimal (e.g. 15.5)"));
             }
         }
+    }
+
+    private static String stateHeader(SimulationState s) {
+        return s.getCurrentDateTime().toLocalDate() + "  " + s.getCurrentDateTime().toLocalTime() + "\n" +
+               String.format("%.1fºC  %s  %.0f lx", s.getTemperature(), s.getWeather(), s.getLuminosity());
     }
 }

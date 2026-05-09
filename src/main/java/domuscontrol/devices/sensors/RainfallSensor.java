@@ -20,14 +20,10 @@ import java.util.Objects;
  */
 public class RainfallSensor extends Sensor {
 
-    /**
-     * The last recorded rainfall intensity in mm/h.
-     */
+    /** The last recorded rainfall intensity in mm/h. */
     private double rainfall;
 
-    /**
-     * Creates a rainfall sensor with default values.
-     */
+    /** Creates a rainfall sensor with default values. */
     public RainfallSensor() {
         super();
         this.rainfall = 0.0;

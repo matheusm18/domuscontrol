@@ -65,9 +65,16 @@ public class SuggestionEngine {
     /** Maximum gap in minutes between two interactions to be considered a sequence. */
     private static final int SEQUENCE_WINDOW_MINUTES = 2;
 
+    /** Temperature in °C below which the environment is considered cold. */
     private static final int COLD_TEMPERATURE_THRESHOLD = 16;
+
+    /** Temperature in °C above which the environment is considered hot. */
     private static final int HOT_TEMPERATURE_THRESHOLD = 24;
+
+    /** Luminosity in lux below which the environment is considered dark. */
     private static final int DARK_LUMINOSITY_THRESHOLD = 300;
+
+    /** Luminosity in lux above which the environment is considered bright. */
     private static final int BRIGHT_LUMINOSITY_THRESHOLD = 700;
 
     /**
@@ -614,7 +621,7 @@ public class SuggestionEngine {
     }
 
     /**
-     * Formats a device's class name and brand/model into a human-readable label for suggestion descriptions.
+     * Formats a device's class name and brand/model into a descriptive label for suggestion descriptions.
      * @param device the device to format
      * @return a string label describing the device, including its type and brand/model
      */

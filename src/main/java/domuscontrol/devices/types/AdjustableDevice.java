@@ -14,9 +14,7 @@ import java.util.Objects;
  */
 public abstract class AdjustableDevice extends SwitchableDevice {
 
-    /**
-     * The adjustable level (0-100).
-     */
+    /** The adjustable level (0-100). */
     private int level;
 
     /**

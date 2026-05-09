@@ -12,6 +12,7 @@ package domuscontrol.routines;
  * @version 1.0
  */
 public enum AutomationType {
+    
     /**
      * Represents a standard automation triggered by device state changes or environmental conditions.
      */

@@ -20,6 +20,7 @@ import java.util.Objects;
  * @version 1.0
  */
 public class SetOpeningAction implements Action {
+    
     /**
      * The unique identifier of the target device to open or close.
      * Value of -1 indicates no target device is set.

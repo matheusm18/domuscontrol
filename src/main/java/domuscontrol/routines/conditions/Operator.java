@@ -11,6 +11,7 @@ package domuscontrol.routines.conditions;
  * @version 1.0
  */
 public enum Operator {
+    
     /**
      * Represents a strict equality comparison.
      * The current value must equal the trigger value exactly (or within tolerance for floating-point values).

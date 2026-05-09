@@ -16,9 +16,7 @@ import java.util.Objects;
  */
 public abstract class Device implements Serializable{
 
-    /**
-     * Counter for automatically assigning unique device IDs.
-     */
+    /** Counter for automatically assigning unique device IDs. */
     private static int nextId = 1;
 
     /** The unique identifier for the device. */

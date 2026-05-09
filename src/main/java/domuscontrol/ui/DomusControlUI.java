@@ -9,6 +9,7 @@ import domuscontrol.exceptions.UserNotFoundException;
 import domuscontrol.houses.DivisionInfo;
 import domuscontrol.houses.House;
 import domuscontrol.menu.Menu;
+import domuscontrol.simulation.SimulationState;
 import domuscontrol.utils.Ansi;
 
 import java.io.FileNotFoundException;
@@ -27,9 +28,16 @@ import java.util.Scanner;
  */
 public class DomusControlUI {
 
+    /** The application model facade. */
     private DomusControl model;
+
+    /** Shared scanner for reading user input. */
     private final Scanner sc;
+
+    /** Sub-UI for authenticated user operations. */
     private final UserUI userUI;
+
+    /** Email of the currently logged-in user, or null if not logged in. */
     private String currentUserEmail;
 
     /**
@@ -52,7 +60,7 @@ public class DomusControlUI {
                 "Register",
                 "Global Statistics",
                 "Load State"
-        }, () -> model.getCurrentState());
+        }, () -> stateHeader(model.getCurrentState()));
 
         menu.setHandler(1, this::doLogin);
         menu.setHandler(2, this::doRegister);
@@ -126,7 +134,7 @@ public class DomusControlUI {
                 "Top 3 devices by active time",
                 "Top 3 devices by activations",
                 "Top 3 divisions by device count"
-        }, () -> model.getCurrentState());
+        }, () -> stateHeader(model.getCurrentState()));
 
         menu.setPreCondition(1, () -> !model.getAllHouses().isEmpty());
         menu.setPreCondition(2, () -> !model.getAllHouses().isEmpty());
@@ -213,6 +221,11 @@ public class DomusControlUI {
             } catch (NumberFormatException ignored) {}
             System.out.println("  Invalid selection.");
         }
+    }
+
+    private static String stateHeader(SimulationState s) {
+        return s.getCurrentDateTime().toLocalDate() + "  " + s.getCurrentDateTime().toLocalTime() + "\n" +
+               String.format("%.1fºC  %s  %.0f lx", s.getTemperature(), s.getWeather(), s.getLuminosity());
     }
 
     private int[] deviceColWidths(List<Device> devices) {

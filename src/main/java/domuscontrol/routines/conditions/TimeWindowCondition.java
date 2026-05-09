@@ -18,6 +18,7 @@ import domuscontrol.routines.Condition;
  * @version 1.0
  */
 public class TimeWindowCondition implements TimeBasedCondition {
+    
     /** The start time of the time window. */
     private LocalTime startTime;
     /** The end time of the time window. */

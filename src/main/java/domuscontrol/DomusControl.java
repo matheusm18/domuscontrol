@@ -68,11 +68,12 @@ import java.time.LocalDateTime;
  */
 public class DomusControl implements Serializable {
 
-    /* The user manager responsible for handling user-related operations. */
     /** The user manager handling user authentication and role management. */
     private final UserManager userManager;
+
     /** The house manager handling house and division management. */
     private final HouseManager houseManager;
+    
     /** The simulation engine managing weather and time progression. */
     private final Simulation simulation;
 

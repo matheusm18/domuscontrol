@@ -16,7 +16,7 @@ import domuscontrol.routines.Automation;
  */
 public class AutomationSuggestion {
 
-    /** Human-readable explanation of why this suggestion was generated. */
+    /** Description of why this suggestion was generated. */
     private String description;
 
     /** The pre-built Automation object ready to be added if the user accepts. */
