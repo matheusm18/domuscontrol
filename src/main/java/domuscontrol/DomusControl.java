@@ -48,6 +48,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
@@ -389,6 +390,21 @@ public class DomusControl implements Serializable {
      */
     public Map<Integer, Device> getDevices(int houseId) throws HouseNotFoundException {
         return this.houseManager.getHouseById(houseId).getDevices();
+    }
+
+    /**
+     * Returns a map from device ID to division name for all devices in the given house.
+     *
+     * @param houseId The ID of the house.
+     * @return a map where each key is a device ID and the value is the division it belongs to.
+     * @throws HouseNotFoundException If no house with the given ID exists.
+     */
+    public Map<Integer, String> getDeviceDivisionMap(int houseId) throws HouseNotFoundException {
+        Map<Integer, String> result = new HashMap<>();
+        getDivisions(houseId).forEach((divName, devices) ->
+            devices.forEach(d -> result.put(d.getId(), divName))
+        );
+        return result;
     }
 
     /**
@@ -876,7 +892,7 @@ public class DomusControl implements Serializable {
         List<DivisionInfo> divisions = new ArrayList<>();
         for (House house : this.getHousesByUser(email)) {
             house.getDivisions().forEach((name, devices) ->
-                divisions.add(new DivisionInfo(house.getName(), name, devices.size()))
+                divisions.add(new DivisionInfo(house.getId(), house.getName(), name, devices.size()))
             );
         }
         return divisions;

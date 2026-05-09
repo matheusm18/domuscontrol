@@ -209,9 +209,10 @@ public class UserUI {
                     System.out.println("  No houses in the system.");
                 } else {
                     Ansi.listTitle("Most Consuming Houses");
+                    int hw = topHouses.stream().mapToInt(h -> h.getName().length()).max().orElse(10) + 2;
                     for (int i = 0; i < topHouses.size(); i++) {
                         House h = topHouses.get(i);
-                        Ansi.listRow(String.format("%d  %-22s %.2f Wh", i + 1, h.getName(), h.calculateTotalConsumption()));
+                        Ansi.listRow(String.format("%d  %-" + hw + "s %.2f Wh", i + 1, h.getName(), h.calculateTotalConsumption()));
                     }
                     Ansi.listSeparator();
                 }
@@ -262,10 +263,15 @@ public class UserUI {
                     System.out.println("  No divisions found for your houses.");
                 } else {
                     Ansi.listTitle("Top Divisions By Device Count");
+                    int dw = topDivisions.stream().mapToInt(d -> d.getDivisionName().length()).max().orElse(10) + 2;
+                    int hlw = topDivisions.stream()
+                        .mapToInt(d -> (d.getHouseName() + " (#" + d.getHouseId() + ")").length())
+                        .max().orElse(10) + 2;
                     for (int i = 0; i < topDivisions.size(); i++) {
                         DivisionInfo div = topDivisions.get(i);
-                        Ansi.listRow(String.format("%d  %-18s %-12s %d device(s)",
-                            i + 1, div.getDivisionName(), div.getHouseName(), div.getDeviceCount()));
+                        String houseLabel = div.getHouseName() + " (#" + div.getHouseId() + ")";
+                        Ansi.listRow(String.format("%d  %-" + dw + "s %-" + hlw + "s %d device(s)",
+                            i + 1, div.getDivisionName(), houseLabel, div.getDeviceCount()));
                     }
                     Ansi.listSeparator();
                 }

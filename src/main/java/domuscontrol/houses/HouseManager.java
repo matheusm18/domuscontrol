@@ -341,7 +341,7 @@ public class HouseManager implements Serializable {
     public List<DivisionInfo> getAllDivisionsInfo() {
         return this.housesById.values().stream()
                 .flatMap(h -> h.getDivisions().entrySet().stream()
-                        .map(e -> new DivisionInfo(h.getName(), e.getKey(), e.getValue().size())))
+                        .map(e -> new DivisionInfo(h.getId(), h.getName(), e.getKey(), e.getValue().size())))
                 .collect(Collectors.toList());
     }
 

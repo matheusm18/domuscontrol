@@ -3,7 +3,6 @@ package domuscontrol.routines.actions;
 import domuscontrol.devices.Device;
 import domuscontrol.devices.DeviceStatus;
 import domuscontrol.devices.Plug;
-import domuscontrol.devices.sensors.TemperatureSensor;
 import domuscontrol.houses.House;
 import domuscontrol.routines.Action;
 import org.junit.jupiter.api.BeforeEach;

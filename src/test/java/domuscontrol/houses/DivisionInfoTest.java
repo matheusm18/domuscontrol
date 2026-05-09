@@ -8,7 +8,7 @@ public class DivisionInfoTest {
 
     @Test
     void constructorStoresAllFields() {
-        DivisionInfo info = new DivisionInfo("Home", "Living Room", 3);
+        DivisionInfo info = new DivisionInfo(0, "Home", "Living Room", 3);
 
         assertEquals("Home", info.getHouseName());
         assertEquals("Living Room", info.getDivisionName());
@@ -17,7 +17,7 @@ public class DivisionInfoTest {
 
     @Test
     void gettersReturnCorrectValues() {
-        DivisionInfo info = new DivisionInfo("Casa da Praia", "Kitchen", 0);
+        DivisionInfo info = new DivisionInfo(0, "Casa da Praia", "Kitchen", 0);
 
         assertEquals("Casa da Praia", info.getHouseName());
         assertEquals("Kitchen", info.getDivisionName());
@@ -26,13 +26,13 @@ public class DivisionInfoTest {
 
     @Test
     void deviceCountCanBeZero() {
-        DivisionInfo info = new DivisionInfo("House", "Empty Room", 0);
+        DivisionInfo info = new DivisionInfo(0, "House", "Empty Room", 0);
         assertEquals(0, info.getDeviceCount());
     }
 
     @Test
     void divisionNameIsStoredExactly() {
-        DivisionInfo info = new DivisionInfo("H", "Sala de Estar", 5);
+        DivisionInfo info = new DivisionInfo(0, "H", "Sala de Estar", 5);
         assertEquals("Sala de Estar", info.getDivisionName());
     }
 }

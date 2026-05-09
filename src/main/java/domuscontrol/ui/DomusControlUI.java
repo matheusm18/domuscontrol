@@ -204,11 +204,15 @@ public class DomusControlUI {
         for (int i = 0; i < houses.size(); i++)
             Ansi.listRow(String.format("%d  %s", i + 1, houses.get(i).getName()));
         Ansi.listSeparator();
-        System.out.print(Ansi.prompt("Select house (0 to cancel)"));
-        int choice;
-        try { choice = Integer.parseInt(sc.nextLine().trim()); } catch (NumberFormatException e) { return null; }
-        if (choice < 1 || choice > houses.size()) return null;
-        return houses.get(choice - 1);
+        while (true) {
+            System.out.print(Ansi.prompt("Select house (0 to cancel)"));
+            try {
+                int choice = Integer.parseInt(sc.nextLine().trim());
+                if (choice == 0) return null;
+                if (choice >= 1 && choice <= houses.size()) return houses.get(choice - 1);
+            } catch (NumberFormatException ignored) {}
+            System.out.println("  Invalid selection.");
+        }
     }
 
     private int[] deviceColWidths(List<Device> devices) {

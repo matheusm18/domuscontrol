@@ -40,6 +40,7 @@ import domuscontrol.user.UserRole;
 import domuscontrol.utils.Ansi;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -121,7 +122,7 @@ public class HouseUI {
         menu.setHandler(1, () -> viewHouseDetails(houseId));
         menu.setHandler(2, () -> manageDivisions(houseId));
         menu.setHandler(3, () -> manageDevices(houseId));
-        menu.setHandler(4, () -> manageUsers(houseId, email));
+        menu.setHandler(4, () -> { if (manageUsers(houseId, email)) menu.stop(); });
         menu.setHandler(5, () -> operateDevice(houseId, userId));
         menu.setHandler(6, () -> showSuggestions(houseId, userId));
         menu.setHandler(7, () -> actionsUI.manageAutomations(houseId, email));
@@ -171,11 +172,15 @@ public class HouseUI {
         try {
             Map<String, List<Device>> divisions = model.getDivisions(houseId);
             if (divisions.isEmpty()) { System.out.println("  No divisions."); return; }
+            int idW = divisions.values().stream()
+                .flatMap(List::stream)
+                .mapToInt(d -> String.valueOf(d.getId()).length())
+                .max().orElse(1);
             Ansi.listTitle("Divisions");
             for (Map.Entry<String, List<Device>> entry : divisions.entrySet()) {
                 Ansi.listRow(entry.getKey());
                 for (Device d : entry.getValue())
-                    Ansi.listRow(String.format("    [#%-3d] %-18s %s %s",
+                    Ansi.listRow(String.format("    [#%-" + idW + "d] %-18s %s %s",
                         d.getId(), d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
             }
             Ansi.listSeparator();
@@ -208,15 +213,18 @@ public class HouseUI {
             for (int i = 0; i < names.size(); i++)
                 Ansi.listRow(String.format("%d  %s", i + 1, names.get(i)));
             Ansi.listSeparator();
-            System.out.print(Ansi.prompt("Division (0 to cancel)"));
-            int choice = readInt();
-            if (choice < 1 || choice > names.size()) return;
+            int choice = readSelection("Division (0 to cancel)", names.size());
+            if (choice == 0) return;
 
             String divName = names.get(choice - 1);
             int deviceCount = divisions.get(divName).size();
             if (deviceCount > 0) {
-                System.out.printf("  Warning: %d device(s) will also be deleted. Confirm? (y/n) ", deviceCount);
-                if (!sc.nextLine().trim().equalsIgnoreCase("y")) return;
+                String confirm;
+                do {
+                    System.out.printf("  Warning: %d device(s) will also be deleted. Confirm? (y/n) ", deviceCount);
+                    confirm = sc.nextLine().trim().toLowerCase();
+                } while (!confirm.equals("y") && !confirm.equals("n"));
+                if (!confirm.equals("y")) return;
             }
 
             model.removeDivision(houseId, divName);
@@ -252,29 +260,26 @@ public class HouseUI {
         try {
             Map<Integer, Device> devices = model.getDevices(houseId);
             if (devices.isEmpty()) { System.out.println("  No devices."); return; }
+            Map<Integer, String> divisionMap = model.getDeviceDivisionMap(houseId);
+            List<Device> sorted = devices.values().stream()
+                .sorted(java.util.Comparator.comparingInt(Device::getId)).toList();
+            int[] w = deviceColWidths(sorted, divisionMap);
             Ansi.listTitle("Select Device");
-            devices.values().forEach(device ->
-                Ansi.listRow(String.format("%d  %-15s %-12s %s",
+            sorted.forEach(device ->
+                Ansi.listRow(String.format("%-" + w[0] + "d  %-" + w[1] + "s %-" + w[2] + "s %-" + w[3] + "s %s",
                     device.getId(),
                     device.getClass().getSimpleName(),
                     device.getBrand(),
-                    device.getModel()))
+                    device.getModel(),
+                    divisionMap.getOrDefault(device.getId(), "")))
             );
             Ansi.listSeparator();
-            System.out.print(Ansi.prompt("Device (0 to cancel)"));
-            
-            String input = sc.nextLine().trim();
-            if (input.equals("0")) return;
-            
-            try {
-                int selectedId = Integer.parseInt(input);
-                if (devices.containsKey(selectedId)) {
-                    showDeviceInfo(devices.get(selectedId));
-                } else {
-                    System.out.println("  Invalid Device ID.");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("  Invalid input.");
+            while (true) {
+                System.out.print(Ansi.prompt("Device (0 to cancel)"));
+                int selectedId = readInt();
+                if (selectedId == 0) return;
+                if (devices.containsKey(selectedId)) { showDeviceInfo(devices.get(selectedId)); break; }
+                System.out.println("  Invalid selection.");
             }
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
@@ -305,9 +310,8 @@ public class HouseUI {
             for (int i = 0; i < divNames.size(); i++)
                 Ansi.listRow(String.format("%d  %s", i + 1, divNames.get(i)));
             Ansi.listSeparator();
-            System.out.print(Ansi.prompt("Division (0 to cancel)"));
-            int divChoice = readInt();
-            if (divChoice < 1 || divChoice > divNames.size()) return;
+            int divChoice = readSelection("Division (0 to cancel)", divNames.size());
+            if (divChoice == 0) return;
             String division = divNames.get(divChoice - 1);
 
             Menu typeMenu = new Menu("Device Type", new String[]{
@@ -374,7 +378,7 @@ public class HouseUI {
         try {
             Lamp lamp = new Lamp(base.brand(), base.modelName(), base.consumption(), brightness, colorTemp);
             model.addDeviceToDivision(houseId, lamp, division);
-            System.out.println("  Lamp added.");
+            System.out.println("  " + lamp.getBrand() + " " + lamp.getModel() + " [#" + lamp.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -404,7 +408,7 @@ public class HouseUI {
         try {
             Speaker speaker = new Speaker(base.brand(), base.modelName(), base.consumption(), volume, source);
             model.addDeviceToDivision(houseId, speaker, division);
-            System.out.println("  Speaker added.");
+            System.out.println("  " + speaker.getBrand() + " " + speaker.getModel() + " [#" + speaker.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -432,7 +436,7 @@ public class HouseUI {
         try {
             Curtain curtain = new Curtain(base.brand(), base.modelName(), base.consumption(), opening);
             model.addDeviceToDivision(houseId, curtain, division);
-            System.out.println("  Curtain added.");
+            System.out.println("  " + curtain.getBrand() + " " + curtain.getModel() + " [#" + curtain.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -460,7 +464,7 @@ public class HouseUI {
         try {
             Gate gate = new Gate(base.brand(), base.modelName(), base.consumption(), opening);
             model.addDeviceToDivision(houseId, gate, division);
-            System.out.println("  Gate added.");
+            System.out.println("  " + gate.getBrand() + " " + gate.getModel() + " [#" + gate.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -482,7 +486,7 @@ public class HouseUI {
         try {
             Plug plug = new Plug(base.brand(), base.modelName(), base.consumption());
             model.addDeviceToDivision(houseId, plug, division);
-            System.out.println("  Plug added.");
+            System.out.println("  " + plug.getBrand() + " " + plug.getModel() + " [#" + plug.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -504,7 +508,7 @@ public class HouseUI {
         try {
             Relay relay = new Relay(base.brand(), base.modelName(), base.consumption());
             model.addDeviceToDivision(houseId, relay, division);
-            System.out.println("  Relay added.");
+            System.out.println("  " + relay.getBrand() + " " + relay.getModel() + " [#" + relay.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -532,7 +536,7 @@ public class HouseUI {
         try {
             Heater heater = new Heater(base.brand(), base.modelName(), base.consumption(), power);
             model.addDeviceToDivision(houseId, heater, division);
-            System.out.println("  Heater added.");
+            System.out.println("  " + heater.getBrand() + " " + heater.getModel() + " [#" + heater.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -560,7 +564,7 @@ public class HouseUI {
         try {
             Fan fan = new Fan(base.brand(), base.modelName(), base.consumption(), speed);
             model.addDeviceToDivision(houseId, fan, division);
-            System.out.println("  Fan added.");
+            System.out.println("  " + fan.getBrand() + " " + fan.getModel() + " [#" + fan.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -588,7 +592,7 @@ public class HouseUI {
         try {
             AirConditioner airConditioner = new AirConditioner(base.brand(), base.modelName(), base.consumption(), coolingPower);
             model.addDeviceToDivision(houseId, airConditioner, division);
-            System.out.println("  Air conditioner added.");
+            System.out.println("  " + airConditioner.getBrand() + " " + airConditioner.getModel() + " [#" + airConditioner.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -618,7 +622,7 @@ public class HouseUI {
         try {
             Television television = new Television(base.brand(), base.modelName(), base.consumption(), volume, source);
             model.addDeviceToDivision(houseId, television, division);
-            System.out.println("  Television added.");
+            System.out.println("  " + television.getBrand() + " " + television.getModel() + " [#" + television.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -637,8 +641,9 @@ public class HouseUI {
             return;
         }
         try {
-            model.addDeviceToDivision(houseId, new TemperatureSensor(base.brand(), base.modelName(), base.consumption()), division);
-            System.out.println("  Temperature sensor added.");
+            TemperatureSensor sensor = new TemperatureSensor(base.brand(), base.modelName(), base.consumption());
+            model.addDeviceToDivision(houseId, sensor, division);
+            System.out.println("  " + sensor.getBrand() + " " + sensor.getModel() + " [#" + sensor.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -657,8 +662,9 @@ public class HouseUI {
             return;
         }
         try {
-            model.addDeviceToDivision(houseId, new LuminositySensor(base.brand(), base.modelName(), base.consumption()), division);
-            System.out.println("  Luminosity sensor added.");
+            LuminositySensor sensor = new LuminositySensor(base.brand(), base.modelName(), base.consumption());
+            model.addDeviceToDivision(houseId, sensor, division);
+            System.out.println("  " + sensor.getBrand() + " " + sensor.getModel() + " [#" + sensor.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -677,8 +683,9 @@ public class HouseUI {
             return;
         }
         try {
-            model.addDeviceToDivision(houseId, new RainfallSensor(base.brand(), base.modelName(), base.consumption()), division);
-            System.out.println("  Rainfall sensor added.");
+            RainfallSensor sensor = new RainfallSensor(base.brand(), base.modelName(), base.consumption());
+            model.addDeviceToDivision(houseId, sensor, division);
+            System.out.println("  " + sensor.getBrand() + " " + sensor.getModel() + " [#" + sensor.getId() + "] added.");
         } catch (HouseNotFoundException e) {
             System.out.println("  Error: house not found.");
         } catch (DivisionNotFoundException e) {
@@ -694,7 +701,7 @@ public class HouseUI {
             if (device == null) return;
             try {
                 model.removeDevice(houseId, device.getId());
-                System.out.println("  Device removed.");
+                System.out.println("  " + device.getBrand() + " " + device.getModel() + " [#" + device.getId() + "] removed.");
             } catch (DeviceNotFoundException e) {
                 System.out.println("  Error: device not found.");
             } catch (HouseNotFoundException e) {
@@ -750,14 +757,14 @@ public class HouseUI {
     private void addUser(int houseId) {
         System.out.print(Ansi.prompt("User email"));
         String email = sc.nextLine().trim();
-        System.out.print(Ansi.prompt("Role (1-Admin, 2-User)"));
-        int roleChoice = readInt();
-        UserRole role = switch (roleChoice) {
-            case 1 -> UserRole.ADMINISTRATOR;
-            case 2 -> UserRole.USER;
-            default -> null;
-        };
-        if (role == null) { System.out.println("  Invalid role choice."); return; }
+        int roleChoice;
+        while (true) {
+            System.out.print(Ansi.prompt("Role (1-Admin, 2-User)"));
+            roleChoice = readInt();
+            if (roleChoice == 1 || roleChoice == 2) break;
+            System.out.println("  Invalid selection.");
+        }
+        UserRole role = roleChoice == 1 ? UserRole.ADMINISTRATOR : UserRole.USER;
         try {
             Integer userId = model.getUserByEmail(email).getId();
             model.assignUserToHouse(houseId, userId, role);
@@ -810,19 +817,25 @@ public class HouseUI {
         Map<Integer, Device> devices = model.getDevices(houseId);
         if (devices.isEmpty()) { System.out.println("  No devices."); return null; }
 
-        List<Device> deviceList = new ArrayList<>(devices.values());
+        Map<Integer, String> divisionMap = model.getDeviceDivisionMap(houseId);
+        List<Device> deviceList = devices.values().stream()
+            .sorted(java.util.Comparator.comparingInt(Device::getId)).toList();
+        int[] w = deviceColWidths(deviceList, divisionMap);
         Ansi.listTitle("Select Device");
-        for (int i = 0; i < deviceList.size(); i++) {
-            Device d = deviceList.get(i);
-            Ansi.listRow(String.format("%d  %-15s %-12s %s",
-                    i + 1, d.getClass().getSimpleName(),
-                    d.getBrand(), d.getModel()));
+        for (Device d : deviceList) {
+            Ansi.listRow(String.format("%-" + w[0] + "d  %-" + w[1] + "s %-" + w[2] + "s %-" + w[3] + "s %s",
+                    d.getId(), d.getClass().getSimpleName(),
+                    d.getBrand(), d.getModel(),
+                    divisionMap.getOrDefault(d.getId(), "")));
         }
         Ansi.listSeparator();
-        System.out.print(Ansi.prompt("Device (0 to cancel)"));
-        int choice = readInt();
-        if (choice < 1 || choice > deviceList.size()) return null;
-        return deviceList.get(choice - 1);
+        while (true) {
+            System.out.print(Ansi.prompt("Device (0 to cancel)"));
+            int choice = readInt();
+            if (choice == 0) return null;
+            if (devices.containsKey(choice)) return devices.get(choice);
+            System.out.println("  Invalid selection.");
+        }
     }
 
     private void operateSelectedDevice(int houseId, int deviceId, int userId) {
@@ -975,6 +988,15 @@ public class HouseUI {
         }
     }
 
+    private int readSelection(String prompt, int max) {
+        while (true) {
+            System.out.print(Ansi.prompt(prompt));
+            int choice = readInt();
+            if (choice == 0 || (choice >= 1 && choice <= max)) return choice;
+            System.out.println("  Invalid selection.");
+        }
+    }
+
     private int readIntInRange(int min, int max, String prompt) {
         while (true) {
             int value = readInt();
@@ -984,6 +1006,15 @@ public class HouseUI {
             System.out.printf("  Error: value must be between %d and %d.%n", min, max);
             System.out.print(Ansi.prompt(prompt));
         }
+    }
+
+    private int[] deviceColWidths(Collection<Device> devices, Map<Integer, String> divisionMap) {
+        int id    = devices.stream().mapToInt(d -> String.valueOf(d.getId()).length()).max().orElse(1);
+        int type  = devices.stream().mapToInt(d -> d.getClass().getSimpleName().length()).max().orElse(10);
+        int brand = devices.stream().mapToInt(d -> d.getBrand().length()).max().orElse(8);
+        int model = devices.stream().mapToInt(d -> d.getModel().length()).max().orElse(10);
+        int div   = divisionMap.values().stream().mapToInt(String::length).max().orElse(10);
+        return new int[]{id, type + 2, brand + 2, model + 2, div + 2};
     }
 
     private boolean houseHasDevices(int houseId) {

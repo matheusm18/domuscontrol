@@ -22,6 +22,8 @@ import java.util.Objects;
  */
 public class DivisionInfo implements Serializable {
 
+    /** The ID of the house this division belongs to. */
+    private final int houseId;
     /** The name of the house this division belongs to. */
     private final String houseName;
     /** The name of the division. */
@@ -33,19 +35,22 @@ public class DivisionInfo implements Serializable {
      * Constructs a DivisionInfo with default values.
      */
     public DivisionInfo() {
+        this.houseId = 0;
         this.houseName = "";
         this.divisionName = "";
         this.deviceCount = 0;
     }
 
     /**
-     * Constructs a DivisionInfo with the given house name, division name, and device count.
+     * Constructs a DivisionInfo with the given house ID, house name, division name, and device count.
      *
+     * @param houseId      the ID of the house the division belongs to
      * @param houseName    the name of the house the division belongs to
      * @param divisionName the name of the division
      * @param deviceCount  the number of devices in the division
      */
-    public DivisionInfo(String houseName, String divisionName, int deviceCount) {
+    public DivisionInfo(int houseId, String houseName, String divisionName, int deviceCount) {
+        this.houseId = houseId;
         this.houseName = houseName;
         this.divisionName = divisionName;
         this.deviceCount = deviceCount;
@@ -57,9 +62,19 @@ public class DivisionInfo implements Serializable {
      * @param other the DivisionInfo to copy
      */
     public DivisionInfo(DivisionInfo other) {
+        this.houseId = other.houseId;
         this.houseName = other.houseName;
         this.divisionName = other.divisionName;
         this.deviceCount = other.deviceCount;
+    }
+
+    /**
+     * Returns the ID of the house this division belongs to.
+     *
+     * @return the house ID
+     */
+    public int getHouseId() {
+        return this.houseId;
     }
 
     /**
@@ -114,7 +129,8 @@ public class DivisionInfo implements Serializable {
             return false;
         }
         DivisionInfo other = (DivisionInfo) o;
-        return this.deviceCount == other.deviceCount
+        return this.houseId == other.houseId
+            && this.deviceCount == other.deviceCount
             && Objects.equals(this.houseName, other.houseName)
             && Objects.equals(this.divisionName, other.divisionName);
     }
@@ -126,7 +142,7 @@ public class DivisionInfo implements Serializable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(this.houseName, this.divisionName, this.deviceCount);
+        return Objects.hash(this.houseId, this.houseName, this.divisionName, this.deviceCount);
     }
 
     /**
@@ -138,7 +154,8 @@ public class DivisionInfo implements Serializable {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("DivisionInfo { ")
-          .append("houseName: ").append(this.houseName)
+          .append("houseId: ").append(this.houseId)
+          .append(", houseName: ").append(this.houseName)
           .append(", divisionName: ").append(this.divisionName)
           .append(", deviceCount: ").append(this.deviceCount)
           .append(" }");

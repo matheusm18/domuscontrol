@@ -31,6 +31,7 @@ import domuscontrol.simulation.WeatherCondition;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -131,6 +132,7 @@ public class SuggestionEngine {
 
             LocalTime clusterCenter = findClusterCenter(times);
             if (clusterCenter == null) continue;
+            clusterCenter = clusterCenter.truncatedTo(ChronoUnit.MINUTES);
 
             DeviceInteraction sample = group.get(0);
             Device device = devices.get(sample.getDeviceId());
@@ -617,6 +619,6 @@ public class SuggestionEngine {
      * @return a string label describing the device, including its type and brand/model
      */
     private static String deviceLabel(Device device) {
-        return device.getClass().getSimpleName() + " '" + device.getBrand() + " " + device.getModel() + "'";
+        return device.getClass().getSimpleName() + " '" + device.getBrand() + " " + device.getModel() + "' [#" + device.getId() + "]";
     }
 }

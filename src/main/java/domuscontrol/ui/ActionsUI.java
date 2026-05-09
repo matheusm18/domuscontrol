@@ -69,6 +69,15 @@ public class ActionsUI {
         }
     }
 
+    private int readSelection(String prompt, int max) {
+        while (true) {
+            System.out.print(Ansi.prompt(prompt));
+            int choice = readInt();
+            if (choice == 0 || (choice >= 1 && choice <= max)) return choice;
+            System.out.println("  Invalid selection.");
+        }
+    }
+
     private int readIntInRange(int min, int max, String prompt) {
         while (true) {
             int value = readInt();
@@ -121,14 +130,8 @@ public class ActionsUI {
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Automation (0 to back)"));
-            int choice = readInt();
+            int choice = readSelection("Automation (0 to back)", automations.size());
             if (choice == 0) return;
-
-            if (choice < 1 || choice > automations.size()) {
-                System.out.println("  Invalid Automation Number.");
-                return;
-            }
 
             Automation selected = automations.get(choice - 1);
             showAutomationInfo(selected, devices);
@@ -231,13 +234,8 @@ public class ActionsUI {
             }
             Ansi.listSeparator();
             
-            System.out.print(Ansi.prompt("Automation (0 to cancel)"));
-            int choice = readInt();
-            
-            if (choice < 1 || choice > automations.size()) {
-                System.out.println("  Cancelled.");
-                return;
-            }
+            int choice = readSelection("Automation (0 to cancel)", automations.size());
+            if (choice == 0) return;
 
             String name = automations.get(choice - 1).getName();
             model.removeAutomation(houseId, name);
@@ -291,14 +289,8 @@ public class ActionsUI {
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Schedule (0 to back)"));
-            int choice = readInt();
+            int choice = readSelection("Schedule (0 to back)", schedules.size());
             if (choice == 0) return;
-
-            if (choice < 1 || choice > schedules.size()) {
-                System.out.println("  Invalid Schedule Number.");
-                return;
-            }
 
             Automation selected = schedules.get(choice - 1);
             showAutomationInfo(selected, devices);
@@ -406,13 +398,8 @@ public class ActionsUI {
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Schedule (0 to cancel)"));
-            int choice = readInt();
-
-            if (choice < 1 || choice > schedules.size()) {
-                System.out.println("  Cancelled.");
-                return;
-            }
+            int choice = readSelection("Schedule (0 to cancel)", schedules.size());
+            if (choice == 0) return;
 
             String name = schedules.get(choice - 1).getName();
             model.removeAutomation(houseId, name);
@@ -515,14 +502,8 @@ public class ActionsUI {
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Scenario (0 to back)"));
-            int choice = readInt();
+            int choice = readSelection("Scenario (0 to back)", scenarios.size());
             if (choice == 0) return;
-
-            if (choice < 1 || choice > scenarios.size()) {
-                System.out.println("  Invalid Scenario Number.");
-                return;
-            }
 
             Scenario selected = scenarios.get(choice - 1);
             showScenarioInfo(selected, devices);
@@ -550,14 +531,8 @@ public class ActionsUI {
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Scenario (0 to back)"));
-            int choice = readInt();
+            int choice = readSelection("Scenario (0 to back)", scenarios.size());
             if (choice == 0) return;
-
-            if (choice < 1 || choice > scenarios.size()) {
-                System.out.println("  Invalid Scenario Number.");
-                return;
-            }
 
             Scenario selected = scenarios.get(choice - 1);
             model.executeScenario(houseId, user.getId(), selected.getName());
@@ -616,13 +591,8 @@ public class ActionsUI {
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Scenario (0 to cancel)"));
-            int choice = readInt();
-
-            if (choice < 1 || choice > scenarios.size()) {
-                System.out.println("  Cancelled.");
-                return;
-            }
+            int choice = readSelection("Scenario (0 to cancel)", scenarios.size());
+            if (choice == 0) return;
 
             String name = scenarios.get(choice - 1).getName();
             model.removeScenario(houseId, user.getId(), name);
@@ -649,18 +619,20 @@ public class ActionsUI {
 
         while (adding) {
             Ansi.listTitle("Available Devices");
-            int num = 1;
-            List<Device> deviceList;
+            Map<Integer, Device> devicesMap;
             try {
-                deviceList = new ArrayList<>(model.getDevices(houseId).values());
+                devicesMap = model.getDevices(houseId);
             } catch (HouseNotFoundException e) {
                 System.out.println("  Error: house not found.");
                 break;
             }
+            List<Device> deviceList = devicesMap.values().stream()
+                .sorted(java.util.Comparator.comparingInt(Device::getId)).toList();
+            int[] w = colWidths(deviceList);
 
             for (Device d : deviceList) {
-                Ansi.listRow(String.format("%d  %-15s %-12s %s",
-                    num++, d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
+                Ansi.listRow(String.format("%-" + w[0] + "d  %-" + w[1] + "s %-" + w[2] + "s %s",
+                    d.getId(), d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
             }
             Ansi.listSeparator();
 
@@ -668,12 +640,12 @@ public class ActionsUI {
             int choice = readInt();
 
             if (choice == 0) break;
-            if (choice < 1 || choice > deviceList.size()) {
-                System.out.println(Ansi.DIM + "  Invalid selection." + Ansi.RESET);
+            if (!devicesMap.containsKey(choice)) {
+                System.out.println("  Invalid selection.");
                 continue;
             }
 
-            Device device = deviceList.get(choice - 1);
+            Device device = devicesMap.get(choice);
             handleDeviceActionSelection(device, actions);
         }
         return actions;
@@ -925,17 +897,26 @@ public class ActionsUI {
     }
 
     private Device pickFromList(List<Device> devices, String label) {
+        List<Device> sorted = devices.stream()
+            .sorted(java.util.Comparator.comparingInt(Device::getId)).toList();
         Ansi.listTitle("Select " + label);
-        for (int i = 0; i < devices.size(); i++) {
-            Device d = devices.get(i);
-            Ansi.listRow(String.format("%d  %-20s %-12s %s",
-                i + 1, d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
+        int[] w = colWidths(sorted);
+        for (Device d : sorted) {
+            Ansi.listRow(String.format("%-" + w[0] + "d  %-" + w[1] + "s %-" + w[2] + "s %s",
+                d.getId(), d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
         }
         Ansi.listSeparator();
         System.out.print(Ansi.prompt("Select (0 to cancel)"));
         int choice = readInt();
-        if (choice < 1 || choice > devices.size()) return null;
-        return devices.get(choice - 1);
+        if (choice == 0) return null;
+        return sorted.stream().filter(d -> d.getId() == choice).findFirst().orElse(null);
+    }
+
+    private int[] colWidths(List<Device> devices) {
+        int id    = devices.stream().mapToInt(d -> String.valueOf(d.getId()).length()).max().orElse(1);
+        int type  = devices.stream().mapToInt(d -> d.getClass().getSimpleName().length()).max().orElse(10);
+        int brand = devices.stream().mapToInt(d -> d.getBrand().length()).max().orElse(8);
+        return new int[]{id, type + 2, brand + 2};
     }
 
     private Operator pickOperator() {
@@ -962,15 +943,15 @@ public class ActionsUI {
 
     private String describeAction(Action a, Map<Integer, Device> devices) {
         if (a instanceof TurnOnAction ta)
-            return "Turn ON   " + devLabel(ta.getDeviceId(), devices) + " [#" + ta.getDeviceId() + "]";
+            return "Turn ON   " + devLabel(ta.getDeviceId(), devices);
         if (a instanceof TurnOffAction ta)
-            return "Turn OFF  " + devLabel(ta.getDeviceId(), devices) + " [#" + ta.getDeviceId() + "]";
+            return "Turn OFF  " + devLabel(ta.getDeviceId(), devices);
         if (a instanceof SetLevelAction sa)
-            return "Set level " + sa.getTargetLevel() + "%  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
+            return "Set level " + sa.getTargetLevel() + "%  " + devLabel(sa.getDeviceId(), devices);
         if (a instanceof SetOpeningAction sa)
-            return "Set opening " + sa.getTargetPercentage() + "%  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
+            return "Set opening " + sa.getTargetPercentage() + "%  " + devLabel(sa.getDeviceId(), devices);
         if (a instanceof SetColorTemperatureAction sa)
-            return "Set color " + sa.getTargetTemperature() + "K  " + devLabel(sa.getDeviceId(), devices) + " [#" + sa.getDeviceId() + "]";
+            return "Set color " + sa.getTargetTemperature() + "K  " + devLabel(sa.getDeviceId(), devices);
         return a.toString();
     }
 
@@ -998,7 +979,7 @@ public class ActionsUI {
 
     private String devLabel(int id, Map<Integer, Device> devices) {
         Device d = devices.get(id);
-        return d != null ? d.getBrand() + " " + d.getModel() : "#" + id;
+        return d != null ? d.getBrand() + " " + d.getModel() + " [#" + id + "]" : "#" + id;
     }
 
     private String opSymbol(Operator op) {
