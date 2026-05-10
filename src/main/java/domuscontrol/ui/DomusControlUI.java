@@ -105,7 +105,7 @@ public class DomusControlUI {
             this.currentUserEmail = model.validateLogin(user, password).getEmail();
             userUI.show(this.currentUserEmail);
         } catch (UserNotFoundException e) {
-            System.out.println("  No account found with " + user + ".");
+            Ansi.error("No account found with " + user + ".");
         } catch (LoginInvalidPasswordException e) {
             System.out.println("  Incorrect password.");
         }
@@ -167,7 +167,7 @@ public class DomusControlUI {
                 }
                 Ansi.listSeparator();
             } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+                Ansi.error("Error: house not found.");
             }
         });
 
@@ -186,7 +186,7 @@ public class DomusControlUI {
                 }
                 Ansi.listSeparator();
             } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+                Ansi.error("Error: house not found.");
             }
         });
 
@@ -219,7 +219,7 @@ public class DomusControlUI {
                 if (choice == 0) return null;
                 if (choice >= 1 && choice <= houses.size()) return houses.get(choice - 1);
             } catch (NumberFormatException ignored) {}
-            System.out.println("  Invalid selection.");
+            Ansi.error("Invalid selection.");
         }
     }
 
@@ -245,9 +245,9 @@ public class DomusControlUI {
         } catch (FileNotFoundException e) {
             System.out.println("  File not found: " + path);
         } catch (IOException e) {
-            System.out.println("  Error loading state: " + e.getMessage());
+            Ansi.error("Error loading state: " + e.getMessage());
         } catch (ClassNotFoundException e) {
-            System.out.println("  Error loading state: corrupted file.");
+            Ansi.error("Error loading state: corrupted file.");
         }
     }
 }

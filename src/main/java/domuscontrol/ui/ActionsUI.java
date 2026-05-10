@@ -78,7 +78,7 @@ public class ActionsUI {
             System.out.print(Ansi.prompt(prompt));
             int choice = readInt();
             if (choice == 0 || (choice >= 1 && choice <= max)) return choice;
-            System.out.println("  Invalid selection.");
+            Ansi.error("Invalid selection.");
         }
     }
 
@@ -140,7 +140,7 @@ public class ActionsUI {
             Automation selected = automations.get(choice - 1);
             showAutomationInfo(selected, devices);
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -179,7 +179,7 @@ public class ActionsUI {
         try {
             List<Action> actions = readActionsDialog(houseId);
             if (actions.isEmpty()) {
-                System.out.println("  Error: automation must have at least one action.");
+                Ansi.error("Error: automation must have at least one action.");
                 return;
             }
 
@@ -191,7 +191,7 @@ public class ActionsUI {
 
             List<Condition> conditions = readConditionsDialog(houseId, false);
             if (conditions.isEmpty()) {
-                System.out.println("  Error: automation must have at least one condition.");
+                Ansi.error("Error: automation must have at least one condition.");
                 return;
             }
 
@@ -204,7 +204,7 @@ public class ActionsUI {
             TimeWindowCondition timeWindow = findTimeWindowCondition(conditions);
             List<Action> endActions = readEndActionsIfNeeded(houseId, timeWindow);
             if (timeWindow != null && endActions.isEmpty()) {
-                System.out.println("  Error: time window routines must have at least one end action.");
+                Ansi.error("Error: time window routines must have at least one end action.");
                 return;
             }
 
@@ -215,11 +215,11 @@ public class ActionsUI {
             addTimeWindowEndRoutine(houseId, name, AutomationType.AUTOMATION, conditions, timeWindow, endActions);
 
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: routine name already exists.");
+            Ansi.error("Error: routine name already exists.");
         } catch (ScheduleWithConditionDifferentFromTimeException e) {
-            System.out.println("  Error: schedule conditions must be time-based.");
+            Ansi.error("Error: schedule conditions must be time-based.");
         }
     }
 
@@ -246,9 +246,9 @@ public class ActionsUI {
             System.out.println("  Automation '" + name + "' removed.");
             
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (AutomationDoesntExistException e) {
-            System.out.println("  Error: automation not found.");
+            Ansi.error("Error: automation not found.");
         }
     }
 
@@ -299,7 +299,7 @@ public class ActionsUI {
             Automation selected = schedules.get(choice - 1);
             showAutomationInfo(selected, devices);
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -314,20 +314,20 @@ public class ActionsUI {
         try {
             List<Action> actions = readActionsDialog(houseId);
             if (actions.isEmpty()) {
-                System.out.println("  Error: schedule must have at least one action.");
+                Ansi.error("Error: schedule must have at least one action.");
                 return;
             }
 
             List<Condition> conditions = readConditionsDialog(houseId, true);
             if (conditions.isEmpty()) {
-                System.out.println("  Error: schedule must have at least one condition.");
+                Ansi.error("Error: schedule must have at least one condition.");
                 return;
             }
 
             TimeWindowCondition timeWindow = findTimeWindowCondition(conditions);
             List<Action> endActions = readEndActionsIfNeeded(houseId, timeWindow);
             if (timeWindow != null && endActions.isEmpty()) {
-                System.out.println("  Error: time window schedules must have at least one end action.");
+                Ansi.error("Error: time window schedules must have at least one end action.");
                 return;
             }
 
@@ -338,11 +338,11 @@ public class ActionsUI {
             addTimeWindowEndRoutine(houseId, name, AutomationType.SCHEDULE, conditions, timeWindow, endActions);
 
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: schedule name already exists.");
+            Ansi.error("Error: schedule name already exists.");
         } catch (ScheduleWithConditionDifferentFromTimeException e) {
-            System.out.println("  Error: schedules only accept time conditions.");
+            Ansi.error("Error: schedules only accept time conditions.");
         }
     }
 
@@ -410,9 +410,9 @@ public class ActionsUI {
             System.out.println("  Schedule '" + name + "' removed.");
 
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (AutomationDoesntExistException e) {
-            System.out.println("  Error: schedule not found.");
+            Ansi.error("Error: schedule not found.");
         }
     }
 
@@ -442,7 +442,7 @@ public class ActionsUI {
         try {
             userId = model.getUserByEmail(email).getId();
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: user not found.");
+            Ansi.error("Error: user not found.");
             return;
         }
 
@@ -512,9 +512,9 @@ public class ActionsUI {
             Scenario selected = scenarios.get(choice - 1);
             showScenarioInfo(selected, devices);
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: user not found.");
+            Ansi.error("Error: user not found.");
         } catch (UserDoesntHaveScenarios e) {
             System.out.println("  No scenarios found for this user.");
         }
@@ -542,13 +542,13 @@ public class ActionsUI {
             model.executeScenario(houseId, user.getId(), selected.getName());
             System.out.println("  Scenario '" + selected.getName() + "' executed.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: user not found.");
+            Ansi.error("Error: user not found.");
         } catch (UserDoesntHaveScenarios e) {
-            System.out.println("  Error: scenario not found.");
+            Ansi.error("Error: scenario not found.");
         } catch (ScenarioDoesntExistException e) {
-            System.out.println("  Error: Scenario not found.");
+            Ansi.error("Error: Scenario not found.");
         }
     }
 
@@ -564,18 +564,18 @@ public class ActionsUI {
             User user = model.getUserByEmail(email);
             List<Action> actions = readActionsDialog(houseId);
             if (actions.isEmpty()) {
-                System.out.println("  Error: scenario must have at least one action.");
+                Ansi.error("Error: scenario must have at least one action.");
                 return;
             }
             Scenario scenario = new Scenario(name, actions);
             model.addScenario(houseId, user.getId(), scenario);
             System.out.println("  Scenario '" + name + "' added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: user not found.");
+            Ansi.error("Error: user not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: scenario name already exists.");
+            Ansi.error("Error: scenario name already exists.");
         }
     }
 
@@ -603,13 +603,13 @@ public class ActionsUI {
             System.out.println("  Scenario '" + name + "' removed.");
 
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: user not found.");
+            Ansi.error("Error: user not found.");
         } catch (UserDoesntHaveScenarios e) {
             System.out.println("  No scenarios found for this user.");
         } catch (ScenarioDoesntExistException e) {
-            System.out.println("  Error: scenario not found.");
+            Ansi.error("Error: scenario not found.");
         }
     }
 
@@ -627,7 +627,7 @@ public class ActionsUI {
             try {
                 devicesMap = model.getDevices(houseId);
             } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+                Ansi.error("Error: house not found.");
                 break;
             }
             List<Device> deviceList = devicesMap.values().stream()
@@ -645,7 +645,7 @@ public class ActionsUI {
 
             if (choice == 0) break;
             if (!devicesMap.containsKey(choice)) {
-                System.out.println("  Invalid selection.");
+                Ansi.error("Invalid selection.");
                 continue;
             }
 
@@ -764,7 +764,7 @@ public class ActionsUI {
                 System.out.println("  Time condition added.");
                 hasTime[0] = true;
             } catch (DateTimeParseException e) {
-                System.out.println("  Invalid time format.");
+                Ansi.error("Invalid time format.");
             }
             timeMenu.stop();
         });
@@ -779,7 +779,7 @@ public class ActionsUI {
                 System.out.println("  Time window condition added.");
                 hasTime[0] = true;
             } catch (DateTimeParseException e) {
-                System.out.println("  Invalid time format.");
+                Ansi.error("Invalid time format.");
             }
             timeMenu.stop();
         });

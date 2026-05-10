@@ -47,12 +47,10 @@ public class SimulationTest {
         Simulation simulation = new Simulation(LocalDateTime.of(2026, 1, 1, 12, 0), 20.0, WeatherCondition.RAINING);
 
         assertTrue(simulation.isRaining());
-        assertFalse(simulation.isWinterComing());
 
-        simulation.changeWeather(WeatherCondition.WINTER_IS_COMING);
+        simulation.changeWeather(WeatherCondition.SUNNY);
 
         assertFalse(simulation.isRaining());
-        assertTrue(simulation.isWinterComing());
     }
 
     @Test

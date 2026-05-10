@@ -16,8 +16,7 @@ public class WeatherConditionTest {
                 WeatherCondition.FOGGY,
                 WeatherCondition.RAINING,
                 WeatherCondition.STORMY,
-                WeatherCondition.SNOWING,
-                WeatherCondition.WINTER_IS_COMING
+                WeatherCondition.SNOWING
             },
             WeatherCondition.values()
         );
@@ -27,6 +26,6 @@ public class WeatherConditionTest {
     void exposesLuminosityMultiplierAndDisplayName() {
         assertEquals(1.0, WeatherCondition.SUNNY.getLuminosityMultiplier());
         assertEquals(0.15, WeatherCondition.STORMY.getLuminosityMultiplier());
-        assertEquals("WINTER", WeatherCondition.WINTER_IS_COMING.toString());
+        assertEquals("SNOWING", WeatherCondition.SNOWING.toString());
     }
 }

@@ -175,15 +175,6 @@ public class Simulation implements SimulationState, Serializable {
     }
 
     /**
-     * Returns whether the weather is WINTER_IS_COMING.
-     *
-     * @return true if winter is coming.
-     */
-    public boolean isWinterComing() {
-        return this.weather == WeatherCondition.WINTER_IS_COMING;
-    }
-
-    /**
      * Advances the simulation by the given number of minutes (ticks), updating temperature
      * and weather stochastically each tick.
      *
@@ -262,10 +253,6 @@ public class Simulation implements SimulationState, Serializable {
                         this.weather = WeatherCondition.CLOUDY;
                         break;
 
-                    case WINTER_IS_COMING:
-                        this.weather = (rand < 0.5) ? WeatherCondition.SNOWING : WeatherCondition.WINTER_IS_COMING;
-                        break;
-                        
                 }
             }
         }

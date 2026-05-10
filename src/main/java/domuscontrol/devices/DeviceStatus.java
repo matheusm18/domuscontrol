@@ -13,10 +13,13 @@ public enum DeviceStatus {
     
     /** Device is turned on (for switchable devices). */
     ON,
+
     /** Device is turned off (for switchable devices). */
     OFF,
+
     /** Device is in open position (for openable devices). */
     OPEN,
+    
     /** Device is in closed position (for openable devices). */
     CLOSED
 }

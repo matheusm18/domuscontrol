@@ -100,7 +100,7 @@ public class HouseUI {
         try {
             userId = model.getUserByEmail(email).getId();
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: User not found.");
+            Ansi.error("Error: User not found.");
             return;
         }
 
@@ -158,7 +158,7 @@ public class HouseUI {
             Ansi.listRow(String.format("%-12s %d", "Devices", model.getDevices(houseId).size()));
             Ansi.listSeparator();
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -191,7 +191,7 @@ public class HouseUI {
             }
             Ansi.listSeparator();
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -203,9 +203,9 @@ public class HouseUI {
             model.addDivision(houseId, name);
             System.out.println("  Division '" + name + "' added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: division name already exists.");
+            Ansi.error("Error: division name already exists.");
         }
     }
 
@@ -236,9 +236,9 @@ public class HouseUI {
             model.removeDivision(houseId, divName);
             System.out.println("  Division removed.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         }
     }
 
@@ -285,10 +285,10 @@ public class HouseUI {
                 int selectedId = readInt();
                 if (selectedId == 0) return;
                 if (devices.containsKey(selectedId)) { showDeviceInfo(devices.get(selectedId)); break; }
-                System.out.println("  Invalid selection.");
+                Ansi.error("Invalid selection.");
             }
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -341,7 +341,7 @@ public class HouseUI {
             typeMenu.run();
 
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -366,19 +366,19 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         System.out.print(Ansi.prompt("Brightness (0-100)"));
         int brightness = readInt();
         if (brightness < 0 || brightness > 100) {
-            System.out.println("  Error: Brightness must be between 0 and 100.");
+            Ansi.error("Error: Brightness must be between 0 and 100.");
             return;
         }
         System.out.print(Ansi.prompt("Color temperature (K, e.g. 2700-4000)"));
         int colorTemp = readInt();
         if (colorTemp < 2700 || colorTemp > 4000) {
-            System.out.println("  Error: Color temperature must be between 2700 and 4000 K.");
+            Ansi.error("Error: Color temperature must be between 2700 and 4000 K.");
             return;
         }
         try {
@@ -386,11 +386,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, lamp, division);
             System.out.println("  " + lamp.getBrand() + " " + lamp.getModel() + " [#" + lamp.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -400,13 +400,13 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         System.out.print(Ansi.prompt("Volume (0-100)"));
         int volume = readInt();
         if (volume < 0 || volume > 100) {
-            System.out.println("  Error: Volume must be between 0 and 100.");
+            Ansi.error("Error: Volume must be between 0 and 100.");
             return;
         }
         System.out.print(Ansi.prompt("Source"));
@@ -416,11 +416,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, speaker, division);
             System.out.println("  " + speaker.getBrand() + " " + speaker.getModel() + " [#" + speaker.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -430,13 +430,13 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         System.out.print(Ansi.prompt("Opening level (0-100)"));
         int opening = readInt();
         if (opening < 0 || opening > 100) {
-            System.out.println("  Error: Opening level must be between 0 and 100.");
+            Ansi.error("Error: Opening level must be between 0 and 100.");
             return;
         }
         try {
@@ -444,11 +444,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, curtain, division);
             System.out.println("  " + curtain.getBrand() + " " + curtain.getModel() + " [#" + curtain.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -458,13 +458,13 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         System.out.print(Ansi.prompt("Opening level (0-100)"));
         int opening = readInt();
         if (opening < 0 || opening > 100) {
-            System.out.println("  Error: Opening level must be between 0 and 100.");
+            Ansi.error("Error: Opening level must be between 0 and 100.");
             return;
         }
         try {
@@ -472,11 +472,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, gate, division);
             System.out.println("  " + gate.getBrand() + " " + gate.getModel() + " [#" + gate.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -486,7 +486,7 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         try {
@@ -494,11 +494,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, plug, division);
             System.out.println("  " + plug.getBrand() + " " + plug.getModel() + " [#" + plug.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -508,7 +508,7 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         try {
@@ -516,11 +516,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, relay, division);
             System.out.println("  " + relay.getBrand() + " " + relay.getModel() + " [#" + relay.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -530,13 +530,13 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         System.out.print(Ansi.prompt("Heating power (0-100)"));
         int power = readInt();
         if (power < 0 || power > 100) {
-            System.out.println("  Error: Heating power must be between 0 and 100.");
+            Ansi.error("Error: Heating power must be between 0 and 100.");
             return;
         }
         try {
@@ -544,11 +544,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, heater, division);
             System.out.println("  " + heater.getBrand() + " " + heater.getModel() + " [#" + heater.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -558,13 +558,13 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         System.out.print(Ansi.prompt("Speed (0-100)"));
         int speed = readInt();
         if (speed < 0 || speed > 100) {
-            System.out.println("  Error: Speed must be between 0 and 100.");
+            Ansi.error("Error: Speed must be between 0 and 100.");
             return;
         }
         try {
@@ -572,11 +572,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, fan, division);
             System.out.println("  " + fan.getBrand() + " " + fan.getModel() + " [#" + fan.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -586,13 +586,13 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         System.out.print(Ansi.prompt("Cooling power (0-100)"));
         int coolingPower = readInt();
         if (coolingPower < 0 || coolingPower > 100) {
-            System.out.println("  Error: Cooling power must be between 0 and 100.");
+            Ansi.error("Error: Cooling power must be between 0 and 100.");
             return;
         }
         try {
@@ -600,11 +600,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, airConditioner, division);
             System.out.println("  " + airConditioner.getBrand() + " " + airConditioner.getModel() + " [#" + airConditioner.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -614,13 +614,13 @@ public class HouseUI {
             base = readBaseFields();
         }
         catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         System.out.print(Ansi.prompt("Volume (0-100)"));
         int volume = readInt();
         if (volume < 0 || volume > 100) {
-            System.out.println("  Error: Volume must be between 0 and 100.");
+            Ansi.error("Error: Volume must be between 0 and 100.");
             return;
         }
         System.out.print(Ansi.prompt("Source"));
@@ -630,11 +630,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, television, division);
             System.out.println("  " + television.getBrand() + " " + television.getModel() + " [#" + television.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -643,7 +643,7 @@ public class HouseUI {
         try {
             base = readBaseFields();
         } catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         try {
@@ -651,11 +651,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, sensor, division);
             System.out.println("  " + sensor.getBrand() + " " + sensor.getModel() + " [#" + sensor.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -664,7 +664,7 @@ public class HouseUI {
         try {
             base = readBaseFields();
         } catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         try {
@@ -672,11 +672,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, sensor, division);
             System.out.println("  " + sensor.getBrand() + " " + sensor.getModel() + " [#" + sensor.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -685,7 +685,7 @@ public class HouseUI {
         try {
             base = readBaseFields();
         } catch (IllegalArgumentException e) {
-            System.out.println("  Error: consumption cannot be negative.");
+            Ansi.error("Error: consumption cannot be negative.");
             return;
         }
         try {
@@ -693,11 +693,11 @@ public class HouseUI {
             model.addDeviceToDivision(houseId, sensor, division);
             System.out.println("  " + sensor.getBrand() + " " + sensor.getModel() + " [#" + sensor.getId() + "] added.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DivisionNotFoundException e) {
-            System.out.println("  Error: division not found.");
+            Ansi.error("Error: division not found.");
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: device already in this division.");
+            Ansi.error("Error: device already in this division.");
         }
     }
 
@@ -709,12 +709,12 @@ public class HouseUI {
                 model.removeDevice(houseId, device.getId());
                 System.out.println("  " + device.getBrand() + " " + device.getModel() + " [#" + device.getId() + "] removed.");
             } catch (DeviceNotFoundException e) {
-                System.out.println("  Error: device not found.");
+                Ansi.error("Error: device not found.");
             } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+                Ansi.error("Error: house not found.");
             }
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -756,7 +756,7 @@ public class HouseUI {
             });
             Ansi.listSeparator();
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -768,7 +768,7 @@ public class HouseUI {
             System.out.print(Ansi.prompt("Role (1-Admin, 2-User)"));
             roleChoice = readInt();
             if (roleChoice == 1 || roleChoice == 2) break;
-            System.out.println("  Invalid selection.");
+            Ansi.error("Invalid selection.");
         }
         UserRole role = roleChoice == 1 ? UserRole.ADMINISTRATOR : UserRole.USER;
         try {
@@ -778,11 +778,11 @@ public class HouseUI {
             System.out.println("  User added to house with role " + role + ".");
 
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: User with email '" + email + "' not found.");
+            Ansi.error("Error: User with email '" + email + "' not found.");
         } catch (UserAlreadyExistsException e) {
-            System.out.println("  Error: This user is already a member of this house.");
+            Ansi.error("Error: This user is already a member of this house.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -795,13 +795,13 @@ public class HouseUI {
             System.out.println("  User removed from house.");
             return targetEmail.equalsIgnoreCase(currentEmail);
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: User with email '" + targetEmail + "' not found.");
+            Ansi.error("Error: User with email '" + targetEmail + "' not found.");
         } catch (LastAdminException e) {
-            System.out.println("  Error: Cannot remove the last administrator of the house.");
+            Ansi.error("Error: Cannot remove the last administrator of the house.");
         } catch (UserAlreadyExistsException e) {
-            System.out.println("  Error: internal user update conflict.");
+            Ansi.error("Error: internal user update conflict.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
         return false;
     }
@@ -815,7 +815,7 @@ public class HouseUI {
             if (device == null) return;
             operateSelectedDevice(houseId, device.getId(), userId);
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -840,32 +840,15 @@ public class HouseUI {
             int choice = readInt();
             if (choice == 0) return null;
             if (devices.containsKey(choice)) return devices.get(choice);
-            System.out.println("  Invalid selection.");
+            Ansi.error("Invalid selection.");
         }
     }
 
     private void operateSelectedDevice(int houseId, int deviceId, int userId) {
         try {
             Device dev = model.getDevice(houseId, deviceId);
-            Ansi.listTitle(dev.getBrand() + " " + dev.getModel());
-            Ansi.listRow(String.format("%-12s %s", "Type", dev.getClass().getSimpleName()));
-            Ansi.listRow(String.format("%-12s %s", "Status", dev.getStatus()));
-            if (dev instanceof AdjustableDevice adjustableDevice) {
-                Ansi.listRow(String.format("%-12s %d%%", "Level", adjustableDevice.getLevel()));
-            }
-            if (dev instanceof ColorAdjustableDevice colorAdjustableDevice) {
-                Ansi.listRow(String.format("%-12s %dK", "Color Temp", colorAdjustableDevice.getColorTemperature()));
-            }
-            if (dev instanceof Speaker speaker) {
-                Ansi.listRow(String.format("%-12s %s", "Source", speaker.getSource()));
-            }
-            if (dev instanceof Television television) {
-                Ansi.listRow(String.format("%-12s %s", "Source", television.getSource()));
-            }
-            if (dev instanceof OpenableDevice openableDevice) {
-                Ansi.listRow(String.format("%-12s %d%%", "Opening", openableDevice.getOpeningLevel()));
-            }
-            Ansi.listSeparator();
+
+            showDeviceInfo(dev);
 
             Menu opMenu = new Menu("Operate Device",
                     new String[] { "Toggle ON/OFF", "Set Level", "Set Opening", "Set Color Temperature" },
@@ -882,9 +865,9 @@ public class HouseUI {
             opMenu.setHandler(4, () -> setDeviceColorTemperature(houseId, deviceId, userId));
             opMenu.run();
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DeviceNotFoundException e) {
-            System.out.println("  Error: device not found.");
+            Ansi.error("Error: device not found.");
         }
     }
 
@@ -892,12 +875,13 @@ public class HouseUI {
         try {
             model.toggleDevice(houseId, deviceId, userId);
             System.out.println("  Device toggled.");
+            showDeviceInfo(model.getDevice(houseId, deviceId));
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DeviceNotFoundException e) {
-            System.out.println("  Error: device not found.");
+            Ansi.error("Error: device not found.");
         } catch (DeviceIsNotInstanceOfSwitchableDeviceException e) {
-            System.out.println("  Error: device cannot be toggled.");
+            Ansi.error("Error: device cannot be toggled.");
         }
     }
 
@@ -907,12 +891,13 @@ public class HouseUI {
         try {
             model.setDeviceLevel(houseId, deviceId, level, userId);
             System.out.println("  Level set.");
+            showDeviceInfo(model.getDevice(houseId, deviceId));
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DeviceNotFoundException e) {
-            System.out.println("  Error: device not found.");
+            Ansi.error("Error: device not found.");
         } catch (DeviceIsNotInstanceOfAdjustableDeviceException e) {
-            System.out.println("  Error: device level cannot be adjusted.");
+            Ansi.error("Error: device level cannot be adjusted.");
         }
     }
 
@@ -922,12 +907,13 @@ public class HouseUI {
         try {
             model.setDeviceColorTemperature(houseId, deviceId, temperature, userId);
             System.out.println("  Color temperature set.");
+            showDeviceInfo(model.getDevice(houseId, deviceId));
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DeviceNotFoundException e) {
-            System.out.println("  Error: device not found.");
+            Ansi.error("Error: device not found.");
         } catch (DeviceIsNotInstanceOfColorAdjustableDeviceException e) {
-            System.out.println("  Error: device color temperature cannot be adjusted.");
+            Ansi.error("Error: device color temperature cannot be adjusted.");
         }
     }
 
@@ -937,12 +923,13 @@ public class HouseUI {
         try {
             model.setDeviceOpening(houseId, deviceId, pct, userId);
             System.out.println("  Opening set.");
+            showDeviceInfo(model.getDevice(houseId, deviceId));
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (DeviceNotFoundException e) {
-            System.out.println("  Error: device not found.");
+            Ansi.error("Error: device not found.");
         } catch (DeviceIsNotInstanceOfOpenableDeviceException e) {
-            System.out.println("  Error: device opening cannot be adjusted.");
+            Ansi.error("Error: device opening cannot be adjusted.");
         }
     }
 
@@ -974,11 +961,11 @@ public class HouseUI {
                 System.out.println("  Automation added successfully.");
             }
         } catch (NameAlreadyExistsException e) {
-            System.out.println("  Error: Automation already exists.");
+            Ansi.error("Error: Automation already exists.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         } catch (ScheduleWithConditionDifferentFromTimeException e) {
-            System.out.println("  Error: suggestion contains invalid schedule conditions.");
+            Ansi.error("Error: suggestion contains invalid schedule conditions.");
         }
     }
 
@@ -999,7 +986,7 @@ public class HouseUI {
             System.out.print(Ansi.prompt(prompt));
             int choice = readInt();
             if (choice == 0 || (choice >= 1 && choice <= max)) return choice;
-            System.out.println("  Invalid selection.");
+            Ansi.error("Invalid selection.");
         }
     }
 

@@ -15,20 +15,24 @@ public enum WeatherCondition {
     
     /** Sunny weather with high luminosity (100% base level). */
     SUNNY(1.0, "SUNNY"),
+
     /** Partly cloudy weather (80% luminosity). */
     PARTLY_CLOUDY(0.8, "PARTLY_CLOUDY"),
+
     /** Cloudy weather (50% luminosity). */
     CLOUDY(0.5, "CLOUDY"),
+
     /** Foggy weather with reduced visibility (40% luminosity). */
     FOGGY(0.4, "FOGGY"),
+    
     /** Rainy weather (30% luminosity). Triggers rainfall sensor. */
     RAINING(0.3, "RAINING"),
+
     /** Stormy weather with heavy rain (15% luminosity). Triggers rainfall sensor with high intensity. */
     STORMY(0.15, "STORMY"),
+
     /** Snowing weather (60% luminosity). */
-    SNOWING(0.6, "SNOWING"),
-    /** Winter conditions with very low luminosity (20% luminosity). */
-    WINTER_IS_COMING(0.2, "WINTER");
+    SNOWING(0.6, "SNOWING");
 
     /** The luminosity multiplier for this weather condition. */
     private final double luminosityMultiplier;

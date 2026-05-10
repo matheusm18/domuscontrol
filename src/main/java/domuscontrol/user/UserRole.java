@@ -14,6 +14,7 @@ public enum UserRole {
      * Administrator role with full system access and control.
      */
     ADMINISTRATOR,
+    
     /**
      * Regular user role with limited access permissions.
      */

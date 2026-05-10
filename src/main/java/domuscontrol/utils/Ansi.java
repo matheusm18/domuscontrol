@@ -92,4 +92,13 @@ public class Ansi {
     public static void listRow(String content) {
         System.out.println("  " + content);
     }
+
+    /**
+     * Prints a dimmed error or invalid-input message.
+     *
+     * @param message the message to display
+     */
+    public static void error(String message) {
+        System.out.println(DIM + "  " + message + RESET);
+    }
 }

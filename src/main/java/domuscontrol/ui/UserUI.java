@@ -115,9 +115,9 @@ public class UserUI {
             houseUI.show(email, selected.getId(), selected.getName());
 
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: user not found.");
+            Ansi.error("Error: user not found.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: one of your houses was not found.");
+            Ansi.error("Error: one of your houses was not found.");
         }
     }
 
@@ -128,9 +128,9 @@ public class UserUI {
             House house = model.createHouse(email, name);
             System.out.printf("  House '%s' created.%n", house.getName());
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: user not found.");
+            Ansi.error("Error: user not found.");
         } catch (HouseAlreadyExistsException | UserAlreadyExistsException e) {
-            System.out.println("  Error: conflict creating house.");
+            Ansi.error("Error: conflict creating house.");
         }
     }
 
@@ -140,7 +140,7 @@ public class UserUI {
             System.out.println();
             showUserDetails(user);
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: user not found.");
+            Ansi.error("Error: user not found.");
             return;
         }
 
@@ -152,7 +152,7 @@ public class UserUI {
                 model.updateUserName(email, name);
                 System.out.println("  Name updated.");
             } catch (UserNotFoundException | UserAlreadyExistsException ex) {
-                System.out.println("  Error: " + ex.getMessage());
+                Ansi.error("Error: " + ex.getMessage());
             }
         });
         menu.setHandler(2, () -> {
@@ -162,7 +162,7 @@ public class UserUI {
                 model.updateUserPassword(email, pass);
                 System.out.println("  Password updated.");
             } catch (UserNotFoundException | UserAlreadyExistsException ex) {
-                System.out.println("  Error: " + ex.getMessage());
+                Ansi.error("Error: " + ex.getMessage());
             }
         });
         menu.run();
@@ -223,7 +223,7 @@ public class UserUI {
                     Ansi.listSeparator();
                 }
             } catch (UserNotFoundException | HouseNotFoundException e) {
-                System.out.println("  Error: " + e.getMessage());
+                Ansi.error("Error: " + e.getMessage());
             }
         });
         menu.setHandler(2, () -> {
@@ -241,7 +241,7 @@ public class UserUI {
                 }
                 Ansi.listSeparator();
             } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+                Ansi.error("Error: house not found.");
             }
         });
         menu.setHandler(3, () -> {
@@ -259,7 +259,7 @@ public class UserUI {
                 }
                 Ansi.listSeparator();
             } catch (HouseNotFoundException e) {
-                System.out.println("  Error: house not found.");
+                Ansi.error("Error: house not found.");
             }
         });
         menu.setHandler(4, () -> {
@@ -282,7 +282,7 @@ public class UserUI {
                     Ansi.listSeparator();
                 }
             } catch (UserNotFoundException | HouseNotFoundException e) {
-                System.out.println("  Error: " + e.getMessage());
+                Ansi.error("Error: " + e.getMessage());
             }
         });
 
@@ -312,7 +312,7 @@ public class UserUI {
             if (choice < 1 || choice > houses.size()) return null;
             return houses.get(choice - 1);
         } catch (UserNotFoundException | HouseNotFoundException e) {
-            System.out.println("  Error: " + e.getMessage());
+            Ansi.error("Error: " + e.getMessage());
             return null;
         }
     }
@@ -334,7 +334,7 @@ public class UserUI {
         try {
             activated = model.tick(minutes);
         } catch (InvalidMinutesException e) {
-            System.out.println("  Invalid number of minutes.");
+            Ansi.error("Invalid number of minutes.");
             return;
         }
         System.out.println("  Simulation advanced by " + minutes + " minute(s).");
@@ -354,9 +354,9 @@ public class UserUI {
                 Ansi.listSeparator();
             }
         } catch (UserNotFoundException e) {
-            System.out.println("  Error: user not found.");
+            Ansi.error("Error: user not found.");
         } catch (HouseNotFoundException e) {
-            System.out.println("  Error: house not found.");
+            Ansi.error("Error: house not found.");
         }
     }
 
@@ -369,7 +369,7 @@ public class UserUI {
             model.saveState(path);
             System.out.println("  State saved to: " + path);
         } catch (IOException e) {
-            System.out.println("  Error saving state: " + e.getMessage());
+            Ansi.error("Error saving state: " + e.getMessage());
         }
     }
 

@@ -248,7 +248,7 @@ public class Menu {
             op = -1;
         }
         if (op < 0 || op > this.opcoes.size()) {
-            System.out.println(Ansi.DIM + "  Invalid option." + Ansi.RESET);
+            Ansi.error("Invalid option.");
             op = -1;
         }
         return op;
