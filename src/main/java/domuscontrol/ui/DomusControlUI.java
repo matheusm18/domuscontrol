@@ -59,7 +59,7 @@ public class DomusControlUI {
                 "Login",
                 "Register",
                 "Global Statistics",
-                "Load State"
+                "Load State",
         }, () -> stateHeader(model.getCurrentState()));
 
         menu.setHandler(1, this::doLogin);
@@ -145,9 +145,11 @@ public class DomusControlUI {
             List<House> top = model.getTopHousesByCriterion(3, h -> h.calculateTotalConsumption());
             if (top.isEmpty()) { System.out.println("  No houses in the system."); return; }
             Ansi.listTitle("Most Consuming Houses");
+            int hw = top.stream().mapToInt(h -> houseLabel(h).length()).max().orElse(10) + 2;
             for (int i = 0; i < top.size(); i++) {
                 House h = top.get(i);
-                Ansi.listRow(String.format("%d  %-22s %.2f Wh", i + 1, h.getName(), h.calculateTotalConsumption()));
+                Ansi.listRow(String.format("%d  %-" + hw + "s %.2f Wh",
+                    i + 1, houseLabel(h), h.calculateTotalConsumption()));
             }
             Ansi.listSeparator();
         });
@@ -158,7 +160,7 @@ public class DomusControlUI {
             try {
                 List<Device> top = model.getTopDevicesInHouse(house.getId(), 3, d -> (double) d.getTotalMinutesOn());
                 if (top.isEmpty()) { System.out.println("  No devices in this house."); return; }
-                Ansi.listTitle("Top Devices By Active Time - " + house.getName());
+                Ansi.listTitle("Top Devices By Active Time - " + houseLabel(house));
                 int[] w = deviceColWidths(top);
                 for (int i = 0; i < top.size(); i++) {
                     Device d = top.get(i);
@@ -177,7 +179,7 @@ public class DomusControlUI {
             try {
                 List<Device> top = model.getTopDevicesInHouse(house.getId(), 3, d -> (double) d.getTotalActivations());
                 if (top.isEmpty()) { System.out.println("  No devices in this house."); return; }
-                Ansi.listTitle("Top Devices By Activations - " + house.getName());
+                Ansi.listTitle("Top Devices By Activations - " + houseLabel(house));
                 int[] w = deviceColWidths(top);
                 for (int i = 0; i < top.size(); i++) {
                     Device d = top.get(i);
@@ -194,10 +196,12 @@ public class DomusControlUI {
             List<DivisionInfo> top = model.getTopDivisionsByCriterion(3, di -> (double) di.getDeviceCount());
             if (top.isEmpty()) { System.out.println("  No divisions in the system."); return; }
             Ansi.listTitle("Top Divisions By Device Count");
+            int dw = top.stream().mapToInt(di -> di.getDivisionName().length()).max().orElse(10) + 2;
+            int hw = top.stream().mapToInt(di -> houseLabel(di).length()).max().orElse(10) + 2;
             for (int i = 0; i < top.size(); i++) {
                 DivisionInfo di = top.get(i);
-                Ansi.listRow(String.format("%d  %-18s %-18s %d device(s)",
-                    i + 1, di.getDivisionName(), di.getHouseName(), di.getDeviceCount()));
+                Ansi.listRow(String.format("%d  %-" + dw + "s %-" + hw + "s %d device(s)",
+                    i + 1, di.getDivisionName(), houseLabel(di), di.getDeviceCount()));
             }
             Ansi.listSeparator();
         });
@@ -208,16 +212,18 @@ public class DomusControlUI {
     private House selectHouseGlobal() {
         List<House> houses = model.getAllHouses();
         if (houses.isEmpty()) { System.out.println("  No houses in the system."); return null; }
+        int idWidth = houses.stream().mapToInt(h -> String.valueOf(h.getId()).length()).max().orElse(1);
         Ansi.listTitle("All Houses");
-        for (int i = 0; i < houses.size(); i++)
-            Ansi.listRow(String.format("%d  %s", i + 1, houses.get(i).getName()));
+        for (House h : houses)
+            Ansi.listRow(String.format("[#%-" + idWidth + "d]  %s", h.getId(), h.getName()));
         Ansi.listSeparator();
         while (true) {
-            System.out.print(Ansi.prompt("Select house (0 to cancel)"));
+            System.out.print(Ansi.prompt("House ID (0 to cancel)"));
             try {
                 int choice = Integer.parseInt(sc.nextLine().trim());
                 if (choice == 0) return null;
-                if (choice >= 1 && choice <= houses.size()) return houses.get(choice - 1);
+                House selected = houses.stream().filter(h -> h.getId() == choice).findFirst().orElse(null);
+                if (selected != null) return selected;
             } catch (NumberFormatException ignored) {}
             Ansi.error("Invalid selection.");
         }
@@ -235,12 +241,19 @@ public class DomusControlUI {
         return new int[]{type + 2, brand + 2, model + 2};
     }
 
+    private String houseLabel(House house) {
+        return "[#" + house.getId() + "] " + house.getName();
+    }
+
+    private String houseLabel(DivisionInfo division) {
+        return "[#" + division.getHouseId() + "] " + division.getHouseName();
+    }
+
     private void doLoadState() {
         System.out.print(Ansi.prompt("File name"));
         String path = "saves/" + sc.nextLine().trim();
         try {
-            this.model = DomusControl.loadState(path);
-            this.userUI.setModel(this.model);
+            setModel(DomusControl.loadState(path));
             System.out.println("  State loaded successfully.");
         } catch (FileNotFoundException e) {
             System.out.println("  File not found: " + path);
@@ -249,5 +262,11 @@ public class DomusControlUI {
         } catch (ClassNotFoundException e) {
             Ansi.error("Error loading state: corrupted file.");
         }
+    }
+
+    private void setModel(DomusControl model) {
+        this.model = model;
+        this.userUI.setModel(this.model);
+        this.currentUserEmail = null;
     }
 }

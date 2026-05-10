@@ -3,6 +3,7 @@ package domuscontrol.devices.sensors;
 import domuscontrol.devices.Device;
 import domuscontrol.simulation.SimulationState;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -112,7 +113,7 @@ public class TemperatureSensor extends Sensor {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(super.toString())
-          .append("Temperature: ").append(String.format("%.1f", this.temperature)).append(" ºC\n");
+          .append("Temperature: ").append(String.format(Locale.US, "%.1f", this.temperature)).append(" ºC\n");
         return sb.toString();
     }
 }

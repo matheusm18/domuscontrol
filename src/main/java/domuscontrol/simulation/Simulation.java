@@ -185,29 +185,14 @@ public class Simulation implements SimulationState, Serializable {
         this.currentDateTime = this.currentDateTime.plusMinutes(ticks);
 
         for (int i = 0; i < ticks; i++) {
-            int hour = this.currentDateTime.minusMinutes(ticks - 1 - i).getHour();
+            LocalDateTime tickDateTime = this.currentDateTime.minusMinutes(ticks - 1 - i);
 
-            double tempChange = 0.0;
+            double targetTemperature = targetTemperature(tickDateTime);
+            this.temperature += (targetTemperature - this.temperature) * 0.00025;
+            this.temperature += (Math.random() * 0.002) - 0.001;
 
-            if (hour >= 7 && hour <= 15) {
-                tempChange += 0.01;
-            } else if (hour >= 18 || hour <= 5) {
-                tempChange -= 0.01;
-            }
-
-            switch (this.weather) {
-                case SUNNY: tempChange += 0.005; break;
-                case SNOWING: tempChange -= 0.015; break;
-                case RAINING:
-                case STORMY: tempChange -= 0.008; break;
-                default: break;
-            }
-
-            tempChange += (Math.random() * 0.04) - 0.02;
-            this.temperature += tempChange;
-
-            if (this.temperature > 45.0) this.temperature = 45.0;
-            if (this.temperature < -15.0) this.temperature = -15.0;
+            if (this.temperature > 40.0) this.temperature = 40.0;
+            if (this.temperature < 0.0) this.temperature = 0.0;
 
             if (Math.random() < 0.01) {
                 double rand = Math.random();
@@ -226,7 +211,7 @@ public class Simulation implements SimulationState, Serializable {
                             this.weather = WeatherCondition.PARTLY_CLOUDY;
                         } else if (rand < 0.6) {
                             this.weather = WeatherCondition.RAINING;
-                        } else if (rand < 0.8 && this.temperature <= 2.0) {
+                        } else if (rand < 0.8 && this.temperature <= 4.0) {
                             this.weather = WeatherCondition.SNOWING;
                         } else {
                             this.weather = WeatherCondition.FOGGY;
@@ -234,7 +219,7 @@ public class Simulation implements SimulationState, Serializable {
                         break;
                         
                     case RAINING:
-                        if (this.temperature <= 0.0) {
+                        if (this.temperature <= 3.0) {
                             this.weather = WeatherCondition.SNOWING;
                         } else {
                             this.weather = (rand < 0.7) ? WeatherCondition.CLOUDY : WeatherCondition.STORMY;
@@ -246,7 +231,7 @@ public class Simulation implements SimulationState, Serializable {
                         break;
                         
                     case SNOWING:
-                        this.weather = (this.temperature > 2.0) ? WeatherCondition.RAINING : WeatherCondition.CLOUDY;
+                        this.weather = (this.temperature > 4.0) ? WeatherCondition.RAINING : WeatherCondition.CLOUDY;
                         break;
                         
                     case FOGGY:
@@ -256,6 +241,31 @@ public class Simulation implements SimulationState, Serializable {
                 }
             }
         }
+    }
+
+    /**
+     * Calculates a plausible outside temperature target for the current moment.
+     *
+     * @param dateTime The moment being simulated.
+     * @return The target temperature in Celsius.
+     */
+    private double targetTemperature(LocalDateTime dateTime) {
+        int dayOfYear = dateTime.getDayOfYear();
+        int hour = dateTime.getHour();
+
+        double seasonal = 16.0 + 10.0 * Math.sin(2.0 * Math.PI * (dayOfYear - 110) / 365.0);
+        double daily = (hour >= 7 && hour <= 15) ? 3.0 : (hour >= 18 || hour <= 5) ? -3.0 : 0.0;
+        double weatherEffect = switch (this.weather) {
+            case SUNNY -> 2.0;
+            case PARTLY_CLOUDY -> 0.8;
+            case CLOUDY -> -0.5;
+            case FOGGY -> -1.0;
+            case RAINING -> -2.5;
+            case STORMY -> -3.5;
+            case SNOWING -> -5.0;
+        };
+
+        return seasonal + daily + weatherEffect;
     }
 
     /**

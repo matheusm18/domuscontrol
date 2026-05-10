@@ -632,15 +632,20 @@ public class ActionsUI {
             }
             List<Device> deviceList = devicesMap.values().stream()
                 .sorted(java.util.Comparator.comparingInt(Device::getId)).toList();
+            Map<Integer, String> divisionMap;
+            try { divisionMap = model.getDeviceDivisionMap(houseId); }
+            catch (HouseNotFoundException e) { divisionMap = new java.util.HashMap<>(); }
             int[] w = colWidths(deviceList);
 
             for (Device d : deviceList) {
-                Ansi.listRow(String.format("%-" + w[0] + "d  %-" + w[1] + "s %-" + w[2] + "s %s",
-                    d.getId(), d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
+                String div = divisionMap.getOrDefault(d.getId(), "");
+                String divCol = div.isEmpty() ? "" : "| " + div;
+                Ansi.listRow(String.format("[#%-" + w[0] + "d]  %-" + w[1] + "s %-" + w[2] + "s %-" + w[3] + "s %s",
+                    d.getId(), d.getClass().getSimpleName(), d.getBrand(), d.getModel(), divCol));
             }
             Ansi.listSeparator();
 
-            System.out.print(Ansi.prompt("Device (0 to finish)"));
+            System.out.print(Ansi.prompt("Device ID (0 to finish)"));
             int choice = readInt();
 
             if (choice == 0) break;
@@ -795,7 +800,7 @@ public class ActionsUI {
             .filter(d -> d instanceof SwitchableDevice && !(d instanceof Sensor))
             .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No switchable devices available."); return; }
-        Device picked = pickFromList(compatible, "switchable device");
+        Device picked = pickFromList(compatible, "switchable device", houseId);
         if (picked == null) return;
         System.out.print(Ansi.prompt("Trigger when ON? (true/false)"));
         boolean on = Boolean.parseBoolean(sc.nextLine().trim());
@@ -811,7 +816,7 @@ public class ActionsUI {
             .filter(d -> d instanceof OpenableDevice)
             .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No openable devices available."); return; }
-        Device picked = pickFromList(compatible, "openable device");
+        Device picked = pickFromList(compatible, "openable device", houseId);
         if (picked == null) return;
         System.out.print(Ansi.prompt("Trigger opening (0-100)"));
         int opening = readInt();
@@ -829,7 +834,7 @@ public class ActionsUI {
             .filter(d -> d instanceof AdjustableDevice)
             .collect(Collectors.toList());
         if (compatible.isEmpty()) { System.out.println("  No adjustable devices available."); return; }
-        Device picked = pickFromList(compatible, "adjustable device");
+        Device picked = pickFromList(compatible, "adjustable device", houseId);
         if (picked == null) return;
         System.out.print(Ansi.prompt("Trigger level (0-100)"));
         int level = readInt();
@@ -852,7 +857,7 @@ public class ActionsUI {
             return;
         }
 
-        Device picked = pickFromList(compatible, "color adjustable device");
+        Device picked = pickFromList(compatible, "color adjustable device", houseId);
         if (picked == null) return;
 
         System.out.print(Ansi.prompt("Trigger temperature (2700-4000K)"));
@@ -873,7 +878,7 @@ public class ActionsUI {
             .filter(d -> d instanceof Sensor)
             .collect(Collectors.toList());
         if (sensors.isEmpty()) { System.out.println("  No sensors available. Add a sensor device first."); return; }
-        Device picked = pickFromList(sensors, "sensor");
+        Device picked = pickFromList(sensors, "sensor", houseId);
         if (picked == null) return;
 
         if (picked instanceof TemperatureSensor) {
@@ -900,17 +905,22 @@ public class ActionsUI {
         }
     }
 
-    private Device pickFromList(List<Device> devices, String label) {
+    private Device pickFromList(List<Device> devices, String label, int houseId) {
         List<Device> sorted = devices.stream()
             .sorted(java.util.Comparator.comparingInt(Device::getId)).toList();
+        Map<Integer, String> divisionMap;
+        try { divisionMap = model.getDeviceDivisionMap(houseId); }
+        catch (HouseNotFoundException e) { divisionMap = new java.util.HashMap<>(); }
         Ansi.listTitle("Select " + label);
         int[] w = colWidths(sorted);
         for (Device d : sorted) {
-            Ansi.listRow(String.format("%-" + w[0] + "d  %-" + w[1] + "s %-" + w[2] + "s %s",
-                d.getId(), d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
+            String div = divisionMap.getOrDefault(d.getId(), "");
+            String divCol = div.isEmpty() ? "" : "| " + div;
+            Ansi.listRow(String.format("[#%-" + w[0] + "d]  %-" + w[1] + "s %-" + w[2] + "s %-" + w[3] + "s %s",
+                d.getId(), d.getClass().getSimpleName(), d.getBrand(), d.getModel(), divCol));
         }
         Ansi.listSeparator();
-        System.out.print(Ansi.prompt("Select (0 to cancel)"));
+        System.out.print(Ansi.prompt("Device ID (0 to cancel)"));
         int choice = readInt();
         if (choice == 0) return null;
         return sorted.stream().filter(d -> d.getId() == choice).findFirst().orElse(null);
@@ -920,7 +930,8 @@ public class ActionsUI {
         int id    = devices.stream().mapToInt(d -> String.valueOf(d.getId()).length()).max().orElse(1);
         int type  = devices.stream().mapToInt(d -> d.getClass().getSimpleName().length()).max().orElse(10);
         int brand = devices.stream().mapToInt(d -> d.getBrand().length()).max().orElse(8);
-        return new int[]{id, type + 2, brand + 2};
+        int model = devices.stream().mapToInt(d -> d.getModel().length()).max().orElse(10);
+        return new int[]{id, type + 2, brand + 2, model + 2};
     }
 
     private Operator pickOperator() {

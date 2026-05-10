@@ -3,6 +3,7 @@ package domuscontrol.devices.sensors;
 import domuscontrol.devices.Device;
 import domuscontrol.simulation.SimulationState;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -115,7 +116,7 @@ public class LuminositySensor extends Sensor {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(super.toString())
-          .append("Luminosity: ").append(String.format("%.1f", this.luminosity)).append(" lx\n");
+          .append("Luminosity: ").append(String.format(Locale.US, "%.1f", this.luminosity)).append(" lx\n");
         return sb.toString();
     }
 }

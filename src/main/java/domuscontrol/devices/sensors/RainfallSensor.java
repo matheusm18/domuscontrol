@@ -4,6 +4,7 @@ import domuscontrol.devices.Device;
 import domuscontrol.simulation.SimulationState;
 import domuscontrol.simulation.WeatherCondition;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -120,7 +121,7 @@ public class RainfallSensor extends Sensor {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(super.toString())
-          .append("Rainfall: ").append(String.format("%.1f", this.rainfall)).append(" mm/h\n");
+          .append("Rainfall: ").append(String.format(Locale.US, "%.1f", this.rainfall)).append(" mm/h\n");
         return sb.toString();
     }
 }

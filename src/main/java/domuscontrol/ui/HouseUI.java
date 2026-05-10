@@ -156,6 +156,7 @@ public class HouseUI {
             Ansi.listRow(String.format("%-12s %d", "ID", house.getId()));
             Ansi.listRow(String.format("%-12s %d", "Divisions", model.getDivisions(houseId).size()));
             Ansi.listRow(String.format("%-12s %d", "Devices", model.getDevices(houseId).size()));
+            Ansi.listRow(String.format("%-12s %.2f Wh", "Consumption", house.calculateTotalConsumption()));
             Ansi.listSeparator();
         } catch (HouseNotFoundException e) {
             Ansi.error("Error: house not found.");
@@ -182,11 +183,19 @@ public class HouseUI {
                 .flatMap(List::stream)
                 .mapToInt(d -> String.valueOf(d.getId()).length())
                 .max().orElse(1);
+            int typeW = divisions.values().stream()
+                .flatMap(List::stream)
+                .mapToInt(d -> d.getClass().getSimpleName().length())
+                .max().orElse(10) + 2;
+            int brandW = divisions.values().stream()
+                .flatMap(List::stream)
+                .mapToInt(d -> d.getBrand().length())
+                .max().orElse(8) + 2;
             Ansi.listTitle("Divisions");
             for (Map.Entry<String, List<Device>> entry : divisions.entrySet()) {
                 Ansi.listRow(entry.getKey());
                 for (Device d : entry.getValue())
-                    Ansi.listRow(String.format("    [#%-" + idW + "d] %-18s %s %s",
+                    Ansi.listRow(String.format("    [#%-" + idW + "d] %-" + typeW + "s %-" + brandW + "s %s",
                         d.getId(), d.getClass().getSimpleName(), d.getBrand(), d.getModel()));
             }
             Ansi.listSeparator();
@@ -271,17 +280,18 @@ public class HouseUI {
                 .sorted(java.util.Comparator.comparingInt(Device::getId)).toList();
             int[] w = deviceColWidths(sorted, divisionMap);
             Ansi.listTitle("Select Device");
-            sorted.forEach(device ->
-                Ansi.listRow(String.format("%-" + w[0] + "d  %-" + w[1] + "s %-" + w[2] + "s %-" + w[3] + "s %s",
+            sorted.forEach(device -> {
+                String div = divisionMap.getOrDefault(device.getId(), "");
+                String divCol = div.isEmpty() ? "" : "| " + div;
+                Ansi.listRow(String.format("[#%-" + w[0] + "d]  %-" + w[1] + "s %-" + w[2] + "s %-" + w[3] + "s %s",
                     device.getId(),
                     device.getClass().getSimpleName(),
                     device.getBrand(),
-                    device.getModel(),
-                    divisionMap.getOrDefault(device.getId(), "")))
-            );
+                    device.getModel(), divCol));
+            });
             Ansi.listSeparator();
             while (true) {
-                System.out.print(Ansi.prompt("Device (0 to cancel)"));
+                System.out.print(Ansi.prompt("Device ID (0 to cancel)"));
                 int selectedId = readInt();
                 if (selectedId == 0) return;
                 if (devices.containsKey(selectedId)) { showDeviceInfo(devices.get(selectedId)); break; }
@@ -746,10 +756,19 @@ public class HouseUI {
             Map<Integer, UserRole> users = model.getUsersInHouse(houseId);
             if (users.isEmpty()) { System.out.println("  No users."); return; }
             Ansi.listTitle("Users");
+            int nameWidth = users.keySet().stream()
+                .mapToInt(userId -> {
+                    try {
+                        return model.getUserById(userId).getName().length();
+                    } catch (UserNotFoundException e) {
+                        return ("User ID " + userId + " not found").length();
+                    }
+                })
+                .max().orElse(10) + 2;
             users.forEach((userId, role) -> {
                 try {
                     String userName = model.getUserById(userId).getName();
-                    Ansi.listRow(String.format("%-22s %s", userName, role));
+                    Ansi.listRow(String.format("%-" + nameWidth + "s %s", userName, role));
                 } catch (UserNotFoundException e) {
                     Ansi.listRow(String.format("User ID %d not found", userId));
                 }
@@ -829,14 +848,15 @@ public class HouseUI {
         int[] w = deviceColWidths(deviceList, divisionMap);
         Ansi.listTitle("Select Device");
         for (Device d : deviceList) {
-            Ansi.listRow(String.format("%-" + w[0] + "d  %-" + w[1] + "s %-" + w[2] + "s %-" + w[3] + "s %s",
+            String div = divisionMap.getOrDefault(d.getId(), "");
+            String divCol = div.isEmpty() ? "" : "| " + div;
+            Ansi.listRow(String.format("[#%-" + w[0] + "d]  %-" + w[1] + "s %-" + w[2] + "s %-" + w[3] + "s %s",
                     d.getId(), d.getClass().getSimpleName(),
-                    d.getBrand(), d.getModel(),
-                    divisionMap.getOrDefault(d.getId(), "")));
+                    d.getBrand(), d.getModel(), divCol));
         }
         Ansi.listSeparator();
         while (true) {
-            System.out.print(Ansi.prompt("Device (0 to cancel)"));
+            System.out.print(Ansi.prompt("Device ID (0 to cancel)"));
             int choice = readInt();
             if (choice == 0) return null;
             if (devices.containsKey(choice)) return devices.get(choice);

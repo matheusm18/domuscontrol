@@ -80,7 +80,7 @@ public class UserUI {
 
         menu.setHandler(1, () -> myHouses(email));
         menu.setHandler(2, () -> createHouse(email));
-        menu.setHandler(3, () -> myProfile(email));
+        menu.setHandler(3, () -> myProfile(email, menu));
         menu.setHandler(4, () -> statistics(email));
         menu.setHandler(5, () -> advanceSimulation(email));
         menu.setHandler(6, this::saveState);
@@ -103,15 +103,16 @@ public class UserUI {
                 System.out.println("  You have no houses yet.");
                 return;
             }
+            int idWidth = houses.stream().mapToInt(h -> String.valueOf(h.getId()).length()).max().orElse(1);
             Ansi.listTitle("Your Houses");
-            for (int i = 0; i < houses.size(); i++)
-                Ansi.listRow(String.format("%d  %s", i + 1, houses.get(i).getName()));
+            for (House h : houses)
+                Ansi.listRow(String.format("[#%-" + idWidth + "d]  %s", h.getId(), h.getName()));
             Ansi.listSeparator();
-            System.out.print(Ansi.prompt("Select house (0 to cancel)"));
+            System.out.print(Ansi.prompt("House ID (0 to cancel)"));
             int choice = readInt();
-            if (choice < 1 || choice > houses.size()) return;
-
-            House selected = houses.get(choice - 1);
+            if (choice == 0) return;
+            House selected = houses.stream().filter(h -> h.getId() == choice).findFirst().orElse(null);
+            if (selected == null) { Ansi.error("House not found."); return; }
             houseUI.show(email, selected.getId(), selected.getName());
 
         } catch (UserNotFoundException e) {
@@ -134,7 +135,7 @@ public class UserUI {
         }
     }
 
-    private void myProfile(String email) {
+    private void myProfile(String email, Menu dashboardMenu) {
         try {
             User user = model.getUserByEmail(email);
             System.out.println();
@@ -144,13 +145,14 @@ public class UserUI {
             return;
         }
 
-        Menu menu = new Menu("Profile", new String[]{"Change Name", "Change Password"}, () -> stateHeader(model.getCurrentState()));
+        Menu menu = new Menu("Profile", new String[]{"Change Name", "Change Password", "Change Email"}, () -> stateHeader(model.getCurrentState()));
         menu.setHandler(1, () -> {
             System.out.print(Ansi.prompt("New name"));
             String name = sc.nextLine();
             try {
                 model.updateUserName(email, name);
                 System.out.println("  Name updated.");
+                showUserDetails(model.getUserByEmail(email));
             } catch (UserNotFoundException | UserAlreadyExistsException ex) {
                 Ansi.error("Error: " + ex.getMessage());
             }
@@ -161,6 +163,19 @@ public class UserUI {
             try {
                 model.updateUserPassword(email, pass);
                 System.out.println("  Password updated.");
+                showUserDetails(model.getUserByEmail(email));
+            } catch (UserNotFoundException | UserAlreadyExistsException ex) {
+                Ansi.error("Error: " + ex.getMessage());
+            }
+        });
+        menu.setHandler(3, () -> {
+            System.out.print(Ansi.prompt("New email"));
+            String newEmail = sc.nextLine();
+            try {
+                model.updateUserEmail(email, newEmail);
+                System.out.println("  Email updated. Please log in again.");
+                menu.stop();
+                dashboardMenu.stop();
             } catch (UserNotFoundException | UserAlreadyExistsException ex) {
                 Ansi.error("Error: " + ex.getMessage());
             }
@@ -188,10 +203,19 @@ public class UserUI {
         if (roles.isEmpty()) {
             Ansi.listRow("No roles assigned.");
         } else {
+            int houseWidth = roles.keySet().stream()
+                .mapToInt(houseId -> {
+                    try {
+                        return this.model.getHouseById(houseId).getName().length();
+                    } catch (HouseNotFoundException e) {
+                        return ("House ID " + houseId).length();
+                    }
+                })
+                .max().orElse(10) + 2;
             for (Map.Entry<Integer, UserRole> entry : roles.entrySet()) {
                 try {
                     String houseName = this.model.getHouseById(entry.getKey()).getName();
-                    Ansi.listRow(String.format("%-22s %s", houseName, entry.getValue()));
+                    Ansi.listRow(String.format("%-" + houseWidth + "s %s", houseName, entry.getValue()));
                 } catch (HouseNotFoundException e) {
                     Ansi.listRow("House ID " + entry.getKey() + " not found");
                 }
@@ -215,10 +239,11 @@ public class UserUI {
                     System.out.println("  No houses in the system.");
                 } else {
                     Ansi.listTitle("Most Consuming Houses");
-                    int hw = topHouses.stream().mapToInt(h -> h.getName().length()).max().orElse(10) + 2;
+                    int hw = topHouses.stream().mapToInt(h -> houseLabel(h).length()).max().orElse(10) + 2;
                     for (int i = 0; i < topHouses.size(); i++) {
                         House h = topHouses.get(i);
-                        Ansi.listRow(String.format("%d  %-" + hw + "s %.2f Wh", i + 1, h.getName(), h.calculateTotalConsumption()));
+                        Ansi.listRow(String.format("%d  %-" + hw + "s %.2f Wh",
+                            i + 1, houseLabel(h), h.calculateTotalConsumption()));
                     }
                     Ansi.listSeparator();
                 }
@@ -232,7 +257,7 @@ public class UserUI {
             try {
                 List<Device> topDevices = model.getTopDevicesInHouse(house.getId(), 3, d -> (double) d.getTotalMinutesOn());
                 if (topDevices.isEmpty()) { System.out.println("  No devices in this house."); return; }
-                Ansi.listTitle("Top Devices By Active Time - " + house.getName());
+                Ansi.listTitle("Top Devices By Active Time - " + houseLabel(house));
                 int[] w2 = deviceColWidths(topDevices);
                 for (int i = 0; i < topDevices.size(); i++) {
                     Device d = topDevices.get(i);
@@ -250,7 +275,7 @@ public class UserUI {
             try {
                 List<Device> topDevices = model.getTopDevicesInHouse(house.getId(), 3, d -> (double) d.getTotalActivations());
                 if (topDevices.isEmpty()) { System.out.println("  No devices in this house."); return; }
-                Ansi.listTitle("Top Devices By Activations - " + house.getName());
+                Ansi.listTitle("Top Devices By Activations - " + houseLabel(house));
                 int[] w3 = deviceColWidths(topDevices);
                 for (int i = 0; i < topDevices.size(); i++) {
                     Device d = topDevices.get(i);
@@ -271,13 +296,12 @@ public class UserUI {
                     Ansi.listTitle("Top Divisions By Device Count");
                     int dw = topDivisions.stream().mapToInt(d -> d.getDivisionName().length()).max().orElse(10) + 2;
                     int hlw = topDivisions.stream()
-                        .mapToInt(d -> (d.getHouseName() + " (#" + d.getHouseId() + ")").length())
+                        .mapToInt(d -> houseLabel(d).length())
                         .max().orElse(10) + 2;
                     for (int i = 0; i < topDivisions.size(); i++) {
                         DivisionInfo div = topDivisions.get(i);
-                        String houseLabel = div.getHouseName() + " (#" + div.getHouseId() + ")";
                         Ansi.listRow(String.format("%d  %-" + dw + "s %-" + hlw + "s %d device(s)",
-                            i + 1, div.getDivisionName(), houseLabel, div.getDeviceCount()));
+                            i + 1, div.getDivisionName(), houseLabel(div), div.getDeviceCount()));
                     }
                     Ansi.listSeparator();
                 }
@@ -296,6 +320,14 @@ public class UserUI {
         return new int[]{type + 2, brand + 2, model + 2};
     }
 
+    private String houseLabel(House house) {
+        return "[#" + house.getId() + "] " + house.getName();
+    }
+
+    private String houseLabel(DivisionInfo division) {
+        return "[#" + division.getHouseId() + "] " + division.getHouseName();
+    }
+
     private House selectHouse(String email) {
         try {
             List<House> houses = model.getHousesByUser(email);
@@ -303,14 +335,17 @@ public class UserUI {
                 System.out.println("  You have no houses.");
                 return null;
             }
+            int idWidth = houses.stream().mapToInt(h -> String.valueOf(h.getId()).length()).max().orElse(1);
             Ansi.listTitle("Your Houses");
-            for (int i = 0; i < houses.size(); i++)
-                Ansi.listRow(String.format("%d  %s", i + 1, houses.get(i).getName()));
+            for (House h : houses)
+                Ansi.listRow(String.format("[#%-" + idWidth + "d]  %s", h.getId(), h.getName()));
             Ansi.listSeparator();
-            System.out.print(Ansi.prompt("Select house (0 to cancel)"));
+            System.out.print(Ansi.prompt("House ID (0 to cancel)"));
             int choice = readInt();
-            if (choice < 1 || choice > houses.size()) return null;
-            return houses.get(choice - 1);
+            if (choice == 0) return null;
+            House selected = houses.stream().filter(h -> h.getId() == choice).findFirst().orElse(null);
+            if (selected == null) { Ansi.error("House not found."); return null; }
+            return selected;
         } catch (UserNotFoundException | HouseNotFoundException e) {
             Ansi.error("Error: " + e.getMessage());
             return null;
