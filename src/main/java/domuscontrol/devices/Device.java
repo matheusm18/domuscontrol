@@ -1,7 +1,6 @@
 package domuscontrol.devices;
 
 import java.io.Serializable;
-import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -288,11 +287,11 @@ public abstract class Device implements Serializable{
             .append("ID: ").append(this.id).append("\n")
             .append("Brand: ").append(this.brand).append("\n")
             .append("Model: ").append(this.model).append("\n")
-            .append("Consumption: ").append(String.format(Locale.US, "%.2f", this.consumptionPerHour)).append(" Wh/h\n")
+            .append("Consumption: ").append(this.consumptionPerHour).append(" Wh/h\n")
             .append("Status: ").append(this.status).append("\n")
             .append("Minutes on: ").append(this.totalMinutesOn).append("\n")
             .append("Activations: ").append(this.totalActivations).append("\n")
-            .append("Energy used: ").append(String.format(Locale.US, "%.2f", this.getEnergyConsumption())).append(" Wh\n");
+            .append("Energy used: ").append(this.getEnergyConsumption()).append(" Wh\n");
         return sb.toString();
     }
 }
