@@ -4,6 +4,8 @@ DomusControl is a Java console application that simulates a smart home automatio
 
 The project was developed for the Object-Oriented Programming course at Universidade do Minho and focuses on clean domain modelling, encapsulation, inheritance, polymorphism, interfaces, design patterns, serialization, and automated testing.
 
+## Final grade: 20 / 20 :star: 
+
 ## Features
 
 * Multi-user system with role-based access per house
